@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#020408">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>NeuroFocus</title>
+<style>
+  :root{--bg:#020408;--surface:#0b1021;--surface-2:#111827;--accent:#00e5ff;--accent-2:#c084fc;--success:#00e676;--danger:#ff5252;--gold:#ffd740;--text:#f0f6ff;--muted:#8b9bb4;--border:rgba(255,255,255,0.06);}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg);}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--text);overflow-x:hidden;padding-bottom:90px;}
+  .sky{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 70% 50% at 20% 0%,rgba(0,229,255,0.08) 0%,transparent 60%),radial-gradient(ellipse 70% 50% at 80% 100%,rgba(192,132,252,0.07) 0%,transparent 60%),var(--bg);}
+  .header{position:sticky;top:0;z-index:50;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:rgba(2,4,8,0.92);border-bottom:1px solid var(--border);}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.25rem;letter-spacing:-0.5px;}
+  .brand-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);}
+  .brand-text{background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .header-btn{background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:10px;font-weight:600;font-size:0.85rem;cursor:pointer;}
+  .header-btn:active{transform:scale(0.96);}
+  .hidden{display:none !important;}
+  .container{padding:16px;max-width:640px;margin:0 auto;}
+  .tab-content{animation:slideUp 0.3s ease-out;}
+  @keyframes slideUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes pop{0%{transform:scale(0.8);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:18px;margin-bottom:14px;transition:transform 0.15s,border-color 0.2s;}
+  .card:active{transform:scale(0.995);}
+  .card.glow{border-color:rgba(0,229,255,0.25);animation:pulseGlow 3s infinite;}
+  @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(0,229,255,0.08);}50%{box-shadow:0 0 20px 4px rgba(0,229,255,0.06);}}
+  .card-title{font-size:1.05rem;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+  .card-sub{color:var(--muted);font-size:0.85rem;line-height:1.5;margin-bottom:14px;}
+  .xp-wrap{margin-bottom:16px;}
+  .xp-header{display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;margin-bottom:6px;font-weight:700;}
+  .xp-track{height:10px;background:var(--surface-2);border-radius:999px;overflow:hidden;}
+  .xp-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width 0.6s ease;box-shadow:0 0 10px rgba(0,229,255,0.3);}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;text-align:center;position:relative;overflow:hidden;}
+  .stat::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent-2));opacity:0.6;}
+  .stat-num{font-size:1.8rem;font-weight:800;background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .stat-label{font-size:0.75rem;color:var(--muted);font-weight:600;margin-top:2px;}
+  .btn{background:linear-gradient(90deg,var(--accent),#00b8d4);color:#000;border:none;padding:14px;border-radius:14px;font-weight:800;font-size:1rem;cursor:pointer;width:100%;letter-spacing:0.2px;box-shadow:0 4px 20px rgba(0,229,255,0.25);transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .btn:active{transform:scale(0.97);box-shadow:0 2px 10px rgba(0,229,255,0.15);}
+  .btn:disabled{opacity:0.4;transform:none;box-shadow:none;cursor:not-allowed;}
+  .btn-outline{background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:12px;border-radius:12px;font-weight:700;font-size:0.95rem;cursor:pointer;transition:all 0.15s;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;}
+  .btn-outline:active{background:rgba(255,255,255,0.04);transform:scale(0.97);}
+  .btn-sm{padding:8px 12px;font-size:0.85rem;border-radius:10px;width:auto;}
+  .btn-gold{background:linear-gradient(90deg,var(--gold),#ffab00);color:#000;box-shadow:0 4px 20px rgba(255,215,64,0.25);}
+  .btn-danger{background:rgba(255,82,82,0.15);border:1px solid rgba(255,82,82,0.3);color:var(--danger);padding:10px 14px;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;}
+  .btn-success{background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.3);color:var(--success);padding:8px 12px;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;}
+  .btn-group{display:flex;gap:10px;}
+  .btn-group .btn,.btn-group .btn-outline{width:auto;flex:1;}
+  .input{background:rgba(0,0,0,0.25);border:1px solid var(--border);color:var(--text);padding:14px;border-radius:14px;font-size:1rem;width:100%;outline:none;transition:border-color 0.2s;}
+  .input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,255,0.1);}
+  .input::placeholder{color:var(--muted);opacity:0.7;}
+  select.input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b9bb4' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:38px;}
+  .progress-track{height:8px;background:var(--bg);border-radius:999px;overflow:hidden;margin-top:8px;}
+  .progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width 0.5s ease;}
+  .check{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.02);margin-bottom:8px;cursor:pointer;transition:background 0.15s;}
+  .check:active{background:rgba(255,255,255,0.04);}
+  .check input[type="checkbox"]{width:24px;height:24px;border-radius:8px;border:2px solid var(--border);appearance:none;background:var(--bg);cursor:pointer;position:relative;flex-shrink:0;transition:all 0.2s;}
+  .check input[type="checkbox"]:checked{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;box-shadow:0 0 12px rgba(0,229,255,0.3);}
+  .check input[type="checkbox"]:checked::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#000;font-weight:900;font-size:0.9rem;}
+  .check label{font-size:0.95rem;color:var(--text);flex:1;cursor:pointer;pointer-events:none;}
+  .check.completed label{text-decoration:line-through;opacity:0.45;}
+  .timer-wrap{display:flex;flex-direction:column;align-items:center;margin:20px 0;}
+  .timer-ring-wrap{position:relative;width:240px;height:240px;}
+  .timer-ring-wrap svg{transform:rotate(-90deg);width:100%;height:100%;}
+  .timer-ring-bg{fill:none;stroke:var(--surface-2);stroke-width:8;}
+  .timer-ring-fill{fill:none;stroke-width:8;stroke-linecap:round;stroke-dasharray:691;stroke-dashoffset:0;transition:stroke-dashoffset 0.3s linear;}
+  .timer-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .timer-digits{font-size:3.2rem;font-weight:800;letter-spacing:-2px;font-variant-numeric:tabular-nums;}
+  .timer-label{color:var(--muted);font-size:0.8rem;font-weight:600;margin-top:4px;}
+  .timer-modes{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap;}
+  .mode-chip{background:var(--surface-2);border:1px solid var(--border);color:var(--muted);padding:8px 14px;border-radius:10px;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;}
+  .mode-chip.active{background:rgba(0,229,255,0.1);border-color:rgba(0,229,255,0.35);color:var(--accent);box-shadow:0 0 12px rgba(0,229,255,0.08);}
+  .tip{background:linear-gradient(135deg,rgba(0,229,255,0.06),rgba(168,85,247,0.06));border:1px solid rgba(0,229,255,0.1);border-radius:16px;padding:14px;font-size:0.85rem;line-height:1.6;color:var(--muted);margin-top:16px;}
+  .tip strong{color:var(--accent);font-weight:700;}
+  .list-item{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid var(--border);margin-bottom:10px;}
+  .list-item .info{flex:1;min-width:0;}
+  .list-item .title{font-weight:700;font-size:0.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .list-item .meta{font-size:0.8rem;color:var(--muted);margin-top:2px;}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:0.75rem;font-weight:700;background:rgba(0,229,255,0.1);color:var(--accent);border:1px solid rgba(0,229,255,0.2);flex-shrink:0;}
+  .badge.warn{background:rgba(255,82,82,0.1);color:var(--danger);border-color:rgba(255,82,82,0.2);}
+  .badge.gold{background:rgba(255,215,64,0.1);color:var(--gold);border-color:rgba(255,215,64,0.2);}
+  .habit-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center;margin-top:10px;}
+  .habit-day{padding:8px 4px;border-radius:8px;font-size:0.75rem;font-weight:700;border:1px solid var(--border);color:var(--muted);background:var(--bg);}
+  .habit-day.done{background:var(--success);color:#000;border-color:var(--success);box-shadow:0 0 8px rgba(0,230,118,0.25);}
+  .habit-day.today{border-color:var(--accent);color:var(--accent);}
+  .celebrate{position:fixed;inset:0;z-index:300;pointer-events:none;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:rgba(0,0,0,0.6);opacity:0;transition:opacity 0.3s;}
+  .celebrate.show{opacity:1;pointer-events:all;}
+  .celebrate-box{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:28px;text-align:center;max-width:320px;width:90%;animation:pop 0.4s cubic-bezier(0.175,0.885,0.32,1.275);}
+  .celebrate-emoji{font-size:3.5rem;line-height:1;}
+  .celebrate-title{font-size:1.3rem;font-weight:800;margin-top:12px;background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .celebrate-sub{color:var(--muted);font-size:0.9rem;margin-top:6px;}
+  .celebrate-xp{display:inline-block;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-weight:800;font-size:0.9rem;color:var(--gold);margin-top:8px;}
+  .nav{position:fixed;bottom:0;left:0;right:0;z-index:100;display:flex;justify-content:space-around;align-items:center;padding:10px 0 max(12px,env(safe-area-inset-bottom));background:rgba(2,4,8,0.95);border-top:1px solid var(--border);}
+  .nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;color:var(--muted);font-size:0.65rem;font-weight:700;padding:6px 10px;cursor:pointer;transition:color 0.2s;flex:1;max-width:80px;}
+  .nav-item.active{color:var(--accent);}
+  .nav-item .icon{font-size:1.4rem;line-height:1;transition:transform 0.2s;}
+  .nav-item.active .icon{transform:translateY(-2px);filter:drop-shadow(0 0 6px rgba(0,229,255,0.4));}
+  .nav-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0;transition:opacity 0.2s;}
+  .nav-item.active .nav-dot{opacity:1;}
+  .overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+  .overlay.show{opacity:1;pointer-events:all;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:22px;max-width:400px;width:100%;transform:translateY(16px);transition:transform 0.3s;}
+  .overlay.show .modal{transform:translateY(0);}
+  .modal-close{float:right;background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;margin-top:-4px;}
+  .flex{display:flex;}.gap-2{gap:8px;}.gap-3{gap:12px;}.flex-1{flex:1;min-width:0;}.items-center{align-items:center;}.justify-between{justify-content:space-between;}.mb-2{margin-bottom:8px;}.mb-3{margin-bottom:12px;}.mb-4{margin-bottom:16px;}.mt-3{margin-top:12px;}.mt-4{margin-top:16px;}.text-center{text-align:center;}.text-muted{color:var(--muted);}.text-sm{font-size:0.85rem;}.font-bold{font-weight:700;}.w-full{width:100%;}
+  .empty{text-align:center;padding:30px 20px;color:var(--muted);font-size:0.9rem;}
+  ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px;}
+  @media(max-width:640px){.timer-digits{font-size:2.8rem;}.timer-ring-wrap{width:200px;height:200px;}.header{flex-direction:column;align-items:flex-start;}}
+</style>
+</head>
+<body>
+<div class="sky"></div>
+
+<div class="header">
+  <div class="brand"><div class="brand-dot"></div><span class="brand-text">NeuroFocus</span></div>
+  <div style="display:flex;gap:8px;">
+    <button class="header-btn hidden" id="install-btn" onclick="installPWA()">Install</button>
+    <button class="header-btn" onclick="openDataModal()">💾</button>
+  </div>
+</div>
+
+<main class="container">
+
+<section id="tab-home" class="tab-content">
+  <div class="xp-wrap">
+    <div class="xp-header"><span>⚡ Level <span id="xp-level">1</span></span><span style="color:var(--gold)"><span id="xp-current">0</span> / <span id="xp-need">100</span> XP</span></div>
+    <div class="xp-track"><div class="xp-fill" id="xp-bar" style="width:0%"></div></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="d-streak">0</div><div class="stat-label">🔥 Detox Streak</div></div>
+    <div class="stat"><div class="stat-num" id="d-backlogs">0</div><div class="stat-label">📚 Backlogs</div></div>
+    <div class="stat"><div class="stat-num" id="d-focus">0</div><div class="stat-label">⏱️ Focus Hrs</div></div>
+    <div class="stat"><div class="stat-num" id="d-habits">0</div><div class="stat-label">✅ Habits</div></div>
+  </div>
+
+  <div class="card glow" id="checkin-card">
+    <div class="card-title">🔥 Daily Check-In</div>
+    <div class="card-sub">Complete ALL 7 checks to unlock the streak button. No shortcuts.</div>
+    <div id="daily-checks"></div>
+    <div id="checkin-status" class="mt-3" style="text-align:center;font-weight:700;font-size:0.95rem;color:var(--danger);">0 / 7 checks</div>
+    <button class="btn btn-gold mt-3" id="claim-btn" onclick="claimStreak()" disabled>🔥 Claim Streak</button>
+  </div>
+
+  <div class="card">
+    <div class="flex justify-between items-center mb-2">
+      <div class="card-title">🎯 Mission</div>
+      <button class="btn-outline btn-sm" onclick="editMission()">Edit</button>
+    </div>
+    <p style="font-style:italic;color:var(--muted);line-height:1.6;" id="mission-text">Loading...</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚡ Today's Priority</div>
+    <div id="dash-priority"><div class="empty">Loading...</div></div>
+  </div>
+</section>
+
+<section id="tab-detox" class="tab-content hidden">
+  <div class="card-title" style="margin-bottom:6px;">🧘 Dopamine Detox</div>
+  <div class="card-sub">Abstinence resets reward pathways. Complete the daily check-in on Home to claim your streak.</div>
+
+  <div class="card">
+    <div class="card-title">Urge Surfing</div>
+    <div class="card-sub">Urges peak at 20–30 min then fade. Don't fight. Surf.</div>
+    <div class="timer-wrap">
+      <div class="timer-ring-wrap">
+        <svg viewBox="0 0 240 240"><defs><linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent)"/><stop offset="100%" stop-color="var(--accent-2)"/></linearGradient></defs>
+          <circle class="timer-ring-bg" cx="120" cy="120" r="110"/>
+          <circle class="timer-ring-fill" id="urge-ring" cx="120" cy="120" r="110" stroke="url(#ringGrad)"/>
+        </svg>
+        <div class="timer-text"><div class="timer-digits" id="urge-timer">20:00</div><div class="timer-label">Urge Timer</div></div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn" onclick="startUrge()">Start Surf</button>
+      <button class="btn-outline" onclick="resetUrge()">Reset</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🧠 Replacement Activities</div>
+    <div class="check" style="cursor:default;"><span style="color:var(--accent);font-weight:800;">✓</span><span>Walk without phone (BDNF boost)</span></div>
+    <div class="check" style="cursor:default;"><span style="color:var(--accent);font-weight:800;">✓</span><span>Cold shower (norepinephrine spike)</span></div>
+    <div class="check" style="cursor:default;"><span style="color:var(--accent);font-weight:800;">✓</span><span>Journal your "Why"</span></div>
+    <div class="check" style="cursor:default;"><span style="color:var(--accent);font-weight:800;">✓</span><span>Read physical books</span></div>
+    <div class="check" style="cursor:default;"><span style="color:var(--accent);font-weight:800;">✓</span><span>Meditate 10 min (gray matter ↑)</span></div>
+  </div>
+</section>
+
+<section id="tab-backlog" class="tab-content hidden">
+  <div class="card-title" style="margin-bottom:6px;">📚 Backlog Blaster</div>
+  <div class="card-sub">Break PW backlogs into micro-modules. Each completion = dopamine + XP.</div>
+
+  <div class="card">
+    <div class="flex gap-3 mb-3" style="flex-wrap:wrap;">
+      <input type="text" class="input flex-1" id="bl-name" placeholder="Subject / Topic (e.g., Physics Lec 3)">
+      <input type="number" class="input" id="bl-count" placeholder="Lectures" style="width:100px;flex-shrink:0;">
+    </div>
+    <button class="btn" onclick="addBacklog()">Add Backlog (+10 XP)</button>
+    <div id="backlog-list" class="mt-4"></div>
+  </div>
+</section>
+
+<section id="tab-focus" class="tab-content hidden">
+  <div class="card-title" style="margin-bottom:6px;">⏱️ Deep Focus</div>
+  <div class="card-sub">Ultradian rhythms: your brain runs in ~90 min cycles. Complete = instant XP reward.</div>
+
+  <div class="card" style="text-align:center;">
+    <div class="timer-modes">
+      <button class="mode-chip active" onclick="setTimerMode(25,this)" id="mode-25">Pomodoro 25</button>
+      <button class="mode-chip" onclick="setTimerMode(52,this)" id="mode-52">Deep 52</button>
+      <button class="mode-chip" onclick="setTimerMode(90,this)" id="mode-90">Flow 90</button>
+    </div>
+
+    <div class="timer-wrap">
+      <div class="timer-ring-wrap">
+        <svg viewBox="0 0 240 240"><defs><linearGradient id="ringGrad2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent)"/><stop offset="100%" stop-color="var(--accent-2)"/></linearGradient></defs>
+          <circle class="timer-ring-bg" cx="120" cy="120" r="110"/>
+          <circle class="timer-ring-fill" id="focus-ring" cx="120" cy="120" r="110" stroke="url(#ringGrad2)"/>
+        </svg>
+        <div class="timer-text">
+          <div class="timer-digits" id="focus-timer">25:00</div>
+          <div class="timer-label" id="focus-mode-label">25 min / 5 break</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-group" style="max-width:300px;margin:0 auto;">
+      <button class="btn" id="focus-btn" onclick="toggleFocus()">Start</button>
+      <button class="btn-outline" onclick="resetFocus()">Reset</button>
+    </div>
+  </div>
+
+  <div class="card" style="text-align:left;">
+    <div class="card-title">🧠 Focus Checklist</div>
+    <div class="check"><input type="checkbox" id="f1"><label>Phone in another room</label></div>
+    <div class="check"><input type="checkbox" id="f2"><label>Only 1 browser tab</label></div>
+    <div class="check"><input type="checkbox" id="f3"><label>Notifications OFF</label></div>
+    <div class="check"><input type="checkbox" id="f4"><label>Water + notebook ready</label></div>
+    <div class="check"><input type="checkbox" id="f5"><label>Specific task written</label></div>
+  </div>
+</section>
+
+<section id="tab-plan" class="tab-content hidden">
+  <div class="card-title" style="margin-bottom:6px;">🎯 Growth Plan</div>
+  <div class="card-sub">Habit stacking + daily battle planning. Every completion = XP + dopamine.</div>
+
+  <div class="card">
+    <div class="card-title">🔥 Habit Forge (+15 XP)</div>
+    <div class="flex gap-3 mb-3" style="flex-wrap:wrap;">
+      <input type="text" class="input flex-1" id="h-name" placeholder="Habit (e.g., 10 Pushups)">
+      <input type="text" class="input flex-1" id="h-anchor" placeholder="After I... (e.g., brush teeth)">
+    </div>
+    <button class="btn" onclick="addHabit()">Add Habit</button>
+    <div id="habit-list" class="mt-4"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚔️ Battle Plan</div>
+    <div class="flex gap-3 mb-3" style="flex-wrap:wrap;">
+      <input type="text" class="input flex-1" id="bp-task" placeholder="Task">
+      <select class="input" id="bp-priority" style="width:120px;flex-shrink:0;"><option value="A">A (Must)</option><option value="B">B (Should)</option><option value="C">C (Nice)</option></select>
+      <select class="input" id="bp-time" style="width:120px;flex-shrink:0;"><option value="morning">Morning</option><option value="afternoon">Afternoon</option><option value="evening">Evening</option></select>
+    </div>
+    <button class="btn" onclick="addBattleTask()">Add Task</button>
+    <div id="battle-list" class="mt-4"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🌙 Evening Review</div>
+    <div class="check"><input type="checkbox" id="e1"><label>What 3 things did I accomplish?</label></div>
+    <div class="check"><input type="checkbox" id="e2"><label>What was my biggest time-waster?</label></div>
+    <div class="check"><input type="checkbox" id="e3"><label>What will I do differently tomorrow?</label></div>
+    <div class="check"><input type="checkbox" id="e4"><label>Did I follow my detox rules?</label></div>
+    <div class="check"><input type="checkbox" id="e5"><label>Am I proud of today's effort?</label></div>
+  </div>
+</section>
+</main>
+
+<nav class="nav">
+  <button class="nav-item active" onclick="switchTab('home',this)"><span class="icon">🏠</span><span class="nav-dot"></span><span>Home</span></button>
+  <button class="nav-item" onclick="switchTab('detox',this)"><span class="icon">🧘</span><span class="nav-dot"></span><span>Detox</span></button>
+  <button class="nav-item" onclick="switchTab('backlog',this)"><span class="icon">📚</span><span class="nav-dot"></span><span>Backlog</span></button>
+  <button class="nav-item" onclick="switchTab('focus',this)"><span class="icon">⏱️</span><span class="nav-dot"></span><span>Focus</span></button>
+  <button class="nav-item" onclick="switchTab('plan',this)"><span class="icon">🎯</span><span class="nav-dot"></span><span>Plan</span></button>
+</nav>
+
+<div class="celebrate" id="celebrate" onclick="if(event.target===this)hideCelebrate()">
+  <div class="celebrate-box">
+    <div class="celebrate-emoji" id="cel-emoji">🎉</div>
+    <div class="celebrate-title" id="cel-title">Dopamine Rush!</div>
+    <div class="celebrate-sub" id="cel-sub">You crushed it.</div>
+    <div class="celebrate-xp" id="cel-xp">+50 XP</div>
+  </div>
+</div>
+
+<div class="overlay" id="data-overlay" onclick="if(event.target===this)closeDataModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDataModal()">×</button>
+    <h3 style="margin-bottom:10px;">💾 Data Vault</h3>
+    <p class="text-muted text-sm" style="margin-bottom:14px;line-height:1.5;">Your data lives only on your phone. Export a backup to keep it safe forever.</p>
+    <button class="btn mb-3" onclick="exportData()">📤 Export Backup</button>
+    <button class="btn-outline mb-3" onclick="document.getElementById('import-file').click()">📥 Import Backup</button>
+    <input type="file" id="import-file" class="hidden" accept=".json" onchange="importData(this)">
+    <hr style="border:0;border-top:1px solid var(--border);margin:16px 0;">
+    <p class="text-muted text-sm" style="margin-bottom:10px;">Testing? Reset today's progress to reclaim streak.</p>
+    <button class="btn-outline" style="border-color:rgba(255,82,82,0.3);color:var(--danger);" onclick="resetToday()">Reset Today's Progress</button>
+    <p class="text-muted text-sm" style="margin-top:14px;">If you reinstall the app, use Import to restore everything.</p>
+  </div>
+</div>
+
+<script>
+/* ========================
+   PWA AUTO-SETUP (single file)
+   ======================== */
+(function(){
+  var canvas=document.createElement('canvas');
+  canvas.width=512;canvas.height=512;
+  var ctx=canvas.getContext('2d');
+  ctx.fillStyle='#020408';ctx.fillRect(0,0,512,512);
+  var grd=ctx.createLinearGradient(0,0,512,512);
+  grd.addColorStop(0,'#00e5ff');grd.addColorStop(1,'#c084fc');
+  ctx.fillStyle=grd;
+  ctx.beginPath();ctx.arc(256,256,200,0,2*Math.PI);ctx.fill();
+  ctx.shadowColor='rgba(0,229,255,0.3)';ctx.shadowBlur=60;
+  ctx.font='bold 240px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';
+  ctx.fillText('🧠',256,256);
+  var iconURL=canvas.toDataURL('image/png');
+
+  var manifest={name:"NeuroFocus Student OS",short_name:"NeuroFocus",start_url:".",display:"standalone",background_color:"#020408",theme_color:"#020408",orientation:"portrait",icons:[{src:iconURL,sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
+  var manBlob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+  var manURL=URL.createObjectURL(manBlob);
+  var l1=document.createElement('link');l1.rel='manifest';l1.href=manURL;document.head.appendChild(l1);
+  var l2=document.createElement('link');l2.rel='apple-touch-icon';l2.href=iconURL;document.head.appendChild(l2);
+
+  var swCode="const CACHE_NAME='neurofocus-v5';self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(['./'])));self.skipWaiting()});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))));self.clients.claim()});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>caches.match('./'))))});";
+  var swBlob=new Blob([swCode],{type:'application/javascript'});
+  if('serviceWorker' in navigator)navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(function(){});
+})();
+
+let installPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();installPrompt=e;var btn=document.getElementById('install-btn');if(btn)btn.classList.remove('hidden');});
+function installPWA(){if(!installPrompt)return;installPrompt.prompt();installPrompt.userChoice.then(function(){installPrompt=null;var btn=document.getElementById('install-btn');if(btn)btn.classList.add('hidden');});}
+
+/* ========================
+   BULLETPROOF STORAGE
+   ======================== */
+var mem={};var LS=false;
+try{var t='__t__';localStorage.setItem(t,'1');localStorage.removeItem(t);LS=true;}catch(e){}
+var S={
+  get:function(k,d){try{if(LS){var v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}return mem[k]!==undefined?mem[k]:d;}catch(e){return d}},
+  set:function(k,v){try{mem[k]=v;if(LS)localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+};
+
+var todayStr=new Date().toDateString();
+var DOW=new Date().getDay();
+
+var data={
+  mission:S.get('nf_mission','I am building discipline to score 100% and master my skills. Every distraction I avoid is a deposit in my future.'),
+  xp:S.get('nf_xp',0),
+  detoxStreak:S.get('nf_detoxStreak',0),
+  detoxLastDate:S.get('nf_detoxLastDate',null),
+  dailyChecks:S.get('nf_dailyChecks',{}),
+  dailyCheckDate:S.get('nf_dailyCheckDate',''),
+  backlogs:S.get('nf_backlogs',[]),
+  habits:S.get('nf_habits',[]),
+  battle:S.get('nf_battle',[]),
+  focusMinutes:S.get('nf_focusMinutes',0),
+  focusDate:S.get('nf_focusDate',todayStr),
+  rules:S.get('nf_rules',{})
+};
+
+if(data.focusDate!==todayStr){data.focusMinutes=0;data.focusDate=todayStr;S.set('nf_focusDate',todayStr);S.set('nf_focusMinutes',0);}
+if(data.dailyCheckDate!==todayStr){data.dailyChecks={};data.dailyCheckDate=todayStr;S.set('nf_dailyChecks',{});S.set('nf_dailyCheckDate',todayStr);}
+
+/* ========================
+   XP / LEVEL
+   ======================== */
+function xpLevel(xp){var lvl=1,need=100;while(xp>=need){xp-=need;lvl++;need=Math.floor(need*1.3);}return{level:lvl,current:xp,need:need,pct:(xp/need)*100};}
+function addXP(amount,reason){data.xp+=amount;S.set('nf_xp',data.xp);renderXP();if(reason)showCelebrate(reason,'+'+amount+' XP');}
+function renderXP(){
+  var info=xpLevel(data.xp);
+  var elL=document.getElementById('xp-level');if(elL)elL.textContent=info.level;
+  var elC=document.getElementById('xp-current');if(elC)elC.textContent=info.current;
+  var elN=document.getElementById('xp-need');if(elN)elN.textContent=info.need;
+  var elB=document.getElementById('xp-bar');if(elB)elB.style.width=info.pct+'%';
+}
+
+/* ========================
+   CELEBRATION
+   ======================== */
+function showCelebrate(title,sub,emoji){
+  var c=document.getElementById('celebrate');
+  var t=document.getElementById('cel-title');var s=document.getElementById('cel-sub');var e=document.getElementById('cel-emoji');var x=document.getElementById('cel-xp');
+  if(t)t.textContent=title;if(s)s.textContent=sub||'Keep the momentum!';if(e)e.textContent=emoji||'🎉';if(x)x.textContent=sub;
+  if(c)c.classList.add('show');
+  if(navigator.vibrate)navigator.vibrate([60,30,60]);
+  setTimeout(function(){if(c)c.classList.remove('show');},2200);
+}
+function hideCelebrate(){var c=document.getElementById('celebrate');if(c)c.classList.remove('show');}
+
+/* ========================
+   TABS
+   ======================== */
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(function(el){el.classList.add('hidden');});
+  var t=document.getElementById('tab-'+id);if(t){t.classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'});}
+  document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});if(btn)btn.classList.add('active');
+  if(id==='home')updateDashboard();
+}
+
+/* ========================
+   DASHBOARD
+   ======================== */
+function updateDashboard(){
+  var ds=document.getElementById('d-streak');if(ds)ds.textContent=data.detoxStreak||0;
+  var db=document.getElementById('d-backlogs');if(db)db.textContent=data.backlogs.reduce(function(a,b){return a+((b.total||0)-(b.done||0));},0);
+  var df=document.getElementById('d-focus');if(df)df.textContent=(Math.floor((data.focusMinutes||0)/60*10)/10).toFixed(1);
+  var dh=document.getElementById('d-habits');if(dh)dh.textContent=data.habits.filter(function(h){return h.today;}).length;
+  var mt=document.getElementById('mission-text');if(mt)mt.textContent=data.mission;
+  var dp=document.getElementById('dash-priority');
+  if(dp){
+    var inc=data.backlogs.filter(function(b){return (b.done||0)<(b.total||0);});
+    var ht=data.habits.filter(function(h){return !h.today;});
+    var html='';
+    if(inc.length>0)html+='<div class="list-item"><div class="info"><div class="title">'+esc(inc[0].name)+'</div><div class="meta">Top backlog — '+((inc[0].total||0)-(inc[0].done||0))+' left</div></div><span class="badge warn">URGENT</span></div>';
+    if(ht.length>0)html+='<div class="list-item"><div class="info"><div class="title">'+esc(ht[0].name)+'</div><div class="meta">Next habit — after '+esc(ht[0].anchor||'waking up')+'</div></div><span class="badge">NEXT</span></div>';
+    dp.innerHTML=html||'<div class="empty"><span style="font-size:2rem;display:block;margin-bottom:8px;">🎉</span>You are on fire. Add a new skill.</div>';
+  }
+  renderDailyChecks();
+  renderXP();
+}
+function editMission(){var m=prompt('Your mission:',data.mission);if(m&&m.trim()){data.mission=m.trim();S.set('nf_mission',data.mission);updateDashboard();}}
+
+/* ========================
+   DAILY CHECK-IN (STREAK)
+   ======================== */
+var CHECK_ITEMS=[
+  {id:'dc1',label:'No explicit content / artificial stimulation'},
+  {id:'dc2',label:'No mindless scrolling (Reels/Shorts/Instagram)'},
+  {id:'dc3',label:'No random texting / DMing during study'},
+  {id:'dc4',label:'Phone in another room during focus sessions'},
+  {id:'dc5',label:'No gaming today'},
+  {id:'dc6',label:'Completed at least 1 focus session'},
+  {id:'dc7',label:'Completed at least 1 backlog or habit'}
+];
+
+function renderDailyChecks(){
+  var el=document.getElementById('daily-checks');if(!el)return;
+  var status=document.getElementById('checkin-status');
+  var btn=document.getElementById('claim-btn');
+  var claimed=data.detoxLastDate===todayStr;
+
+  if(claimed){
+    el.innerHTML='<div style="text-align:center;color:var(--success);font-weight:700;padding:16px;">🔥 Streak claimed for today! Come back tomorrow.</div>';
+    if(status)status.style.display='none';if(btn)btn.style.display='none';
+    return;
+  }
+
+  if(!el.dataset.built){
+    el.innerHTML=CHECK_ITEMS.map(function(item){
+      return '<div class="check" id="row-'+item.id+'" onclick="toggleDailyCheck(\''+item.id+'\')">'+
+        '<input type="checkbox" id="chk-'+item.id+'" onclick="event.stopPropagation();toggleDailyCheck(\''+item.id+'\')">'+
+        '<label>'+esc(item.label)+'</label></div>';
+    }).join('');
+    el.dataset.built='1';
+  }
+
+  var doneCount=0;
+  CHECK_ITEMS.forEach(function(item){
+    var checked=!!data.dailyChecks[item.id];
+    if(checked)doneCount++;
+    var row=document.getElementById('row-'+item.id);
+    var chk=document.getElementById('chk-'+item.id);
+    if(row)row.classList.toggle('completed',checked);
+    if(chk)chk.checked=checked;
+  });
+
+  if(status){
+    status.style.display='block';
+    var allChecked=doneCount===CHECK_ITEMS.length;
+    if(allChecked){
+      status.textContent='All 7 checks complete! Claim your streak 🔥';
+      status.style.color='var(--success)';
+    }else{
+      status.textContent=doneCount+' / 7 checks — complete all to claim streak';
+      status.style.color='var(--danger)';
+    }
+  }
+  if(btn){
+    btn.style.display='inline-flex';
+    var allChecked=doneCount===CHECK_ITEMS.length;
+    btn.disabled=!allChecked;
+    btn.style.opacity=allChecked?'1':'0.5';
+  }
+}
+
+function toggleDailyCheck(id){
+  if(data.detoxLastDate===todayStr)return;
+  data.dailyChecks[id]=!data.dailyChecks[id];
+  S.set('nf_dailyChecks',data.dailyChecks);
+  renderDailyChecks();
+}
+
+function claimStreak(){
+  if(data.detoxLastDate===todayStr)return;
+  var allChecked=CHECK_ITEMS.every(function(item){return !!data.dailyChecks[item.id];});
+  if(!allChecked)return;
+  data.detoxStreak=(data.detoxStreak||0)+1;
+  data.detoxLastDate=todayStr;
+  S.set('nf_detoxStreak',data.detoxStreak);
+  S.set('nf_detoxLastDate',data.detoxLastDate);
+  addXP(50,'Streak Claimed!');
+  var ds=document.getElementById('d-streak');if(ds)ds.textContent=data.detoxStreak;
+  renderDailyChecks();updateDashboard();
+  if(navigator.vibrate)navigator.vibrate([80,40,80,40,120]);
+}
+
+function resetToday(){
+  if(!confirm('Reset today\'s progress? This lets you test the check-in again.'))return;
+  data.dailyChecks={};
+  data.detoxLastDate=null;
+  data.focusMinutes=0;
+  data.focusDate=todayStr;
+  S.set('nf_dailyChecks',{});
+  S.set('nf_detoxLastDate',null);
+  S.set('nf_focusMinutes',0);
+  S.set('nf_focusDate',todayStr);
+  delete document.getElementById('daily-checks').dataset.built;
+  renderDailyChecks();updateDashboard();
+  closeDataModal();
+  alert('Today reset. You can now claim the streak again.');
+}
+
+/* ========================
+   URGE TIMER
+   ======================== */
+var urgeInt=null,urgeSec=1200,urgeTotal=1200;
+function startUrge(){
+  clearInterval(urgeInt);
+  urgeInt=setInterval(function(){
+    urgeSec--;
+    updateUrgeUI();
+    if(urgeSec<=0){
+      clearInterval(urgeInt);urgeSec=1200;updateUrgeUI();
+      showCelebrate('Urge Surfed!','You are stronger than your impulses.','🌊');
+    }
+  },1000);
+}
+function resetUrge(){clearInterval(urgeInt);urgeSec=1200;updateUrgeUI();}
+function updateUrgeUI(){
+  var m=Math.floor(urgeSec/60).toString().padStart(2,'0');
+  var s=(urgeSec%60).toString().padStart(2,'0');
+  var el=document.getElementById('urge-timer');if(el)el.textContent=m+':'+s;
+  var ring=document.getElementById('urge-ring');if(ring){
+    var pct=urgeSec/urgeTotal;
+    var offset=691*(1-pct);
+    ring.style.strokeDashoffset=offset;
+  }
+}
+
+/* ========================
+   BACKLOGS
+   ======================== */
+function addBacklog(){
+  var n=document.getElementById('bl-name');var c=document.getElementById('bl-count');
+  var name=n?n.value.trim():'';var count=c?parseInt(c.value,10):0;
+  if(!name||!count||count<1)return;
+  data.backlogs.push({id:Date.now(),name:name,total:count,done:0});
+  S.set('nf_backlogs',data.backlogs);if(n)n.value='';if(c)c.value='';
+  renderBacklogs();updateDashboard();addXP(10,'Backlog Added!');
+}
+function renderBacklogs(){
+  var el=document.getElementById('backlog-list');if(!el)return;
+  if(!data.backlogs.length){el.innerHTML='<div class="empty">No backlogs yet. Add your first PW lecture above.</div>';return;}
+  el.innerHTML=data.backlogs.map(function(b){
+    var total=b.total||1;var done=b.done||0;var pct=Math.min(100,(done/total)*100);var left=total-done;
+    return '<div class="list-item">'+
+      '<div class="info"><div class="title">'+esc(b.name)+'</div><div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div><div class="meta">'+done+' / '+total+' completed</div></div>'+
+      '<div class="flex items-center gap-2" style="flex-shrink:0;"><span class="badge '+(left>5?'warn':'')+'">'+left+' left</span><button class="btn-success" onclick="incBacklog('+b.id+')">+1</button><button class="btn-danger" onclick="delBacklog('+b.id+')">×</button></div>'+
+    '</div>';
+  }).join('');
+}
+function incBacklog(id){
+  var b=data.backlogs.find(function(x){return x.id===id;});
+  if(b&&(b.done||0)<(b.total||0)){b.done=(b.done||0)+1;S.set('nf_backlogs',data.backlogs);renderBacklogs();updateDashboard();addXP(25,'Backlog Crushed!');if(navigator.vibrate)navigator.vibrate(30);}
+}
+function delBacklog(id){data.backlogs=data.backlogs.filter(function(x){return x.id!==id;});S.set('nf_backlogs',data.backlogs);renderBacklogs();updateDashboard();}
+
+/* ========================
+   FOCUS TIMER
+   ======================== */
+var tMode=25,tSec=1500,tTotal=1500,tInt=null,tRun=false;
+function setTimerMode(m,btn){
+  tMode=m;tSec=m*60;tTotal=m*60;clearInterval(tInt);tRun=false;
+  var d=document.getElementById('focus-timer');if(d)d.textContent=m+':00';
+  var b=document.getElementById('focus-btn');if(b)b.textContent='Start';
+  var l=document.getElementById('focus-mode-label');if(l)l.textContent=m===25?'25 min / 5 break':m===52?'52 min / 17 break':'90 min / 20 break';
+  ['mode-25','mode-52','mode-90'].forEach(function(id){var e=document.getElementById(id);if(e)e.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  updateFocusRing();
+}
+function updateFocusRing(){
+  var ring=document.getElementById('focus-ring');if(ring){
+    var pct=tSec/tTotal;
+    var offset=691*(1-pct);
+    ring.style.strokeDashoffset=offset;
+  }
+}
+function updateTimerDisplay(){
+  var m=Math.floor(tSec/60).toString().padStart(2,'0');
+  var s=(tSec%60).toString().padStart(2,'0');
+  var d=document.getElementById('focus-timer');if(d)d.textContent=m+':'+s;
+}
+function toggleFocus(){
+  var btn=document.getElementById('focus-btn');
+  if(tRun){
+    clearInterval(tInt);tRun=false;if(btn)btn.textContent='Resume';
+  }else{
+    tRun=true;if(btn)btn.textContent='Pause';
+    updateTimerDisplay();updateFocusRing();
+    tInt=setInterval(function(){
+      tSec--;
+      updateTimerDisplay();updateFocusRing();
+      if(tSec<=0){
+        clearInterval(tInt);tRun=false;if(btn)btn.textContent='Start';
+        if(navigator.vibrate)navigator.vibrate([100,50,100]);
+        showCelebrate('Focus Complete!','Take a real break. No phone.','⏱️');
+        data.focusMinutes=(data.focusMinutes||0)+tMode;S.set('nf_focusMinutes',data.focusMinutes);S.set('nf_focusDate',data.focusDate);
+        data.dailyChecks['dc6']=true;S.set('nf_dailyChecks',data.dailyChecks);renderDailyChecks();
+        addXP(tMode>=52?60:40,'Deep Work XP!');
+        updateDashboard();tSec=tTotal;updateTimerDisplay();updateFocusRing();
+      }
+    },1000);
+  }
+}
+function resetFocus(){clearInterval(tInt);tRun=false;tSec=tTotal;updateTimerDisplay();updateFocusRing();var b=document.getElementById('focus-btn');if(b)b.textContent='Start';}
+
+/* ========================
+   HABITS
+   ======================== */
+function addHabit(){
+  var n=document.getElementById('h-name');var a=document.getElementById('h-anchor');
+  var name=n?n.value.trim():'';var anchor=a?a.value.trim():'';
+  if(!name)return;
+  data.habits.push({id:Date.now(),name:name,anchor:anchor||'waking up',streak:0,today:false,days:[0,0,0,0,0,0,0]});
+  S.set('nf_habits',data.habits);if(n)n.value='';if(a)a.value='';
+  renderHabits();updateDashboard();
+}
+function toggleHabit(id){
+  var h=data.habits.find(function(x){return x.id===id;});if(!h)return;
+  h.today=!h.today;
+  if(h.today){h.streak=(h.streak||0)+1;}else{h.streak=Math.max(0,(h.streak||0)-1);}
+  h.days[DOW]=h.today?1:0;
+  S.set('nf_habits',data.habits);renderHabits();updateDashboard();
+  if(h.today){
+    addXP(15,'Habit Done!');
+    data.dailyChecks['dc7']=true;S.set('nf_dailyChecks',data.dailyChecks);renderDailyChecks();
+    if(navigator.vibrate)navigator.vibrate(30);
+  }
+}
+function deleteHabit(id){data.habits=data.habits.filter(function(x){return x.id!==id;});S.set('nf_habits',data.habits);renderHabits();updateDashboard();}
+function renderHabits(){
+  var el=document.getElementById('habit-list');if(!el)return;
+  var days=['S','M','T','W','T','F','S'];var today=DOW;
+  if(!data.habits.length){el.innerHTML='<div class="empty">No habits yet. Stack one tiny habit.</div>';return;}
+  el.innerHTML=data.habits.map(function(h){
+    var streak=h.streak||0;
+    return '<div class="card">'+
+      '<div class="flex justify-between items-center" style="gap:8px;margin-bottom:10px;">'+
+        '<div class="flex-1" style="min-width:0;"><div style="font-weight:700;font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(h.name)+'</div><div style="color:var(--muted);font-size:0.8rem;">After '+esc(h.anchor||'waking up')+'</div></div>'+
+        '<div class="flex items-center gap-2"><span style="font-weight:800;color:var(--accent);">🔥 '+streak+'</span><button class="btn-success" onclick="toggleHabit('+h.id+')">'+(h.today?'Done':'Mark')+'</button><button class="btn-danger" onclick="deleteHabit('+h.id+')">×</button></div>'+
+      '</div>'+
+      '<div class="habit-cal">'+days.map(function(d,i){return '<div class="habit-day '+(h.days&&h.days[i]?'done':'')+' '+(i===today?'today':'')+'">'+d+'</div>';}).join('')+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ========================
+   BATTLE PLAN
+   ======================== */
+function addBattleTask(){
+  var t=document.getElementById('bp-task');var p=document.getElementById('bp-priority');var tm=document.getElementById('bp-time');
+  var task=t?t.value.trim():'';var pri=p?p.value:'A';var time=tm?tm.value:'morning';
+  if(!task)return;
+  data.battle.push({id:Date.now(),task:task,pri:pri,time:time,done:false});
+  S.set('nf_battle',data.battle);if(t)t.value='';
+  renderBattle();updateDashboard();
+}
+function toggleBattle(id){
+  var x=data.battle.find(function(b){return b.id===id;});if(x){x.done=!x.done;S.set('nf_battle',data.battle);renderBattle();updateDashboard();if(x.done)addXP(10,'Task Done!');}
+}
+function delBattle(id){data.battle=data.battle.filter(function(x){return x.id!==id;});S.set('nf_battle',data.battle);renderBattle();updateDashboard();}
+function renderBattle(){
+  var el=document.getElementById('battle-list');if(!el)return;
+  var order={A:1,B:2,C:3};
+  var sorted=[].concat(data.battle).sort(function(a,b){return order[a.pri]-order[b.pri];});
+  var colors={A:'var(--danger)',B:'#f59e0b',C:'var(--success)'};
+  if(!sorted.length){el.innerHTML='<div class="empty">No battle tasks. Plan your 6 priorities.</div>';return;}
+  el.innerHTML=sorted.map(function(t){
+    return '<div class="list-item" style="border-left:3px solid '+(colors[t.pri]||colors.C)+';">'+
+      '<div class="flex items-center gap-3 flex-1" style="min-width:0;">'+
+        '<input type="checkbox" '+(t.done?'checked':'')+' onchange="toggleBattle('+t.id+')" style="width:20px;height:20px;flex-shrink:0;">'+
+        '<span class="'+(t.done?'completed':'')+'" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.95rem;">'+
+          '<strong style="color:var(--muted);margin-right:4px;">['+t.pri+']</strong>'+esc(t.task)+' <span class="badge">'+t.time+'</span>'+
+        '</span>'+
+      '</div>'+
+      '<button class="btn-danger" onclick="delBattle('+t.id+')">×</button>'+
+    '</div>';
+  }).join('');
+}
+
+/* ========================
+   DATA VAULT
+   ======================== */
+function openDataModal(){var o=document.getElementById('data-overlay');if(o)o.classList.add('show');}
+function closeDataModal(){var o=document.getElementById('data-overlay');if(o)o.classList.remove('show');}
+function exportData(){
+  var payload={neurofocus_backup:true,exported:new Date().toISOString(),data:data};
+  var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='neurofocus-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url);
+  if(navigator.vibrate)navigator.vibrate(40);
+}
+function importData(input){
+  var file=input.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var json=JSON.parse(e.target.result);
+      if(!json.neurofocus_backup||!json.data)throw new Error('Invalid backup');
+      if(!confirm('This will REPLACE all current data. Continue?'))return;
+      data=json.data;
+      Object.keys(data).forEach(function(k){S.set('nf_'+k,data[k]);});
+      S.set('nf_mission',data.mission);S.set('nf_xp',data.xp);S.set('nf_detoxStreak',data.detoxStreak);S.set('nf_detoxLastDate',data.detoxLastDate);
+      S.set('nf_dailyChecks',data.dailyChecks);S.set('nf_dailyCheckDate',data.dailyCheckDate);S.set('nf_backlogs',data.backlogs);
+      S.set('nf_habits',data.habits);S.set('nf_battle',data.battle);S.set('nf_focusMinutes',data.focusMinutes);S.set('nf_focusDate',data.focusDate);
+      delete document.getElementById('daily-checks').dataset.built;
+      renderHabits();renderBacklogs();renderBattle();renderDailyChecks();renderXP();updateDashboard();
+      alert('Backup restored!');
+    }catch(err){alert('Failed to import: '+err.message);}
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+/* ========================
+   UTILS
+   ======================== */
+function esc(s){if(!s)return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* ========================
+   INIT
+   ======================== */
+function init(){
+  renderHabits();renderBacklogs();renderBattle();renderDailyChecks();renderXP();updateDashboard();
+  updateUrgeUI();updateFocusRing();
+  var lastCheck=S.get('nf_habitCheck','');
+  if(lastCheck!==todayStr){
+    data.habits.forEach(function(h){h.today=false;});
+    S.set('nf_habits',data.habits);S.set('nf_habitCheck',todayStr);
+    renderHabits();
+  }
+}
+init();
+</script>
+</body>
+</html>

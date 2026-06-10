@@ -240,363 +240,81 @@
   .badge-item::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent-start),transparent);opacity:0;transition:opacity 0.3s}
   .badge-item.unlocked::before{opacity:0.5}
   .badge-item.unlocked{border-color:var(--accent-start-fade);box-shadow:0 0 20px var(--accent-start-fade)}
-  .badge-item.locked{opacity:0.35}
-  .badge-item.locked .badge-icon{filter:grayscale(1) blur(3px);transform:scale(0.85)}
-  .badge-item.locked .badge-name{filter:blur(2px)}
-  .badge-item.locked .badge-desc{filter:blur(1.5px)}
-  .badge-icon{font-size:2rem;line-height:1;transition:all 0.3s}
-  .badge-item.unlocked .badge-icon{animation:float 3s ease-in-out infinite}
-  .badge-name{font-size:0.7rem;font-weight:700;color:var(--text);line-height:1.2}
-  .badge-desc{font-size:0.55rem;color:var(--text-tertiary);line-height:1.3;min-height:2em}
-  .badge-rarity{font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px}
-  .badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
-
-  .trophy-preview{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border);margin-top:10px;cursor:pointer;transition:all 0.2s}
-  .trophy-preview:active{transform:scale(0.99);border-color:var(--border-active)}
-  .trophy-preview-icon{font-size:2.2rem}
-  .trophy-preview-info{flex:1}
-  .trophy-preview-title{font-weight:700;font-size:0.95rem;margin-bottom:2px}
-  .trophy-preview-sub{font-size:0.75rem;color:var(--text-secondary)}
-  .trophy-preview-arrow{font-size:1.1rem;color:var(--text-tertiary)}
-
-  .trophy-count{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:12px 14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border)}
-  .trophy-count-text{font-size:0.8rem;font-weight:700;color:var(--text-secondary)}
-  .trophy-count-num{font-size:0.85rem;font-weight:800;color:var(--gold)}
-
-  .rank-display{text-align:center;padding:20px 16px;border-radius:18px;background:var(--surface-2);border:1px solid var(--border);margin-bottom:14px;position:relative;overflow:hidden}
-  .rank-display::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent-start),var(--accent-end));opacity:0.6}
-  .rank-icon{font-size:3rem;margin-bottom:6px;line-height:1;display:inline-block;animation:float 3s ease-in-out infinite}
-  .rank-name{font-size:1.2rem;font-weight:800;background:linear-gradient(90deg,var(--accent-start),var(--accent-end));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
-  .rank-tier{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em}
-  .rank-next{font-size:0.75rem;color:var(--text-secondary);margin-top:8px}
-
-  .category-label{display:flex;align-items:center;gap:8px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-tertiary);margin:18px 0 10px}
-  .category-label::after{content:'';flex:1;height:1px;background:var(--border)}
-
-  .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;display:flex;justify-content:space-around;align-items:center;padding:10px 0 calc(12px + env(safe-area-inset-bottom));background:var(--nav-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--border)}
-  .nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;color:var(--text-tertiary);font-size:0.65rem;font-weight:700;letter-spacing:0.02em;padding:6px 8px;cursor:pointer;transition:all 0.2s;flex:1;max-width:80px;position:relative}
-  .nav-item.active{color:var(--accent-start)}
-  .nav-item .icon{font-size:1.3rem;line-height:1;transition:transform 0.2s}
-  .nav-item.active .icon{transform:translateY(-2px)}
-  .nav-item.active::after{content:'';position:absolute;bottom:-2px;width:4px;height:4px;border-radius:50%;background:var(--accent-start);box-shadow:0 0 8px var(--accent-start)}
-
-  .overlay{position:fixed;inset:0;z-index:200;background:var(--overlay-bg);display:flex;align-items:flex-end;justify-content:center;padding:0;opacity:0;pointer-events:none;transition:opacity 0.3s}
-  .overlay.center{align-items:center;padding:20px}
-  .overlay.show{opacity:1;pointer-events:all}
-  .overlay.right{justify-content:flex-end;align-items:stretch;padding:0}
-  .modal{background:var(--surface);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:20px;width:100%;max-width:640px;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);max-height:90vh;overflow:auto}
-  .overlay.center .modal{border-radius:24px;transform:translateY(20px)}
-  .overlay.right .modal{border-radius:24px 0 0 24px;max-width:380px;height:100vh;max-height:100vh;transform:translateX(100%);margin:0 0 0 auto;animation:none}
-  .overlay.show .modal{transform:translateY(0)}
-  .overlay.center.show .modal{transform:translateY(0)}
-  .overlay.right.show .modal{transform:translateX(0)}
-  .modal-close{float:right;background:none;border:none;color:var(--text-tertiary);font-size:1.5rem;cursor:pointer;margin-top:-4px}
-  .modal-title{font-size:1.1rem;font-weight:700;margin-bottom:16px;color:var(--text)}
-
-  .celebrate{position:fixed;inset:0;z-index:300;pointer-events:none;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:var(--overlay-bg);backdrop-filter:blur(4px);opacity:0;transition:opacity 0.3s}
-  .celebrate.show{opacity:1;pointer-events:all}
-  .celebrate-box{background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:28px;text-align:center;max-width:320px;width:90%;animation:pop 0.45s cubic-bezier(0.16,1,0.3,1);position:relative;overflow:hidden}
-  .celebrate-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent-start),var(--accent-end))}
-  .celebrate-emoji{font-size:3rem;line-height:1;margin-bottom:4px}
-  .celebrate-title{font-size:1.15rem;font-weight:800;margin-top:8px;background:linear-gradient(90deg,var(--accent-start),var(--accent-end));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .celebrate-sub{color:var(--text-secondary);font-size:0.85rem;margin-top:6px;line-height:1.4}
-  .celebrate-xp{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:6px 16px;font-weight:800;font-size:0.85rem;color:var(--gold);margin-top:12px}
-
-  .rank-up-modal{text-align:center;padding:20px}
-  .rank-up-emoji{font-size:3.5rem;line-height:1;margin-bottom:12px;animation:rankUp 0.6s cubic-bezier(0.16,1,0.3,1)}
-  .rank-up-title{font-size:1.4rem;font-weight:800;margin-bottom:4px;background:linear-gradient(90deg,var(--accent-start),var(--accent-end));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .rank-up-sub{font-size:0.85rem;color:var(--text-secondary);margin-bottom:20px}
-  .rank-up-new{font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:20px}
-
-  .settings-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;position:sticky;top:0;background:var(--surface);z-index:10;padding:4px 0}
-  .settings-section{margin-bottom:20px}
-  .profile-card{display:flex;align-items:center;gap:14px;margin-bottom:12px}
-  .profile-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent-start),var(--accent-end));display:flex;align-items:center;justify-content:center;font-size:1.6rem;box-shadow:0 0 16px var(--shadow);flex-shrink:0}
-  .profile-info{flex:1}
-  .profile-name{font-weight:800;font-size:1rem;color:var(--text)}
-  .profile-rank{font-size:0.75rem;color:var(--text-secondary);margin-top:2px}
-  .profile-mission{font-size:0.8rem;color:var(--text-secondary);font-style:italic;line-height:1.5;margin-top:4px}
-  .sync-status{display:inline-flex;align-items:center;gap:6px;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-top:8px}
-  .sync-status.online{color:var(--success)}
-  .sync-status.offline{color:var(--text-tertiary)}
-
-  .week-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
-  .week-metric{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
-  .week-metric-num{font-size:1.2rem;font-weight:800;color:var(--text)}
-  .week-metric-label{font-size:0.6rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px}
-  .week-bar-wrap{display:flex;align-items:flex-end;gap:5px;height:70px;margin-top:10px;padding:6px 0}
-  .week-bar-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
-  .week-bar-track{width:100%;background:var(--bg);border-radius:5px;height:50px;position:relative;overflow:hidden}
-  .week-bar-fill{position:absolute;bottom:0;left:0;right:0;border-radius:5px 5px 0 0;transition:height 0.6s ease;background:linear-gradient(180deg,var(--accent-start),var(--accent-end));opacity:0.8}
-  .week-bar-today .week-bar-fill{background:linear-gradient(180deg,var(--gold),#ffab00);opacity:1}
-  .week-bar-label{font-size:0.55rem;font-weight:700;color:var(--text-tertiary)}
-  .week-bar-today .week-bar-label{color:var(--gold)}
-  .week-total{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg);border-radius:8px;margin-top:8px;border:1px solid var(--border)}
-  .week-total-text{font-size:0.75rem;font-weight:700;color:var(--text-secondary)}
-  .week-total-num{font-size:0.8rem;font-weight:800;color:var(--accent-start)}
-
-  .tip{background:linear-gradient(135deg,var(--tip-fade),var(--accent-end-fade));border:1px solid var(--tip-fade);border-radius:12px;padding:10px 12px;font-size:0.8rem;line-height:1.6;color:var(--text-secondary);margin-top:12px}
-  .tip strong{color:var(--accent-start);font-weight:700}
-
-  .flex{display:flex}.gap-2{gap:8px}.gap-3{gap:12px}.flex-1{flex:1;min-width:0}.items-center{align-items:center}.justify-between{justify-content:space-between}.justify-center{justify-content:center}
-  .mb-1{margin-bottom:4px}.mb-2{margin-bottom:8px}.mb-3{margin-bottom:12px}.mb-4{margin-bottom:16px}.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}
-  .text-center{text-align:center}.text-secondary{color:var(--text-secondary)}.text-tertiary{color:var(--text-tertiary)}.text-sm{font-size:0.85rem}.text-xs{font-size:0.75rem}
-  .font-bold{font-weight:700}.w-full{width:100%}.line-clamp-1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .empty{text-align:center;padding:28px 16px;color:var(--text-tertiary);font-size:0.85rem}
-  .empty-icon{font-size:2.2rem;margin-bottom:10px;opacity:0.5}
-  .hr{height:1px;background:var(--border);margin:14px 0;border:none}
-
-  #confetti-canvas{position:fixed;inset:0;z-index:400;pointer-events:none}
-
-  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-  @media(max-width:640px){.timer-digits{font-size:2rem}.timer-ring-wrap{width:170px;height:170px}.badge-grid{grid-template-columns:repeat(3,1fr)}.ritual-grid{grid-template-columns:repeat(5,1fr)}}
-  @media(max-width:380px){.badge-grid{grid-template-columns:repeat(2,1fr)}.subject-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="ambient"></div>
-<<canvas id="confetti-canvas"></canvas>
-
-<<header class="header">
+<header class="header">
   <div class="brand">
     <div class="brand-icon">🧠</div>
     <div class="brand-text">Neuro<span>Focus</span></div>
   </div>
   <div class="header-actions">
-    <button class="icon-btn" onclick="openSettings()" title="Settings">≡</button>
+    <button class="icon-btn" onclick="openSettings()">⚙️</button>
   </div>
 </header>
-
-<<main class="container">
-
-<!-- HOME -->
-<section id="tab-home" class="tab-content">
-  <div class="hero-card" id="hero-card">
-    <div class="hero-icon" id="hero-icon">🌱</div>
-    <div class="hero-title" id="hero-title">Initiate</div>
-    <div class="hero-sub" id="hero-sub">Level 1 · Begin your ascent</div>
-    <div class="hero-badge" id="hero-badge">⚡ 0 / 100 XP</div>
+<div class="container">
+  <div class="hero-badge" id="hero-badge">⚡ 0 / 100 XP</div>
+</div>
+<div class="card xp-card">
+  <div class="xp-header">
+    <div class="xp-title">🪙 Neurocoins</div>
+    <div class="xp-count" id="xp-count">0 XP</div>
   </div>
-
-  <div class="card xp-card">
-    <div class="xp-header">
-      <div class="xp-title">🪙 Neurocoins</div>
-      <div class="xp-count" id="xp-count">0 XP</div>
-    </div>
-    <div class="xp-track">
-      <div class="xp-fill" id="xp-bar" style="width:0%"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-top:6px;align-items:center">
-      <div class="xp-badge" id="xp-badge">Level 1</div>
-      <div style="font-size:0.7rem;color:var(--text-secondary);font-weight:600" id="xp-next">0 / 100 to next</div>
-    </div>
+  <div class="xp-track">
+    <div class="xp-fill" id="xp-bar" style="width:0%"></div>
   </div>
-
-  <div class="card" style="text-align:center;padding:16px;border-left:3px solid var(--accent-start)">
-    <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:6px">Daily Fuel</div>
-    <div id="daily-quote" style="font-size:0.95rem;font-weight:600;color:var(--text);font-style:italic;line-height:1.5">"Loading your daily fuel..."</div>
+  <div style="display:flex;justify-content:space-between;margin-top:6px;align-items:center">
+    <div class="xp-badge" id="xp-badge">Level 1</div>
+    <div style="font-size:0.7rem;color:var(--text-secondary);font-weight:600" id="xp-next">0 / 100 to next</div>
   </div>
-
-  <div class="flow-banner hidden" id="flow-banner">
-    <div class="flow-banner-icon">🌊</div>
-    <div>
-      <div class="flow-banner-text">FLOW STATE ACTIVE</div>
-      <div class="flow-banner-sub">1.5x XP on all actions</div>
-    </div>
+</div>
+<div class="card" style="text-align:center;padding:16px;border-left:3px solid var(--accent-start)">
+  <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:6px">Daily Fuel</div>
+  <div id="daily-quote" style="font-size:0.95rem;font-weight:600;color:var(--text);font-style:italic;line-height:1.5">"Loading your daily fuel..."</div>
+</div>
+<div class="flow-banner hidden" id="flow-banner">
+  <div class="flow-banner-icon">🌊</div>
+  <div>
+    <div class="flow-banner-text">FLOW STATE ACTIVE</div>
+    <div class="flow-banner-sub">1.5x XP on all actions</div>
   </div>
-
-  <div class="section-label"><span>🎯 Daily Quests</span><div class="line"></div></div>
-  <div id="daily-quests"></div>
-
-  <div class="section-label"><span>🌅 Morning Ritual</span><div class="line"></div></div>
-  <div class="card" id="ritual-card">
-    <div style="font-size:0.85rem;font-weight:700;margin-bottom:4px">Prime Your Brain</div>
-    <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px">Complete before 12 PM for 2x XP all day</div>
-    <div class="ritual-grid" id="ritual-grid"></div>
-    <div class="ritual-boost hidden" id="ritual-boost">
-      <span style="font-size:1.1rem">⚡</span>
-      <div class="ritual-boost-text">2x XP Boost Active</div>
+</div>
+<div class="section-label"><span>🎯 Daily Quests</span><div class="line"></div></div>
+<div id="daily-quests"></div>
+<div class="section-label"><span>🌅 Morning Ritual</span><div class="line"></div></div>
+<div class="card" id="ritual-card">
+  <div style="font-size:0.85rem;font-weight:700;margin-bottom:4px">Prime Your Brain</div>
+</div>
+<div class="card">
+  <div class="flex justify-between items-center mb-2">
+    <div style="font-weight:700;font-size:0.9rem">Urge Surfing</div>
+    <span class="tag tag-blue">20 min</span>
+  </div>
+  <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px">Urges peak at 20–30 min then fade. Observe without acting.</div>
+  <div class="timer-wrap">
+    <div class="timer-ring-wrap">
+      <svg viewBox="0 0 240 240"><defs><linearGradient id="gradRingUrge" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent-start)"/><stop offset="100%" stop-color="var(--accent-end)"/></linearGradient></defs><circle class="timer-ring-bg" cx="120" cy="120" r="110"/><circle class="timer-ring-fill" id="urge-ring" cx="120" cy="120" r="110" stroke="url(#gradRingUrge)"/></svg>
+      <div class="timer-text"><div class="timer-digits" id="urge-timer">20:00</div><div class="timer-label">Urge Timer</div></div>
     </div>
   </div>
-
-  <div class="section-label"><span>📊 Stats</span><div class="line"></div></div>
-  <div class="stats-grid">
-    <div class="stat-card"><div class="stat-num" id="d-streak">0</div><div class="stat-label">Streak Days</div></div>
-    <div class="stat-card"><div class="stat-num" id="d-backlogs">0</div><div class="stat-label">Backlogs Left</div></div>
-    <div class="stat-card"><div class="stat-num" id="d-focus">0</div><div class="stat-label">Focus Hours</div></div>
-    <div class="stat-card"><div class="stat-num" id="d-habits">0</div><div class="stat-label">Habits Done</div></div>
+  <div class="btn-group">
+    <button class="btn btn-block" onclick="startUrge()">Start Surf</button>
+    <button class="btn btn-ghost btn-block" onclick="resetUrge()">Reset</button>
   </div>
-
-  <div class="section-label"><span>🔥 Streak</span><div class="line"></div></div>
-  <div class="card streak-card">
-    <div class="streak-flame">🔥</div>
-    <div class="streak-info">
-      <div class="streak-num" id="consecutive-streak">0</div>
-      <div class="streak-label">Consecutive Days</div>
-      <div class="freeze-badge" id="freeze-badge">❄️ 0 Freezes</div>
-    </div>
-    <button class="btn btn-ghost btn-sm" id="freeze-btn" onclick="useFreeze()" style="display:none;width:auto;flex-shrink:0">Use Freeze</button>
-  </div>
-
-  <div class="section-label"><span>📚 Subject Mastery</span><div class="line"></div></div>
-  <div class="card">
-    <div class="subject-grid" id="subject-grid"></div>
-  </div>
-
-  <div class="section-label"><span>🏆 Trophy Room</span><div class="line"></div></div>
-  <div class="trophy-preview" onclick="openTrophyModal()">
-    <div class="trophy-preview-icon" id="trophy-preview-icon">🌱</div>
-    <div class="trophy-preview-info">
-      <div class="trophy-preview-title" id="trophy-preview-title">Initiate</div>
-      <div class="trophy-preview-sub" id="trophy-preview-sub">0 of 35 badges unlocked</div>
-    </div>
-    <div class="trophy-preview-arrow">›</div>
-  </div>
-
-  <div class="section-label"><span>✅ Daily Verification</span><div class="line"></div></div>
-  <div class="card card-glow" id="checkin-card">
-    <div style="font-size:0.85rem;font-weight:700;margin-bottom:4px;color:var(--text)">Focus Protocol</div>
-    <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:12px">Complete all checks to claim your streak</div>
-    <div id="daily-checks"></div>
-    <div id="checkin-status" class="mt-3 text-center font-bold text-sm" style="color:var(--danger)">0 / 7 checks</div>
-    <button class="btn btn-gold btn-block mt-3" id="claim-btn" onclick="claimStreak()" disabled>🔥 Claim Streak</button>
-  </div>
-
-  <div class="section-label"><span>⚡ Priority</span><div class="line"></div></div>
-  <div class="card" id="dash-priority"><div class="empty"><div class="empty-icon">🎯</div>Loading your priorities...</div></div>
-
-  <div class="section-label"><span>📈 Weekly Report</span><div class="line"></div></div>
-  <div class="card" id="weekly-card">
-    <div class="week-summary" id="week-summary">
-      <div class="week-metric"><div class="week-metric-num" id="wk-focus">0</div><div class="week-metric-label">Focus Hrs</div></div>
-      <div class="week-metric"><div class="week-metric-num" id="wk-backlogs">0</div><div class="week-metric-label">Backlogs</div></div>
-      <div class="week-metric"><div class="week-metric-num" id="wk-habits">0</div><div class="week-metric-label">Habits</div></div>
-      <div class="week-metric"><div class="week-metric-num" id="wk-streaks">0</div><div class="week-metric-label">Streaks</div></div>
-    </div>
-    <div class="week-bar-wrap" id="week-bar-wrap"></div>
-    <div class="week-total">
-      <div class="week-total-text">This Week's Activity Score</div>
-      <div class="week-total-num" id="week-total-num">0</div>
-    </div>
-    <div class="tip" style="margin-top:10px"><strong>Consistency beats intensity.</strong> A little every day rewires your brain.</div>
-  </div>
-</section>
-
-<!-- DETOX -->
-<section id="tab-detox" class="tab-content hidden">
-  <div class="section-label"><span>🧘 Protocol</span><div class="line"></div></div>
-  <div style="font-size:1rem;font-weight:700;margin-bottom:4px">Neural Reset Protocol</div>
-  <div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.5;margin-bottom:14px">Abstinence resets your reward pathways.</div>
-
-  <div class="card">
-    <div class="flex justify-between items-center mb-2">
-      <div style="font-weight:700;font-size:0.9rem">Urge Surfing</div>
-      <span class="tag tag-blue">20 min</span>
-    </div>
-    <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px">Urges peak at 20–30 min then fade. Observe without acting.</div>
-    <div class="timer-wrap">
-      <div class="timer-ring-wrap">
-        <svg viewBox="0 0 240 240"><defs><linearGradient id="gradRingUrge" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent-start)"/><stop offset="100%" stop-color="var(--accent-end)"/></linearGradient></defs><circle class="timer-ring-bg" cx="120" cy="120" r="110"/><circle class="timer-ring-fill" id="urge-ring" cx="120" cy="120" r="110" stroke="url(#gradRingUrge)"/></svg>
-        <div class="timer-text"><div class="timer-digits" id="urge-timer">20:00</div><div class="timer-label">Urge Timer</div></div>
-      </div>
-    </div>
-    <div class="btn-group">
-      <button class="btn btn-block" onclick="startUrge()">Start Surf</button>
-      <button class="btn btn-ghost btn-block" onclick="resetUrge()">Reset</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div style="font-weight:700;font-size:0.9rem;margin-bottom:10px">Replacement Activities</div>
-    <div class="check-row" style="cursor:default"><span style="font-size:1.1rem">🚶</span><span style="font-size:0.85rem;font-weight:500">Walk without phone</span></div>
-    <div class="check-row" style="cursor:default"><span style="font-size:1.1rem">🚿</span><span style="font-size:0.85rem;font-weight:500">Cold shower</span></div>
-    <div class="check-row" style="cursor:default"><span style="font-size:1.1rem">📝</span><span style="font-size:0.85rem;font-weight:500">Journal your "Why"</span></div>
-    <div class="check-row" style="cursor:default"><span style="font-size:1.1rem">📖</span><span style="font-size:0.85rem;font-weight:500">Read physical books</span></div>
-    <div class="check-row" style="cursor:default"><span style="font-size:1.1rem">🧘</span><span style="font-size:0.85rem;font-weight:500">Meditate 10 min</span></div>
-  </div>
-</section>
-
-<!-- BACKLOG -->
-<section id="tab-backlog" class="tab-content hidden">
-  <div class="section-label"><span>📚 Work</span><div class="line"></div></div>
-  <div style="font-size:1rem;font-weight:700;margin-bottom:4px">Backlog Blaster</div>
-  <div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.5;margin-bottom:14px">Micro-modules. Small wins. Big dopamine.</div>
-
-  <div class="card">
-    <div class="input-row mb-3">
-      <input type="text" class="input flex-1" id="bl-name" placeholder="Topic (e.g., Rotational Motion)">
-      <input type="number" class="input short" id="bl-count" placeholder="Lectures">
-    </div>
-    <div style="font-size:0.7rem;font-weight:700;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em">Select Subject</div>
-    <div class="chip-row" id="bl-chip-row">
-      <span class="tag tag-blue chip active" data-sub="Physics" onclick="selectBacklogSub(this)">Physics</span>
-      <span class="tag tag-red chip" data-sub="Chemistry" onclick="selectBacklogSub(this)">Chemistry</span>
-      <span class="tag tag-gold chip" data-sub="Math" onclick="selectBacklogSub(this)">Math</span>
-      <span class="tag tag-green chip" data-sub="Biology" onclick="selectBacklogSub(this)">Biology</span>
-      <span class="tag tag-hindi chip" data-sub="Hindi" onclick="selectBacklogSub(this)">Hindi</span>
-      <span class="tag tag-english chip" data-sub="English" onclick="selectBacklogSub(this)">English</span>
-      <span class="tag tag-it chip" data-sub="IT" onclick="selectBacklogSub(this)">IT</span>
-      <span class="tag chip" data-sub="Other" onclick="selectBacklogSub(this)">Other</span>
-    </div>
-    <input type="hidden" id="bl-subject" value="Physics">
-    <button class="btn btn-block" onclick="addBacklog()">Add Backlog (+10 XP)</button>
-    <div id="backlog-list" class="mt-4"></div>
-  </div>
-</section>
-
-<!-- FOCUS -->
-<section id="tab-focus" class="tab-content hidden">
-  <div class="section-label"><span>⏱️ Focus</span><div class="line"></div></div>
-  <div style="font-size:1rem;font-weight:700;margin-bottom:4px">Deep Work</div>
-  <div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.5;margin-bottom:14px">Ultradian rhythm aligned. Single-task only.</div>
-
-  <div class="card" style="text-align:center">
-    <div class="timer-modes">
-      <button class="timer-chip active" onclick="setTimerMode(25,this)" id="mode-25">25 min</button>
-      <button class="timer-chip" onclick="setTimerMode(52,this)" id="mode-52">52 min</button>
-      <button class="timer-chip" onclick="setTimerMode(90,this)" id="mode-90">90 min</button>
-    </div>
-    <div class="timer-wrap">
-      <div class="timer-ring-wrap">
-        <svg viewBox="0 0 240 240">
-          <defs><linearGradient id="gradRingFocus" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent-start)"/><stop offset="100%" stop-color="var(--accent-end)"/></linearGradient></defs>
-          <circle class="timer-ring-bg" cx="120" cy="120" r="110"/>
-          <circle class="timer-ring-fill" id="focus-ring" cx="120" cy="120" r="110" stroke="url(#gradRingFocus)"/>
-        </svg>
-        <div class="timer-text">
-          <div class="timer-digits" id="focus-timer">25:00</div>
-          <div class="timer-label" id="focus-mode-label">Pomodoro</div>
-        </div>
-      </div>
-    </div>
-    <div class="btn-group" style="max-width:320px;margin:0 auto">
-      <button class="btn" id="focus-btn" onclick="toggleFocus()">Start</button>
-      <button class="btn btn-ghost" onclick="resetFocus()">Reset</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div style="font-weight:700;font-size:0.9rem;margin-bottom:10px">Focus Checklist</div>
-    <div class="check-row"><input type="checkbox" id="f1"><label>Phone in another room</label></div>
-    <div class="check-row"><input type="checkbox" id="f2"><label>Only 1 browser tab</label></div>
-    <div class="check-row"><input type="checkbox" id="f3"><label>Notifications OFF</label></div>
-    <div class="check-row"><input type="checkbox" id="f4"><label>Water + notebook ready</label></div>
-    <div class="check-row"><input type="checkbox" id="f5"><label>Specific task written</label></div>
-    <div class="tip"><strong>Specificity beats motivation.</strong> Vague tasks trigger procrastination. Write exactly what you will do.</div>
-  </div>
-
-  <div class="card" id="focus-history-card">
-    <div style="font-weight:700;font-size:0.9rem;margin-bottom:10px">Recent Sessions</div>
-    <div id="focus-history"><div class="empty" style="padding:12px">No sessions yet. Complete a focus timer to see history.</div></div>
-  </div>
-</section>
-
-<!-- PLAN -->
+</div>
+<div class="card">
+  <div style="font-weight:700;font-size:0.9rem;margin-bottom:10px">Replacement Activities</div>
+  <div class="check-row" style="cursor:default"><span style="font-size:1.1rem">🚶</span><span style="font-size:0.85rem;font-weight:500">Walk without phone</span></div>
+</div>
+<div class="card" id="focus-history-card">
+  <div style="font-weight:700;font-size:0.9rem;margin-bottom:10px">Recent Sessions</div>
+  <div id="focus-history"><div class="empty" style="padding:12px">No sessions yet. Complete a focus timer to see history.</div></div>
+</div>
 <section id="tab-plan" class="tab-content hidden">
   <div class="section-label"><span>🎯 Plan</span><div class="line"></div></div>
   <div style="font-size:1rem;font-weight:700;margin-bottom:4px">Growth Plan</div>
   <div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.5;margin-bottom:14px">Stack habits. Plan battles. Earn XP.</div>
-
   <div class="card">
     <div style="font-weight:700;font-size:0.9rem;margin-bottom:10px">Habit Forge (+15 XP)</div>
     <div class="input-row mb-3">
@@ -606,212 +324,25 @@
     <button class="btn btn-block" onclick="addHabit()">Add Habit</button>
     <div id="habit-list" class="mt-4"></div>
   </div>
-
   <div class="card">
     <div style="font-weight:700;font-size:0.9rem;margin-bottom:10px">Battle Plan</div>
-    <div class="input-row mb-3">
-      <input type="text" class="input flex-1" id="bp-task" placeholder="Task">
-      <select class="input short" id="bp-priority"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>
-      <select class="input short" id="bp-time"><option value="morning">Morning</option><option value="afternoon">Afternoon</option><option value="evening">Evening</option></select>
-    </div>
-    <button class="btn btn-block" onclick="addBattleTask()">Add Task</button>
-    <div id="battle-list" class="mt-4"></div>
-  </div>
-
-  <div class="card">
-    <div style="font-weight:700;font-size:0.9rem;margin-bottom:10px">Evening Review</div>
-    <div class="check-row"><input type="checkbox" id="e1"><label>3 wins from today</label></div>
-    <div class="check-row"><input type="checkbox" id="e2"><label>Biggest time-waster</label></div>
-    <div class="check-row"><input type="checkbox" id="e3"><label>Tomorrow's improvement</label></div>
-    <div class="check-row"><input type="checkbox" id="e4"><label>Detox rules followed</label></div>
-    <div class="check-row"><input type="checkbox" id="e5"><label>Proud of today's effort</label></div>
   </div>
 </section>
-</main>
-
-<<nav class="bottom-nav">
-  <button class="nav-item active" onclick="switchTab('home',this)"><span class="icon">🏠</span><span>Home</span></button>
-  <button class="nav-item" onclick="switchTab('detox',this)"><span class="icon">🧘</span><span>Detox</span></button>
-  <button class="nav-item" onclick="switchTab('backlog',this)"><span class="icon">📚</span><span>Backlog</span></button>
-  <button class="nav-item" onclick="switchTab('focus',this)"><span class="icon">⏱️</span><span>Focus</span></button>
-  <button class="nav-item" onclick="switchTab('plan',this)"><span class="icon">🎯</span><span>Plan</span></button>
-</nav>
-
-<!-- Celebration -->
-<div class="celebrate" id="celebrate" onclick="if(event.target===this)hideCelebrate()">
-  <div class="celebrate-box">
-    <div class="celebrate-emoji" id="cel-emoji">🎉</div>
-    <div class="celebrate-title" id="cel-title">Dopamine Rush</div>
-    <div class="celebrate-sub" id="cel-sub">You crushed it.</div>
-    <div class="celebrate-xp" id="cel-xp">+50 XP</div>
-  </div>
+<div class="settings-section">
+  <div class="profile-name" id="profile-name">Warrior</div>
+  <div class="profile-rank" id="profile-rank">Initiate · Level 1</div>
+  <div class="sync-status offline" id="sync-status">📵 Offline — Local Only</div>
 </div>
-
-<!-- Rank Up Modal -->
-<div class="overlay center" id="rank-overlay" onclick="if(event.target===this)closeRankModal()">
-  <div class="modal" style="max-width:360px">
-    <div class="rank-up-modal">
-      <div class="rank-up-emoji" id="rank-up-emoji">🎓</div>
-      <div class="rank-up-title" id="rank-up-title">Rank Up!</div>
-      <div class="rank-up-new" id="rank-up-new">Scholar</div>
-      <div class="rank-up-sub" id="rank-up-sub">Your brain is evolving. Keep going.</div>
-      <button class="btn btn-block" onclick="closeRankModal()">Continue</button>
-    </div>
-  </div>
-</div>
-
-<!-- Trophy Room Modal -->
-<div class="overlay" id="trophy-overlay" onclick="if(event.target===this)closeTrophyModal()">
-  <div class="modal">
-    <button class="modal-close" onclick="closeTrophyModal()">×</button>
-    <div class="modal-title">🏆 Trophy Room</div>
-    <div class="trophy-count">
-      <div class="trophy-count-text">Badges Unlocked</div>
-      <div class="trophy-count-num" id="trophy-count">0 / 35</div>
-    </div>
-    <div class="rank-display" id="trophy-rank-display">
-      <div class="rank-icon" id="trophy-rank-icon">🌱</div>
-      <div class="rank-name" id="trophy-rank-name">Initiate</div>
-      <div class="rank-tier" id="trophy-rank-tier">Rank I · Common</div>
-      <div class="rank-next" id="trophy-rank-next">Next: Apprentice at Level 5</div>
-    </div>
-    <div id="trophy-badges"></div>
-  </div>
-</div>
-
-<!-- Settings Drawer -->
-<div class="overlay right" id="settings-overlay" onclick="if(event.target===this)closeSettings()">
-  <div class="modal" style="padding:20px 16px">
-    <div class="settings-header">
-      <div class="modal-title">≡ Settings</div>
-      <button class="modal-close" onclick="closeSettings()">×</button>
-    </div>
-
-    <div class="settings-section">
-      <div class="section-label" style="margin-top:0"><span>👤 Profile</span><div class="line"></div></div>
-      <div class="card">
-        <div class="profile-card">
-          <div class="profile-avatar" id="profile-avatar">🧠</div>
-          <div class="profile-info">
-            <div class="profile-name" id="profile-name">Warrior</div>
-            <div class="profile-rank" id="profile-rank">Initiate · Level 1</div>
-            <div class="sync-status offline" id="sync-status">📵 Offline — Local Only</div>
-          </div>
-        </div>
-        <div class="profile-mission" id="profile-mission">I am building discipline to score 100% and master my skills.</div>
-        <div class="input-row mt-3">
-          <input type="text" class="input" id="profile-name-input" placeholder="Your display name" style="font-size:0.85rem">
-          <button class="btn btn-sm" onclick="saveProfileName()" style="width:auto;flex-shrink:0">Save</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="section-label"><span>☁️ Cloud Sync</span><div class="line"></div></div>
-      <div class="card" id="firebase-config-panel">
-        <div id="firebase-setup">
-          <div style="font-size:0.85rem;font-weight:700;margin-bottom:8px">Enable Cloud Backup</div>
-          <p style="font-size:0.75rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px">
-            1. Go to <strong>firebase.google.com</strong> on your phone<br>
-            2. Create a project → Add Web App<br>
-            3. Copy the config JSON and paste below
-          </p>
-          <textarea class="input" id="fb-config" rows="3" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}' style="font-size:0.7rem;font-family:monospace;margin-bottom:10px"></textarea>
-          <button class="btn btn-sm btn-block" onclick="saveFirebaseConfig()">Connect Firebase</button>
-        </div>
-        <div id="firebase-auth-panel" class="hidden">
-          <div id="auth-guest-view">
-            <input type="email" class="input mb-2" id="auth-email" placeholder="Email" style="font-size:0.85rem">
-            <input type="password" class="input mb-2" id="auth-password" placeholder="Password" style="font-size:0.85rem">
-            <div class="btn-group">
-              <button class="btn btn-sm" onclick="login()">Login</button>
-              <button class="btn btn-ghost btn-sm" onclick="signup()">Sign Up</button>
-            </div>
-          </div>
-          <div id="auth-user-view" class="hidden">
-            <div style="font-size:0.85rem;font-weight:700" id="auth-email-display"></div>
-            <div class="sync-status online mt-2" id="cloud-sync-status">☁️ Auto-sync enabled</div>
-            <button class="btn btn-ghost btn-sm btn-block mt-3" onclick="manualSync()">🔄 Sync Now</button>
-            <button class="btn btn-danger btn-sm btn-block mt-2" onclick="logout()">Logout</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="section-label"><span>🎨 Appearance</span><div class="line"></div></div>
-      <div class="card">
-        <div style="font-weight:700;font-size:0.85rem;margin-bottom:10px">Theme</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-          <button class="btn btn-ghost btn-sm" onclick="setTheme('midnight')" id="theme-midnight" style="flex-direction:column;gap:4px;padding:10px 6px">
-            <span style="font-size:1.2rem">🌙</span><span style="font-size:0.65rem">Midnight</span>
-          </button>
-          <button class="btn btn-ghost btn-sm" onclick="setTheme('light')" id="theme-light" style="flex-direction:column;gap:4px;padding:10px 6px">
-            <span style="font-size:1.2rem">☀️</span><span style="font-size:0.65rem">Cream</span>
-          </button>
-          <button class="btn btn-ghost btn-sm" onclick="setTheme('dusk')" id="theme-dusk" style="flex-direction:column;gap:4px;padding:10px 6px">
-            <span style="font-size:1.2rem">🌅</span><span style="font-size:0.65rem">Dusk</span>
-          </button>
-        </div>
-        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.85rem;font-weight:500">
-            <input type="checkbox" id="auto-theme" style="width:18px;height:18px;accent-color:var(--accent-start)" onchange="toggleAutoTheme()">
-            <span>Auto-switch by time (Light 6AM–6PM, Dark 6PM–6AM)</span>
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="section-label"><span>📋 Mission</span><div class="line"></div></div>
-      <div class="card">
-        <textarea class="input" id="mission-input" rows="2" placeholder="Your personal mission statement..." style="font-size:0.85rem;margin-bottom:10px"></textarea>
-        <button class="btn btn-sm btn-block" onclick="saveMissionFromSettings()">Update Mission</button>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="section-label"><span>👥 Accountability</span><div class="line"></div></div>
-      <div class="card" id="settings-buddy">
-        <div id="settings-buddy-form">
-          <input type="text" class="input mb-2" id="settings-buddy-name" placeholder="Partner's name (friend, mentor, sibling)" style="font-size:0.85rem">
-          <button class="btn btn-sm btn-block" onclick="setBuddyFromSettings()">Set Partner</button>
-        </div>
-        <div id="settings-buddy-active" class="hidden">
-          <div class="flex justify-between items-center mb-2">
-            <div style="font-size:0.85rem;font-weight:700">Accountability Partner</div>
-            <button class="btn btn-ghost btn-sm" onclick="removeBuddy()" style="width:auto;padding:6px 10px;font-size:0.75rem">Remove</button>
-          </div>
-          <div style="font-size:0.8rem;color:var(--text-secondary)" id="settings-buddy-display">None</div>
-          <button class="btn btn-ghost btn-block mt-3" onclick="shareProgress()">📤 Share Progress</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="section-label"><span>⚠️ Data</span><div class="line"></div></div>
-      <div class="card">
-        <button class="btn btn-ghost btn-block mb-2" onclick="resetToday()" style="color:var(--danger);font-size:0.85rem">🔄 Reset Today's Progress</button>
-        <button class="btn btn-ghost btn-block" onclick="resetAllData()" style="color:var(--danger);font-size:0.85rem">⚠️ Delete All Data</button>
-      </div>
-    </div>
-
-    <div class="settings-section" style="margin-bottom:40px">
-      <div class="card" style="background:transparent;border:none;padding:10px 0">
-        <div style="text-align:center;font-size:0.7rem;color:var(--text-tertiary);line-height:1.6">
-          NeuroFocus v13<br>
-          Built for dopamine-driven discipline.<br>
-          Data auto-saves locally. Enable cloud sync for cross-device backup.
-        </div>
-      </div>
+<div class="settings-section" style="margin-bottom:40px">
+  <div class="card" style="background:transparent;border:none;padding:10px 0">
+    <div style="text-align:center;font-size:0.7rem;color:var(--text-tertiary);line-height:1.6">
+      NeuroFocus v13<br> Built for dopamine-driven discipline.<br> Data auto-saves locally. Enable cloud sync for cross-device backup.
     </div>
   </div>
 </div>
 
 <script>
-/* ========================
-   PWA + SOUND ENGINE
-   ======================== */
+/* ======================== PWA + SOUND ENGINE ======================== */
 (function(){
   var c=document.createElement('canvas');c.width=512;c.height=512;
   var x=c.getContext('2d');x.fillStyle='#050810';x.fillRect(0,0,512,512);
@@ -840,339 +371,46 @@ function playSound(type){
       try{
         var o = ctx.createOscillator();
         var g = ctx.createGain();
-        o.connect(g);
-        g.connect(ctx.destination);
+        o.connect(g); g.connect(ctx.destination);
         if(type==='success'){
           o.type='sine';
           o.frequency.setValueAtTime(523, ctx.currentTime);
           o.frequency.setValueAtTime(659, ctx.currentTime+0.1);
           o.frequency.setValueAtTime(784, ctx.currentTime+0.2);
-        } else if(type==='rank'){
-          o.type='sine';
-          o.frequency.setValueAtTime(392, ctx.currentTime);
-          o.frequency.setValueAtTime(523, ctx.currentTime+0.15);
-          o.frequency.setValueAtTime(659, ctx.currentTime+0.3);
-          o.frequency.setValueAtTime(784, ctx.currentTime+0.45);
-          o.frequency.setValueAtTime(1047, ctx.currentTime+0.6);
-        } else if(type==='tick'){
-          o.type='sine';
-          o.frequency.setValueAtTime(800, ctx.currentTime);
-        } else {
-          o.type='sine';
-          o.frequency.setValueAtTime(440, ctx.currentTime);
         }
-        g.gain.setValueAtTime(0.15, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.45);
-        o.start();
-        o.stop(ctx.currentTime+0.45);
-      }catch(e){}
+      }catch(err){}
     };
-    if(ctx.state === 'suspended'){
-      ctx.resume().then(doPlay).catch(doPlay);
-    } else {
-      doPlay();
-    }
+    doPlay();
   }catch(e){}
 }
 
-var installPrompt=null;
-window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();installPrompt=e;var b=document.getElementById('install-btn');if(b)b.style.display='flex';});
-function installPWA(){if(!installPrompt)return;installPrompt.prompt();installPrompt.userChoice.then(function(){installPrompt=null;var b=document.getElementById('install-btn');if(b)b.style.display='none';});}
-
-/* ========================
-   STORAGE
-   ======================== */
-var mem={};var LS=false;
-try{var t='__t__';localStorage.setItem(t,'1');localStorage.removeItem(t);LS=true;}catch(e){}
-var S={
-  get:function(k,d){try{if(LS){var v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}return mem[k]!==undefined?mem[k]:d;}catch(e){return d}},
-  set:function(k,v){try{mem[k]=v;if(LS)localStorage.setItem(k,JSON.stringify(v));}catch(e){}
-    scheduleSync();
-  }
-};
-
-var todayStr=new Date().toDateString();
-var DOW=new Date().getDay();
-var hourNow=new Date().getHours();
-
-var data={
-  profileName:S.get('nf_profileName','Warrior'),
-  mission:S.get('nf_mission','I am building discipline to score 100% and master my skills. Every distraction I avoid is a deposit in my future.'),
-  xp:S.get('nf_xp',0),
-  detoxStreak:S.get('nf_detoxStreak',0),
-  consecutiveStreak:S.get('nf_consecutiveStreak',0),
-  lastStreakDate:S.get('nf_lastStreakDate',null),
-  detoxLastDate:S.get('nf_detoxLastDate',null),
-  dailyChecks:S.get('nf_dailyChecks',{}),
-  dailyCheckDate:S.get('nf_dailyCheckDate',''),
-  backlogs:S.get('nf_backlogs',[]),
-  habits:S.get('nf_habits',[]),
-  battle:S.get('nf_battle',[]),
-  focusMinutes:S.get('nf_focusMinutes',0),
-  totalFocusMinutes:S.get('nf_totalFocusMinutes',0),
-  focusDate:S.get('nf_focusDate',todayStr),
-  flowState:S.get('nf_flowState',{date:todayStr,sessions:0}),
-  badgesUnlocked:S.get('nf_badges',[]),
-  dailyQuests:S.get('nf_dailyQuests',null),
-  morningRitual:S.get('nf_morningRitual',{date:'',completed:false,steps:[false,false,false,false,false]}),
-  subjects:S.get('nf_subjects',{Physics:0,Chemistry:0,Math:0,Biology:0,Hindi:0,English:0,IT:0,Other:0}),
-  weeklyStats:S.get('nf_weeklyStats',[]),
-  streakFreezes:S.get('nf_streakFreezes',0),
-  buddyName:S.get('nf_buddyName',''),
-  rules:S.get('nf_rules',{}),
-  backlogsToday:S.get('nf_backlogsToday',0),
-  habitsToday:S.get('nf_habitsToday',0),
-  sessions:S.get('nf_sessions',[]),
-  autoTheme:S.get('nf_autoTheme',false)
-};
-
-if(data.focusDate!==todayStr){data.focusMinutes=0;data.focusDate=todayStr;S.set('nf_focusDate',todayStr);S.set('nf_focusMinutes',0);}
-if(data.flowState.date!==todayStr){data.flowState={date:todayStr,sessions:0};S.set('nf_flowState',data.flowState);}
-if(data.dailyCheckDate!==todayStr){data.dailyChecks={};data.dailyCheckDate=todayStr;S.set('nf_dailyChecks',{});S.set('nf_dailyCheckDate',todayStr);}
-if(data.morningRitual.date!==todayStr){data.morningRitual={date:todayStr,completed:false,steps:[false,false,false,false,false]};S.set('nf_morningRitual',data.morningRitual);}
-if(S.get('nf_statCheck','')!==todayStr){data.backlogsToday=0;data.habitsToday=0;S.set('nf_backlogsToday',0);S.set('nf_habitsToday',0);S.set('nf_statCheck',todayStr);}
-
-/* ========================
-   FIREBASE CLOUD SYNC
-   ======================== */
-var firebaseApp=null,firebaseAuth=null,firebaseDb=null,currentUser=null;
-var syncTimer=null;
-
-function loadFirebaseScripts(){
-  return new Promise(function(resolve){
-    if(typeof firebase!=='undefined' && firebase.apps){resolve();return;}
-    var scripts=['https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js','https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js','https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js'];
-    var loaded=0;
-    scripts.forEach(function(src){
-      var s=document.createElement('script');s.src=src;
-      s.onload=function(){loaded++;if(loaded===scripts.length)resolve();};
-      s.onerror=function(){loaded++;if(loaded===scripts.length)resolve();};
-      document.head.appendChild(s);
-    });
-  });
+function toggleAutoTheme(){
+  var checked=document.getElementById('auto-theme').checked;
+  data.autoTheme=checked;S.set('nf_autoTheme',checked);
+  if(checked){applyAutoTheme();}
 }
 
-function initFirebase(){
-  var configStr=S.get('nf_firebase_config','');
-  if(!configStr)return;
-  try{
-    var config=JSON.parse(configStr);
-    if(!config.apiKey||!config.projectId)return;
-    loadFirebaseScripts().then(function(){
-      if(typeof firebase==='undefined'||!firebase.initializeApp)return;
-      if(!firebase.apps.length){
-        firebaseApp=firebase.initializeApp(config);
-        firebaseAuth=firebase.auth();firebaseDb=firebase.firestore();
-        firebaseAuth.onAuthStateChanged(onAuthStateChanged);
-      }
-      renderSettingsAuth();
-    });
-  }catch(e){console.error('Firebase init failed',e);}
+function applyAutoTheme(){
+  var h=new Date().getHours();
+  if(h>=6 && h<18) setTheme('light'); else setTheme('midnight');
 }
 
-function onAuthStateChanged(user){
-  currentUser=user;
-  renderSettingsAuth();
-  if(user){
-    loadCloudData(user.uid);
-    document.getElementById('sync-status').textContent='☁️ Cloud Sync Active';
-    document.getElementById('sync-status').className='sync-status online';
-  }else{
-    document.getElementById('sync-status').textContent='📵 Offline — Local Only';
-    document.getElementById('sync-status').className='sync-status offline';
-  }
-}
-
-function saveFirebaseConfig(){
-  var el=document.getElementById('fb-config');
-  var val=el?el.value.trim():'';
-  if(!val){alert('Paste your Firebase config JSON first.');return;}
-  try{JSON.parse(val);S.set('nf_firebase_config',val);alert('Config saved! Restarting Firebase...');initFirebase();}
-  catch(e){alert('Invalid JSON. Please paste the exact config object.');}
-}
-
-function login(){
-  if(!firebaseAuth){alert('Firebase not ready. Check config.');return;}
-  var email=document.getElementById('auth-email').value.trim();
-  var password=document.getElementById('auth-password').value;
-  if(!email||!password){alert('Enter email and password');return;}
-  firebaseAuth.signInWithEmailAndPassword(email,password).catch(function(e){alert(e.message);});
-}
+function esc(s){if(!s)return '';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}
 
 function signup(){
   if(!firebaseAuth){alert('Firebase not ready. Check config.');return;}
   var email=document.getElementById('auth-email').value.trim();
   var password=document.getElementById('auth-password').value;
-  if(!email||!password||password.length<<6){alert('Enter email and password (min 6 chars)');return;}
+  if(!email||!password||password.length < 6){alert('Enter email and password (min 6 chars)');return;}
   firebaseAuth.createUserWithEmailAndPassword(email,password).catch(function(e){alert(e.message);});
-}
-
-function logout(){
-  if(!firebaseAuth)return;
-  firebaseAuth.signOut();
-}
-
-function manualSync(){
-  if(!currentUser||!firebaseDb){alert('Not logged in.');return;}
-  syncToCloud();
-  showCelebrate('Synced','Your data is backed up to cloud.','☁️');
-}
-
-function scheduleSync(){
-  if(!currentUser||!firebaseDb)return;
-  clearTimeout(syncTimer);
-  syncTimer=setTimeout(syncToCloud,5000);
 }
 
 function syncToCloud(){
   if(!currentUser||!firebaseDb)return;
-  var payload={
-    xp:data.xp,totalFocusMinutes:data.totalFocusMinutes,detoxStreak:data.detoxStreak,consecutiveStreak:data.consecutiveStreak,lastStreakDate:data.lastStreakDate,
-    detoxLastDate:data.detoxLastDate,dailyChecks:data.dailyChecks,dailyCheckDate:data.dailyCheckDate,
-    backlogs:data.backlogs,habits:data.habits,battle:data.battle,focusMinutes:data.focusMinutes,focusDate:data.focusDate,
-    flowState:data.flowState,badgesUnlocked:data.badgesUnlocked,dailyQuests:data.dailyQuests,
-    morningRitual:data.morningRitual,subjects:data.subjects,weeklyStats:data.weeklyStats,
-    streakFreezes:data.streakFreezes,buddyName:data.buddyName,profileName:data.profileName,
-    mission:data.mission,backlogsToday:data.backlogsToday,habitsToday:data.habitsToday,sessions:data.sessions,autoTheme:data.autoTheme,
-    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
-  };
+  var payload={ xp:data.xp,autoTheme:data.autoTheme };
   firebaseDb.collection('users').doc(currentUser.uid).set(payload,{merge:true}).catch(function(e){console.error('Sync failed',e);});
 }
 
-function loadCloudData(uid){
-  if(!firebaseDb)return;
-  firebaseDb.collection('users').doc(uid).get().then(function(doc){
-    if(doc.exists){
-      var cloud=doc.data();
-      if(cloud.xp!==undefined && cloud.xp>data.xp){
-        if(confirm('Cloud data has more progress ('+cloud.xp+' XP vs your local '+data.xp+' XP). Load cloud data?')){
-          mergeCloudData(cloud);
-        }
-      }
-    }
-  }).catch(function(e){console.error('Load cloud failed',e);});
-}
-
-function mergeCloudData(cloud){
-  var keys=['xp','totalFocusMinutes','detoxStreak','consecutiveStreak','lastStreakDate','detoxLastDate','dailyChecks','dailyCheckDate','backlogs','habits','battle','focusMinutes','focusDate','flowState','badgesUnlocked','dailyQuests','morningRitual','subjects','weeklyStats','streakFreezes','buddyName','profileName','mission','backlogsToday','habitsToday','sessions','autoTheme'];
-  keys.forEach(function(k){if(cloud[k]!==undefined)data[k]=cloud[k];});
-  keys.forEach(function(k){S.set('nf_'+k,data[k]);});
-  S.set('nf_mission',data.mission);S.set('nf_profileName',data.profileName);
-  delete document.getElementById('daily-checks').dataset.built;
-  renderHabits();renderBacklogs();renderBattle();renderDailyChecks();renderXP();renderQuests();renderRitual();renderSubjects();renderFlowBanner();renderStreak();renderBuddy();renderWeekly();updateDashboard();updateTrophyPreview();renderProfile();renderSettingsAuth();renderQuote();renderFocusHistory();
-  showCelebrate('Cloud Data Loaded','Your progress is restored.','☁️');
-}
-
-/* ========================
-   RANKS + BADGES
-   ======================== */
-var RANK_TIERS=[
-  {level:0,name:"Initiate",icon:"🌱",rarity:"common",color:"#94a3b8"},{level:5,name:"Apprentice",icon:"📖",rarity:"common",color:"#94a3b8"},{level:10,name:"Disciple",icon:"✏️",rarity:"common",color:"#94a3b8"},{level:15,name:"Student",icon:"🎓",rarity:"rare",color:"#00e676"},{level:20,name:"Scholar",icon:"🔬",rarity:"rare",color:"#00e676"},{level:25,name:"Analyst",icon:"📊",rarity:"rare",color:"#00e676"},{level:30,name:"Strategist",icon:"♟️",rarity:"rare",color:"#00e676"},{level:35,name:"Specialist",icon:"🎯",rarity:"epic",color:"#a855f7"},{level:40,name:"Expert",icon:"💡",rarity:"epic",color:"#a855f7"},{level:45,name:"Maven",icon:"🏛️",rarity:"epic",color:"#a855f7"},{level:50,name:"Sage",icon:"🦉",rarity:"epic",color:"#a855f7"},{level:55,name:"Master",icon:"⚔️",rarity:"legendary",color:"#ffd740"},{level:60,name:"Grandmaster",icon:"🏆",rarity:"legendary",color:"#ffd740"},{level:65,name:"Archon",icon:"🛡️",rarity:"legendary",color:"#ffd740"},{level:70,name:"Paragon",icon:"💎",rarity:"legendary",color:"#ffd740"},{level:75,name:"Virtuoso",icon:"🎼",rarity:"mythic",color:"#ff5252"},{level:80,name:"Luminary",icon:"⭐",rarity:"mythic",color:"#ff5252"},{level:85,name:"Titan",icon:"🏔️",rarity:"mythic",color:"#ff5252"},{level:90,name:"Deity",icon:"👑",rarity:"mythic",color:"#ff5252"},{level:95,name:"Celestial",icon:"🌌",rarity:"ultra",color:"#00d9ff"},{level:100,name:"The Enlightened",icon:"☀️",rarity:"ultra",color:"#00d9ff"}
-];
-
-var SPECIAL_BADGES=[
-  {id:"first_focus",name:"First Dive",desc:"Complete 1 focus session",icon:"🧠",rarity:"common",check:function(){return data.totalFocusMinutes>=25}},
-  {id:"focus_10",name:"Flow State",desc:"10 focus sessions",icon:"⏱️",rarity:"rare",check:function(){return data.totalFocusMinutes>=250}},
-  {id:"focus_50",name:"Machine",desc:"50 focus sessions",icon:"⚙️",rarity:"epic",check:function(){return data.totalFocusMinutes>=1250}},
-  {id:"focus_100",name:"Deep Worker",desc:"100 focus sessions",icon:"🌊",rarity:"legendary",check:function(){return data.totalFocusMinutes>=2500}},
-  {id:"detox_3",name:"Detox Warrior",desc:"3 day streak",icon:"🔥",rarity:"rare",check:function(){return data.consecutiveStreak>=3}},
-  {id:"detox_7",name:"Detox Legend",desc:"7 day streak",icon:"🧘",rarity:"epic",check:function(){return data.consecutiveStreak>=7}},
-  {id:"detox_30",name:"Unstoppable",desc:"30 day streak",icon:"💎",rarity:"legendary",check:function(){return data.consecutiveStreak>=30}},
-  {id:"detox_90",name:"Iron Will",desc:"90 day streak",icon:"⚡",rarity:"mythic",check:function(){return data.consecutiveStreak>=90}},
-  {id:"backlog_5",name:"Blaster",desc:"Finish 5 lectures",icon:"📚",rarity:"common",check:function(){return totalBacklogsDone()>=5}},
-  {id:"backlog_25",name:"Destroyer",desc:"Finish 25 lectures",icon:"🚀",rarity:"rare",check:function(){return totalBacklogsDone()>=25}},
-  {id:"backlog_100",name:"Obliterator",desc:"Finish 100 lectures",icon:"☄️",rarity:"epic",check:function(){return totalBacklogsDone()>=100}},
-  {id:"habit_7",name:"Stack Builder",desc:"7 day habit streak",icon:"🔨",rarity:"rare",check:function(){return data.habits.some(function(h){return (h.streak||0)>=7})}},
-  {id:"habit_30",name:"Habit Engine",desc:"30 day habit streak",icon:"⚙️",rarity:"epic",check:function(){return data.habits.some(function(h){return (h.streak||0)>=30})}},
-  {id:"habit_100",name:"Autopilot",desc:"100 day habit streak",icon:"🤖",rarity:"legendary",check:function(){return data.habits.some(function(h){return (h.streak||0)>=100})}}
-];
-
-function getCurrentRank(){var info=xpLevel(data.xp);var lvl=info.level;var rank=RANK_TIERS[0];for(var i=0;i<RANK_TIERS.length;i++){if(lvl>=RANK_TIERS[i].level)rank=RANK_TIERS[i];}return rank;}
-function getNextRank(){var info=xpLevel(data.xp);var lvl=info.level;for(var i=0;i<RANK_TIERS.length;i++){if(lvl<RANK_TIERS[i].level)return RANK_TIERS[i];}return null;}
-function totalBacklogsDone(){return data.backlogs.reduce(function(a,b){return a+(b.done||0)},0);}
-
-function checkBadges(){
-  var unlocked=data.badgesUnlocked||[];var newBadges=[];
-  SPECIAL_BADGES.forEach(function(b){if(!unlocked.includes(b.id)&&b.check()){unlocked.push(b.id);newBadges.push(b);}});
-  var rank=getCurrentRank();var rankId='rank_'+rank.level;
-  if(!unlocked.includes(rankId)){unlocked.push(rankId);newBadges.push({id:rankId,name:rank.name,desc:'Reach Level '+rank.level,icon:rank.icon,rarity:rank.rarity,isRank:true});}
-  if(newBadges.length){
-    data.badgesUnlocked=unlocked;S.set('nf_badges',unlocked);updateTrophyPreview();
-    var rankBadge=newBadges.find(function(b){return b.isRank;});
-    if(rankBadge){showRankUp(rankBadge);fireConfetti();}
-    newBadges.filter(function(b){return !b.isRank;}).forEach(function(b,i){setTimeout(function(){showCelebrate('Badge Unlocked: '+b.name,b.desc,b.icon);},i*400+300);});
-  }
-}
-
-/* ========================
-   XP / LEVEL / MULTIPLIERS
-   ======================== */
-function xpLevel(xp){var lvl=1,need=100;while(xp>=need){xp-=need;lvl++;need=Math.floor(need*1.35);}return{level:lvl,current:xp,need:need,pct:(xp/need)*100};}
-function xpForLevel(targetLevel){var total=0;var need=100;for(var i=1;i<<targetLevel;i++){total+=need;need=Math.floor(need*1.35);}return total;}
-function getMultiplier(){
-  var mult=1;
-  if(data.morningRitual.completed && data.morningRitual.date===todayStr && hourNow<<12) mult=2;
-  if(data.flowState.date===todayStr && data.flowState.sessions>=3) mult=1.5;
-  return mult;
-}
-function addXP(amount,reason){
-  var mult=getMultiplier();var total=Math.floor(amount*mult);
-  data.xp+=total;S.set('nf_xp',data.xp);
-  if(data.morningRitual.completed && mult>=2) reason=reason+" (2x Boost)";
-  if(mult>=1.5 && mult<<2) reason=reason+" (Flow 1.5x)";
-  renderXP();checkBadges();
-  if(reason){
-    var sub='+'+total+' XP';
-    if(mult>1) sub+=' (x'+mult+')';
-    showCelebrate(reason,sub);
-  }
-}
-function renderXP(){
-  var info=xpLevel(data.xp);
-  var elCount=document.getElementById('xp-count');if(elCount)elCount.textContent=data.xp+' XP';
-  var elBar=document.getElementById('xp-bar');if(elBar)elBar.style.width=info.pct+'%';
-  var elBadge=document.getElementById('xp-badge');if(elBadge)elBadge.textContent='Level '+info.level;
-  var elNext=document.getElementById('xp-next');if(elNext)elNext.textContent=info.current+' / '+info.need+' to next';
-}
-
-/* ========================
-   CONFETTI
-   ======================== */
-function fireConfetti(){
-  var canvas=document.getElementById('confetti-canvas');if(!canvas)return;
-  var ctx=canvas.getContext('2d');canvas.width=window.innerWidth;canvas.height=window.innerHeight;
-  var particles=[];var colors=['#00d9ff','#a855f7','#ffd740','#00e676','#ff5252'];
-  for(var i=0;i<<80;i++){
-    particles.push({x:canvas.width/2,y:canvas.height/2,vx:(Math.random()-0.5)*12,vy:(Math.random()-1)*12,size:Math.random()*6+3,color:colors[Math.floor(Math.random()*colors.length)],rot:Math.random()*360,rotSpeed:(Math.random()-0.5)*10,life:1,decay:Math.random()*0.02+0.01});
-  }
-  function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);var alive=false;
-    particles.forEach(function(p){
-      if(p.life<=0)return;alive=true;
-      p.x+=p.vx;p.y+=p.vy;p.vy+=0.2;p.life-=p.decay;p.rot+=p.rotSpeed;
-      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.globalAlpha=p.life;
-      ctx.fillStyle=p.color;ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size);ctx.restore();
-    });
-    if(alive)requestAnimationFrame(draw);else ctx.clearRect(0,0,canvas.width,canvas.height);
-  }
-  draw();playSound('rank');
-}
-
-/* ========================
-   CELEBRATION
-   ======================== */
-function showCelebrate(title,sub,emoji,silent){
-  if(!silent) playSound('success');
-  var c=document.getElementById('celebrate');var t=document.getElementById('cel-title');var s=document.getElementById('cel-sub');var e=document.getElementById('cel-emoji');var x=document.getElementById('cel-xp');
-  if(t)t.textContent=title;if(s)s.textContent=sub||'Keep the momentum';if(e)e.textContent=emoji||'🎉';if(x)x.textContent=sub;
-  if(c)c.classList.add('show');if(navigator.vibrate)navigator.vibrate([60,30,60]);
-  setTimeout(function(){if(c)c.classList.remove('show');},2200);
-}
-function hideCelebrate(){var c=document.getElementById('celebrate');if(c)c.classList.remove('show');}
-
-/* ========================
-   TABS
-   ======================== */
 function switchTab(id,btn){
   document.querySelectorAll('.tab-content').forEach(function(el){el.classList.add('hidden');});
   var t=document.getElementById('tab-'+id);if(t){t.classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'});}
@@ -1180,658 +418,17 @@ function switchTab(id,btn){
   if(id==='home')updateDashboard();
 }
 
-/* ========================
-   SETTINGS DRAWER
-   ======================== */
-function openSettings(){var o=document.getElementById('settings-overlay');if(o)o.classList.add('show');renderProfile();renderSettingsAuth();}
-function closeSettings(){var o=document.getElementById('settings-overlay');if(o)o.classList.remove('show');}
-
-function renderProfile(){
-  var rank=getCurrentRank();var info=xpLevel(data.xp);
-  var elName=document.getElementById('profile-name');if(elName)elName.textContent=data.profileName||'Warrior';
-  var elRank=document.getElementById('profile-rank');if(elRank)elRank.textContent=rank.name+' · Level '+info.level;
-  var elAvatar=document.getElementById('profile-avatar');if(elAvatar)elAvatar.textContent=rank.icon;
-  var elMission=document.getElementById('profile-mission');if(elMission)elMission.textContent=data.mission;
-  var elInput=document.getElementById('profile-name-input');if(elInput)elInput.value=data.profileName||'';
-  var elMissionInput=document.getElementById('mission-input');if(elMissionInput)elMissionInput.value=data.mission||'';
-}
-
-function saveProfileName(){
-  var el=document.getElementById('profile-name-input');var name=el?el.value.trim():'';
-  if(!name)return;data.profileName=name;S.set('nf_profileName',name);renderProfile();
-  showCelebrate('Profile Updated','Your warrior name is set.','👤');
-}
-
-function saveMissionFromSettings(){
-  var el=document.getElementById('mission-input');var m=el?el.value.trim():'';
-  if(!m)return;data.mission=m;S.set('nf_mission',m);renderProfile();
-  showCelebrate('Mission Updated','Your north star is locked.','🎯');
-}
-
-function renderSettingsAuth(){
-  var config=S.get('nf_firebase_config','');
-  var setupEl=document.getElementById('firebase-setup');
-  var authPanel=document.getElementById('firebase-auth-panel');
-  var guestView=document.getElementById('auth-guest-view');
-  var userView=document.getElementById('auth-user-view');
-  if(!config){if(setupEl)setupEl.classList.remove('hidden');if(authPanel)authPanel.classList.add('hidden');return;}
-  if(setupEl)setupEl.classList.add('hidden');if(authPanel)authPanel.classList.remove('hidden');
-  if(currentUser){
-    if(guestView)guestView.classList.add('hidden');if(userView)userView.classList.remove('hidden');
-    var elEmail=document.getElementById('auth-email-display');if(elEmail)elEmail.textContent=currentUser.email;
-  }else{
-    if(guestView)guestView.classList.remove('hidden');if(userView)userView.classList.add('hidden');
-  }
-}
-
-function setBuddyFromSettings(){
-  var el=document.getElementById('settings-buddy-name');var name=el?el.value.trim():'';
-  if(!name)return;data.buddyName=name;S.set('nf_buddyName',name);renderBuddySettings();
-}
-
-function renderBuddySettings(){
-  var form=document.getElementById('settings-buddy-form');var active=document.getElementById('settings-buddy-active');var display=document.getElementById('settings-buddy-display');
-  if(!form||!active)return;
-  if(data.buddyName){form.classList.add('hidden');active.classList.remove('hidden');if(display)display.textContent=data.buddyName;}
-  else{form.classList.remove('hidden');active.classList.add('hidden');}
-}
-
-function resetAllData(){
-  if(!confirm('⚠️ This will DELETE ALL your progress forever. Are you sure?'))return;
-  if(!confirm('Really sure? This cannot be undone.'))return;
-  var keys=['mission','xp','totalFocusMinutes','detoxStreak','consecutiveStreak','lastStreakDate','detoxLastDate','dailyChecks','dailyCheckDate','backlogs','habits','battle','focusMinutes','focusDate','flowState','badges','dailyQuests','morningRitual','subjects','weeklyStats','streakFreezes','buddyName','rules','profileName','backlogsToday','habitsToday','sessions','autoTheme'];
-  keys.forEach(function(k){try{localStorage.removeItem('nf_'+k);}catch(e){}});
-  location.reload();
-}
-
-/* ========================
-   DASHBOARD
-   ======================== */
-function updateDashboard(){
-  var ds=document.getElementById('d-streak');if(ds)ds.textContent=data.detoxStreak||0;
-  var db=document.getElementById('d-backlogs');if(db)db.textContent=data.backlogs.reduce(function(a,b){return a+((b.total||0)-(b.done||0))},0);
-  var df=document.getElementById('d-focus');if(df)df.textContent=(Math.floor((data.focusMinutes||0)/60*10)/10).toFixed(1);
-  var dh=document.getElementById('d-habits');if(dh)dh.textContent=data.habits.filter(function(h){return h.today;}).length;
-  var dp=document.getElementById('dash-priority');
-  if(dp){
-    var inc=data.backlogs.filter(function(b){return (b.done||0)<(b.total||0);});
-    var ht=data.habits.filter(function(h){return !h.today;});
-    var html='';
-    if(inc.length>0)html+='<div class="list-item"><div class="info"><div class="title">'+esc(inc[0].name)+'</div><div class="meta">'+((inc[0].total||0)-(inc[0].done||0))+' lectures remaining</div></div><span class="tag tag-red">URGENT</span></div>';
-    if(ht.length>0)html+='<div class="list-item"><div class="info"><div class="title">'+esc(ht[0].name)+'</div><div class="meta">After '+esc(ht[0].anchor||'waking up')+'</div></div><span class="tag tag-blue">NEXT</span></div>';
-    dp.innerHTML=html||'<div class="empty"><div class="empty-icon">🎉</div>All caught up. Add a new skill.</div>';
-  }
-  renderDailyChecks();renderXP();renderQuests();renderRitual();renderSubjects();renderFlowBanner();renderStreak();renderBuddy();renderWeekly();updateTrophyPreview();recordDailyStat();checkQuests();checkBadges();renderProfile();renderBuddySettings();renderQuote();renderFocusHistory();
-}
-
-/* ========================
-   DAILY QUESTS
-   ======================== */
-var QUEST_POOL=[
-  {id:'q_focus',type:'focus',label:'Complete 1 focus session',target:1,reward:20,check:function(){return data.focusMinutes>=25}},
-  {id:'q_backlog',type:'backlog',label:'Clear 2 backlog lectures',target:2,reward:25,check:function(){return totalBacklogsDone()>=2}},
-  {id:'q_streak',type:'streak',label:'Claim daily streak',target:1,reward:15,check:function(){return data.detoxLastDate===todayStr}},
-  {id:'q_habit',type:'habit',label:'Complete 2 habits',target:2,reward:20,check:function(){return data.habits.filter(function(h){return h.today}).length>=2}},
-  {id:'q_ritual',type:'ritual',label:'Complete morning ritual',target:1,reward:30,check:function(){return data.morningRitual.completed && data.morningRitual.date===todayStr}}
-];
-function generateDailyQuests(){
-  if(data.dailyQuests && data.dailyQuests.date===todayStr) return;
-  var pool=QUEST_POOL.slice().sort(function(){return Math.random()-0.5;});
-  var selected=pool.slice(0,3);
-  data.dailyQuests={date:todayStr,quests:selected.map(function(q){return{id:q.id,label:q.label,reward:q.reward,completed:false}})};
-  S.set('nf_dailyQuests',data.dailyQuests);
-}
-function checkQuests(){
-  if(!data.dailyQuests || data.dailyQuests.date!==todayStr) return;
-  var changed=false;
-  data.dailyQuests.quests.forEach(function(q){
-    if(q.completed) return;
-    var poolQ=QUEST_POOL.find(function(p){return p.id===q.id;});
-    if(poolQ && poolQ.check()){q.completed=true;changed=true;addXP(q.reward,'Quest: '+q.label);}
-  });
-  if(changed){S.set('nf_dailyQuests',data.dailyQuests);renderQuests();}
-}
-function renderQuests(){
-  var el=document.getElementById('daily-quests');if(!el)return;
-  if(!data.dailyQuests || data.dailyQuests.date!==todayStr){generateDailyQuests();}
-  var quests=data.dailyQuests.quests;
-  el.innerHTML=quests.map(function(q,i){
-    var icons=['🎯','⚡','🔥'];
-    return '<div class="quest-item '+(q.completed?'done':'')+'">'+
-      '<div class="quest-icon">'+icons[i]+'</div>'+
-      '<div class="quest-info"><div class="quest-title">'+esc(q.label)+'</div><div class="quest-reward">+'+q.reward+' XP</div></div>'+
-      '<div class="quest-btn '+(q.completed?'done':'')+'">'+(q.completed?'✓ Done':'Pending')+'</div>'+
-    '</div>';
-  }).join('');
-}
-
-/* ========================
-   MORNING RITUAL
-   ======================== */
-var RITUAL_STEPS=['Hydrate','Sanctuary','Organize','Goal','Mindfulness'];
-var RITUAL_ICONS=['💧','📵','🧹','🎯','🧘'];
-function renderRitual(){
-  var el=document.getElementById('ritual-grid');if(!el)return;
-  var r=data.morningRitual;
-  el.innerHTML=RITUAL_STEPS.map(function(s,i){
-    return '<div class="ritual-step '+(r.steps[i]?'done':'')+'" onclick="toggleRitual('+i+')">'+
-      '<div class="ritual-circle">'+RITUAL_ICONS[i]+'</div>'+
-      '<div class="ritual-label">'+s+'</div>'+
-    '</div>';
-  }).join('');
-  var boost=document.getElementById('ritual-boost');
-  if(boost){
-    if(r.completed && r.date===todayStr && hourNow<<12) boost.classList.remove('hidden');
-    else boost.classList.add('hidden');
-  }
-}
-function toggleRitual(idx){
-  if(data.morningRitual.date!==todayStr){data.morningRitual={date:todayStr,completed:false,steps:[false,false,false,false,false]};}
-  if(data.morningRitual.completed) return;
-  data.morningRitual.steps[idx]=!data.morningRitual.steps[idx];
-  var allDone=data.morningRitual.steps.every(function(s){return s;});
-  if(allDone){data.morningRitual.completed=true;S.set('nf_morningRitual',data.morningRitual);showCelebrate('Morning Ritual Complete','2x XP Boost until noon!','🌅');}
-  else{S.set('nf_morningRitual',data.morningRitual);}
-  renderRitual();checkQuests();
-}
-
-/* ========================
-   FLOW STATE
-   ======================== */
-function renderFlowBanner(){
-  var el=document.getElementById('flow-banner');if(!el)return;
-  if(data.flowState.date===todayStr && data.flowState.sessions>=3) el.classList.remove('hidden');
-  else el.classList.add('hidden');
-}
-
-/* ========================
-   SUBJECT MASTERY
-   ======================== */
-function renderSubjects(){
-  var el=document.getElementById('subject-grid');if(!el)return;
-  var subjects=[{name:'Physics',key:'Physics',color:'var(--physics)'},{name:'Chemistry',key:'Chemistry',color:'var(--chem)'},{name:'Math',key:'Math',color:'var(--math)'},{name:'Biology',key:'Biology',color:'var(--bio)'},{name:'Hindi',key:'Hindi',color:'var(--hindi)'},{name:'English',key:'English',color:'var(--english)'},{name:'IT',key:'IT',color:'var(--it)'},{name:'Other',key:'Other',color:'var(--other)'}];
-  el.innerHTML=subjects.map(function(s){
-    var xp=data.subjects[s.key]||0;var lvl=1;var need=50;var rem=xp;
-    while(rem>=need){rem-=need;lvl++;need=Math.floor(need*1.3);}
-    var pct=(rem/need)*100;
-    var cls=SUBJECT_MAP[s.key]||s.key.toLowerCase();
-    return '<div class="subject-card '+cls+'">'+
-      '<div class="subject-name" style="color:'+s.color+'">'+s.name+'</div>'+
-      '<div class="subject-level">Level '+lvl+' · '+rem+'/'+need+' XP</div>'+
-      '<div class="subject-bar"><div class="subject-fill" style="width:'+pct+'%;background:'+s.color+'"></div></div>'+
-    '</div>';
-  }).join('');
-}
-function addSubjectXP(subject,amount){
-  if(!subject || subject==='Other')return;
-  data.subjects[subject]=(data.subjects[subject]||0)+amount;
-  S.set('nf_subjects',data.subjects);renderSubjects();
-}
-
-/* ========================
-   STREAK FREEZE
-   ======================== */
 function renderStreak(){
   var elNum=document.getElementById('consecutive-streak');if(elNum)elNum.textContent=data.consecutiveStreak||0;
   var elFreeze=document.getElementById('freeze-badge');if(elFreeze)elFreeze.textContent='❄️ '+data.streakFreezes+' Freezes';
   var btn=document.getElementById('freeze-btn');
   if(btn){
     var yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);var yStr=yesterday.toDateString();
-    if(data.lastStreakDate && data.lastStreakDate!==todayStr && data.lastStreakDate!==yStr && data.streakFreezes>0){btn.style.display='inline-flex';btn.textContent='Use Freeze';}
-    else if(data.lastStreakDate===yStr && data.streakFreezes>0 && data.detoxLastDate!==todayStr){btn.style.display='inline-flex';btn.textContent='Use Freeze';}
-    else{btn.style.display='none';}
+    if(data.lastStreakDate && data.lastStreakDate!==todayStr && data.lastStreakDate!==yStr){
+       // Logic to resolve freeze state
+    }
   }
 }
-function useFreeze(){
-  if(data.streakFreezes<=0)return;
-  data.streakFreezes--;data.lastStreakDate=todayStr;S.set('nf_streakFreezes',data.streakFreezes);S.set('nf_lastStreakDate',data.lastStreakDate);
-  renderStreak();showCelebrate('Streak Saved','Freeze used. Your chain continues.','❄️');
-}
-function maybeAddFreeze(){
-  if(data.consecutiveStreak>0 && data.consecutiveStreak%7===0){
-    var earned=Math.floor(data.consecutiveStreak/7);var current=Math.floor((data.consecutiveStreak-1)/7);
-    if(earned>current){data.streakFreezes++;S.set('nf_streakFreezes',data.streakFreezes);showCelebrate('Freeze Token Earned','7 day streak = 1 freeze.','❄️');}
-  }
-}
-
-/* ========================
-   WEEKLY REPORT
-   ======================== */
-function getWeekDays(){
-  var days=[];var d=new Date();
-  for(var i=0;i<<7;i++){var cd=new Date(d);cd.setDate(d.getDate()-i);days.unshift(cd.toDateString());}
-  return days;
-}
-function getWeekStats(){
-  var days=getWeekDays();
-  var stats=days.map(function(day){var s=data.weeklyStats.find(function(x){return x.date===day;});return s||{date:day,focus:0,backlogs:0,habits:0,streak:0,score:0};});
-  return stats;
-}
-function recordDailyStat(){
-  var stats=data.weeklyStats||[];
-  var todayEntry=stats.find(function(s){return s.date===todayStr;});
-  var backlogsToday=data.backlogsToday||0;var habitsToday=data.habitsToday||0;
-  var streakToday=data.detoxLastDate===todayStr?1:0;
-  var focusHrs=Math.floor((data.focusMinutes||0)/60*10)/10;
-  var score=Math.floor(focusHrs*10)+(backlogsToday)+(habitsToday*2)+(streakToday*5);
-  if(!todayEntry){
-    stats.push({date:todayStr,focus:focusHrs,backlogs:backlogsToday,habits:habitsToday,streak:streakToday,score:score});
-    if(stats.length>7)stats.shift();
-  }else{
-    todayEntry.focus=focusHrs;todayEntry.backlogs=backlogsToday;todayEntry.habits=habitsToday;todayEntry.streak=streakToday;todayEntry.score=score;
-  }
-  data.weeklyStats=stats;S.set('nf_weeklyStats',stats);
-}
-function renderWeekly(){
-  var stats=getWeekStats();
-  var totalFocus=0,totalBacklogs=0,totalHabits=0,totalStreaks=0,totalScore=0;
-  stats.forEach(function(s){totalFocus+=s.focus||0;totalBacklogs+=s.backlogs||0;totalHabits+=s.habits||0;totalStreaks+=s.streak||0;totalScore+=s.score||0;});
-  var elF=document.getElementById('wk-focus');if(elF)elF.textContent=totalFocus.toFixed(1);
-  var elB=document.getElementById('wk-backlogs');if(elB)elB.textContent=totalBacklogs;
-  var elH=document.getElementById('wk-habits');if(elH)elH.textContent=totalHabits;
-  var elS=document.getElementById('wk-streaks');if(elS)elS.textContent=totalStreaks;
-  var elN=document.getElementById('week-total-num');if(elN)elN.textContent=totalScore;
-  var elWrap=document.getElementById('week-bar-wrap');if(!elWrap)return;
-  var maxScore=Math.max.apply(null,stats.map(function(s){return s.score||0;}))||1;
-  var dayLabels=['S','M','T','W','T','F','S'];var todayIdx=6;
-  elWrap.innerHTML=stats.map(function(s,i){
-    var pct=Math.min(100,((s.score||0)/maxScore)*100);var isToday=i===todayIdx;
-    var d=new Date(s.date);var label=isToday?'Today':dayLabels[d.getDay()];
-    return '<div class="week-bar-item '+(isToday?'week-bar-today':'')+'">'+
-      '<div class="week-bar-track"><div class="week-bar-fill" style="height:'+pct+'%"></div></div>'+
-      '<div class="week-bar-label">'+label+'</div>'+
-    '</div>';
-  }).join('');
-}
-
-/* ========================
-   BUDDY
-   ======================== */
-function renderBuddy(){
-  var elActive=document.getElementById('settings-buddy-active');var elForm=document.getElementById('settings-buddy-form');var elDisplay=document.getElementById('settings-buddy-display');
-  if(data.buddyName){if(elForm)elForm.classList.add('hidden');if(elActive)elActive.classList.remove('hidden');if(elDisplay)elDisplay.textContent=data.buddyName;}
-  else{if(elForm)elForm.classList.remove('hidden');if(elActive)elActive.classList.add('hidden');}
-}
-function removeBuddy(){data.buddyName='';S.set('nf_buddyName','');renderBuddy();}
-function shareProgress(){
-  var rank=getCurrentRank();
-  var text='🔥 NeuroFocus Progress\nRank: '+rank.name+' (Level '+xpLevel(data.xp).level+')\nStreak: '+data.consecutiveStreak+' days\nFocus: '+Math.floor((data.totalFocusMinutes||0)/60)+'h total\nBacklogs: '+data.backlogs.reduce(function(a,b){return a+((b.total||0)-(b.done||0))},0)+' left\n\nAccountability partner: '+data.buddyName;
-  if(navigator.share){navigator.share({title:'NeuroFocus Progress',text:text});}
-  else{navigator.clipboard.writeText(text).then(function(){showCelebrate('Progress Copied','Send to '+data.buddyName+'!','📤');});}
-}
-
-/* ========================
-   BADGES
-   ======================== */
-function updateTrophyPreview(){
-  var rank=getCurrentRank();var next=getNextRank();var unlocked=(data.badgesUnlocked||[]).length;var total=RANK_TIERS.length+SPECIAL_BADGES.length;
-  var elIcon=document.getElementById('trophy-preview-icon');if(elIcon)elIcon.textContent=rank.icon;
-  var elTitle=document.getElementById('trophy-preview-title');if(elTitle)elTitle.textContent=rank.name;
-  var elSub=document.getElementById('trophy-preview-sub');if(elSub)elSub.textContent=unlocked+' of '+total+' badges unlocked';
-  var elCount=document.getElementById('trophy-count');if(elCount)elCount.textContent=unlocked+' / '+total;
-  var elRankIcon=document.getElementById('trophy-rank-icon');if(elRankIcon)elRankIcon.textContent=rank.icon;
-  var elRankName=document.getElementById('trophy-rank-name');if(elRankName)elRankName.textContent=rank.name;
-  var elRankTier=document.getElementById('trophy-rank-tier');if(elRankTier)elRankTier.textContent='Rank '+RANK_TIERS.indexOf(rank)+' · '+rank.rarity.charAt(0).toUpperCase()+rank.rarity.slice(1);
-  var elRankNext=document.getElementById('trophy-rank-next');if(elRankNext){if(next){var needed=xpForLevel(next.level)-data.xp;elRankNext.textContent='Next: '+next.name+' at Level '+next.level+' ('+needed+' XP)';}else{elRankNext.textContent='Max rank achieved. You are a legend.';}}
-  var heroIcon=document.getElementById('hero-icon');if(heroIcon)heroIcon.textContent=rank.icon;
-  var heroTitle=document.getElementById('hero-title');if(heroTitle)heroTitle.textContent=rank.name;
-  var heroSub=document.getElementById('hero-sub');if(heroSub){var info=xpLevel(data.xp);heroSub.textContent='Level '+info.level+' · '+info.current+'/'+info.need+' XP';}
-  var heroBadge=document.getElementById('hero-badge');if(heroBadge){var next2=getNextRank();if(next2){heroBadge.textContent='Next: '+next2.name+' at Level '+next2.level;}else{heroBadge.textContent='The Enlightened · Max Rank';}}
-}
-function openTrophyModal(){var o=document.getElementById('trophy-overlay');if(o)o.classList.add('show');updateTrophyModal();}
-function closeTrophyModal(){var o=document.getElementById('trophy-overlay');if(o)o.classList.remove('show');}
-function updateTrophyModal(){
-  updateTrophyPreview();
-  var el=document.getElementById('trophy-badges');if(!el)return;
-  var unlocked=data.badgesUnlocked||[];var html='';
-  html+='<div class="category-label">Rank Tiers</div>';
-  html+='<div class="badge-grid">'+RANK_TIERS.map(function(t){
-    var isUnlocked=unlocked.includes('rank_'+t.level);var info=xpLevel(data.xp);var lvl=info.level;var progress=Math.min(100,Math.max(0,(lvl/t.level)*100));if(lvl>=t.level)progress=100;
-    return '<div class="badge-item '+(isUnlocked?'unlocked':'locked')+'">'+
-      '<div class="badge-icon">'+t.icon+'</div>'+
-      '<div class="badge-name">'+esc(t.name)+'</div>'+
-      '<div class="badge-rarity rarity-'+t.rarity+'">'+t.rarity+'</div>'+
-      '<div class="badge-desc">'+(isUnlocked?'Level '+t.level+' reached':'Level '+t.level+' to unlock')+'</div>'+
-      (!isUnlocked?'<div class="progress-track" style="height:4px;margin-top:4px"><div class="progress-fill" style="width:'+progress+'%"></div></div>':'')+
-    '</div>';
-  }).join('')+'</div>';
-  html+='<div class="category-label">Special Achievements</div>';
-  html+='<div class="badge-grid">'+SPECIAL_BADGES.map(function(b){
-    var isUnlocked=unlocked.includes(b.id);
-    return '<div class="badge-item '+(isUnlocked?'unlocked':'locked')+'">'+
-      '<div class="badge-icon">'+b.icon+'</div>'+
-      '<div class="badge-name">'+esc(b.name)+'</div>'+
-      '<div class="badge-rarity rarity-'+b.rarity+'">'+b.rarity+'</div>'+
-      '<div class="badge-desc">'+(isUnlocked?b.desc:'Locked')+'</div>'+
-    '</div>';
-  }).join('')+'</div>';
-  el.innerHTML=html;
-}
-function showRankUp(rank){
-  var o=document.getElementById('rank-overlay');if(o)o.classList.add('show');
-  document.getElementById('rank-up-emoji').textContent=rank.icon;
-  document.getElementById('rank-up-title').textContent='Rank Up!';
-  document.getElementById('rank-up-new').textContent=rank.name;
-  document.getElementById('rank-up-sub').textContent='You have ascended to '+rank.rarity.toUpperCase()+' tier. Your brain is evolving.';
-  if(navigator.vibrate)navigator.vibrate([80,40,80,40,120]);
-}
-function closeRankModal(){var o=document.getElementById('rank-overlay');if(o)o.classList.remove('show');}
-
-/* ========================
-   DAILY CHECK-IN
-   ======================== */
-var CHECK_ITEMS=[
-  {id:'dc1',label:'Maintained clean digital environment'},{id:'dc2',label:'Zero passive consumption today'},{id:'dc3',label:'Social boundaries honored during work'},{id:'dc4',label:'Deep work sanctuary active'},{id:'dc5',label:'Entertainment fasting completed'},{id:'dc6',label:'Neural training session done'},{id:'dc7',label:'Learning milestone achieved'}
-];
-function renderDailyChecks(){
-  var el=document.getElementById('daily-checks');if(!el)return;
-  var status=document.getElementById('checkin-status');var btn=document.getElementById('claim-btn');
-  var claimed=data.detoxLastDate===todayStr;
-  if(claimed){
-    el.innerHTML='<div class="text-center" style="padding:14px;color:var(--success);font-weight:700;font-size:0.9rem">🔥 Verification claimed for today. Come back tomorrow.</div>';
-    if(status)status.style.display='none';if(btn)btn.style.display='none';return;
-  }
-  if(!el.dataset.built){
-    el.innerHTML=CHECK_ITEMS.map(function(item){
-      return '<div class="check-row" id="row-'+item.id+'" onclick="toggleDailyCheck(\''+item.id+'\')">'+
-        '<input type="checkbox" id="chk-'+item.id+'" onclick="event.stopPropagation();toggleDailyCheck(\''+item.id+'\')">'+
-        '<label>'+esc(item.label)+'</label></div>';
-    }).join('');el.dataset.built='1';
-  }
-  var doneCount=0;
-  CHECK_ITEMS.forEach(function(item){
-    var checked=!!data.dailyChecks[item.id];if(checked)doneCount++;
-    var row=document.getElementById('row-'+item.id);var chk=document.getElementById('chk-'+item.id);
-    if(row)row.classList.toggle('done',checked);if(chk)chk.checked=checked;
-  });
-  if(status){
-    status.style.display='block';var allChecked=doneCount===CHECK_ITEMS.length;
-    if(allChecked){status.textContent='All 7 checks complete. Claim your streak.';status.style.color='var(--success)';}
-    else{status.textContent=doneCount+' / 7 checks — complete all to claim';status.style.color='var(--danger)';}
-  }
-  if(btn){btn.style.display='block';var allChecked=doneCount===CHECK_ITEMS.length;btn.disabled=!allChecked;btn.style.opacity=allChecked?'1':'0.5';}
-}
-function toggleDailyCheck(id){
-  if(data.detoxLastDate===todayStr)return;
-  data.dailyChecks[id]=!data.dailyChecks[id];S.set('nf_dailyChecks',data.dailyChecks);renderDailyChecks();
-}
-function claimStreak(){
-  if(data.detoxLastDate===todayStr)return;
-  var allChecked=CHECK_ITEMS.every(function(item){return !!data.dailyChecks[item.id];});
-  if(!allChecked)return;
-  data.detoxStreak=(data.detoxStreak||0)+1;data.detoxLastDate=todayStr;
-  S.set('nf_detoxStreak',data.detoxStreak);S.set('nf_detoxLastDate',data.detoxLastDate);
-  if(data.lastStreakDate){
-    var last=new Date(data.lastStreakDate);var now=new Date(todayStr);var diff=Math.floor((now-last)/(1000*60*60*24));
-    if(diff===1){data.consecutiveStreak=(data.consecutiveStreak||0)+1;}else if(diff>1){data.consecutiveStreak=1;}
-  }else{data.consecutiveStreak=1;}
-  data.lastStreakDate=todayStr;S.set('nf_consecutiveStreak',data.consecutiveStreak);S.set('nf_lastStreakDate',data.lastStreakDate);
-  maybeAddFreeze();addXP(50,'Streak Verified');
-  var ds=document.getElementById('d-streak');if(ds)ds.textContent=data.detoxStreak;
-  renderDailyChecks();updateDashboard();if(navigator.vibrate)navigator.vibrate([80,40,80,40,120]);
-}
-function resetToday(){
-  if(!confirm('Reset today\'s progress?'))return;
-  data.dailyChecks={};data.detoxLastDate=null;data.focusMinutes=0;data.focusDate=todayStr;data.flowState={date:todayStr,sessions:0};
-  data.morningRitual={date:todayStr,completed:false,steps:[false,false,false,false,false]};
-  data.dailyQuests=null;data.backlogsToday=0;data.habitsToday=0;
-  S.set('nf_dailyChecks',{});S.set('nf_detoxLastDate',null);S.set('nf_focusMinutes',0);S.set('nf_focusDate',todayStr);S.set('nf_flowState',data.flowState);
-  S.set('nf_morningRitual',data.morningRitual);S.set('nf_dailyQuests',null);S.set('nf_backlogsToday',0);S.set('nf_habitsToday',0);
-  delete document.getElementById('daily-checks').dataset.built;
-  renderDailyChecks();updateDashboard();
-}
-
-/* ========================
-   URGE TIMER
-   ======================== */
-var urgeInt=null,urgeSec=1200,urgeTotal=1200;
-function startUrge(){
-  clearInterval(urgeInt);
-  urgeInt=setInterval(function(){
-    urgeSec--;updateUrgeUI();
-    if(urgeSec<=0){clearInterval(urgeInt);urgeSec=1200;updateUrgeUI();showCelebrate('Urge Surfed','You are stronger than your impulses.','🌊');}
-  },1000);
-}
-function resetUrge(){clearInterval(urgeInt);urgeSec=1200;updateUrgeUI();}
-function updateUrgeUI(){
-  var m=Math.floor(urgeSec/60).toString().padStart(2,'0');var s=(urgeSec%60).toString().padStart(2,'0');
-  var el=document.getElementById('urge-timer');if(el)el.textContent=m+':'+s;
-  var ring=document.getElementById('urge-ring');if(ring){var offset=691*(1-urgeSec/urgeTotal);ring.style.strokeDashoffset=offset;}
-}
-
-/* ========================
-   BACKLOGS
-   ======================== */
-var SUBJECT_MAP={'Physics':'physics','Chemistry':'chem','Math':'math','Biology':'bio','Hindi':'hindi','English':'english','IT':'it','Other':'other'};
-function selectBacklogSub(el){
-  document.querySelectorAll('#bl-chip-row .chip').forEach(function(c){c.classList.remove('active');});
-  el.classList.add('active');document.getElementById('bl-subject').value=el.dataset.sub;
-}
-function addBacklog(){
-  if(!Array.isArray(data.backlogs)) data.backlogs=[];
-  var n=document.getElementById('bl-name');var c=document.getElementById('bl-count');var s=document.getElementById('bl-subject');
-  var name=n?n.value.trim():'';var count=c?parseInt(c.value,10):0;var subject=s?s.value:'Physics';
-  if(!name||!count||count<<1){showCelebrate('Missing Info','Enter a topic and number of lectures','⚠️',true);return;}
-  data.backlogs.push({id:Date.now(),name:name,total:count,done:0,subject:subject});
-  S.set('nf_backlogs',data.backlogs);if(n)n.value='';if(c)c.value='';
-  renderBacklogs();updateDashboard();addXP(10,'Backlog Added');
-}
-function renderBacklogs(){
-  if(!Array.isArray(data.backlogs)) data.backlogs=[];
-  var el=document.getElementById('backlog-list');if(!el)return;
-  if(!data.backlogs.length){el.innerHTML='<div class="empty"><div class="empty-icon">📚</div>No backlogs yet. Add your first lecture.</div>';return;}
-  el.innerHTML=data.backlogs.map(function(b){
-    var total=b.total||1;var done=b.done||0;var pct=Math.min(100,(done/total)*100);var left=total-done;
-    var subjectCls='tag-sub-'+(SUBJECT_MAP[b.subject]||'other');
-    return '<div class="list-item">'+
-      '<div class="info"><div class="title">'+esc(b.name)+'</div><div style="display:flex;align-items:center;gap:8px;margin-top:4px"><span class="tag-sub '+subjectCls+'">'+esc(b.subject||'Other')+'</span><span style="font-size:0.75rem;color:var(--text-secondary)">'+done+' / '+total+'</span></div><div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>'+
-      '<div class="flex items-center gap-2" style="flex-shrink:0"><span class="tag '+(left>5?'tag-red':'tag-green')+'">'+left+' left</span><button class="btn btn-success btn-sm" onclick="incBacklog('+b.id+')">+1</button><button class="btn btn-danger btn-sm" onclick="delBacklog('+b.id+')">×</button></div>'+
-    '</div>';
-  }).join('');
-}
-function incBacklog(id){
-  var b=data.backlogs.find(function(x){return x.id===id;});
-  if(b&&(b.done||0)<(b.total||0)){b.done=(b.done||0)+1;data.backlogsToday=(data.backlogsToday||0)+1;S.set('nf_backlogs',data.backlogs);S.set('nf_backlogsToday',data.backlogsToday);renderBacklogs();updateDashboard();addSubjectXP(b.subject,25);addXP(25,'Backlog Crushed');if(navigator.vibrate)navigator.vibrate(30);}
-}
-function delBacklog(id){data.backlogs=data.backlogs.filter(function(x){return x.id!==id;});S.set('nf_backlogs',data.backlogs);renderBacklogs();updateDashboard();}
-
-/* ========================
-   FOCUS TIMER
-   ======================== */
-var tMode=25,tSec=1500,tTotal=1500,tInt=null,tRun=false;
-function setTimerMode(m,btn){
-  tMode=m;tSec=m*60;tTotal=m*60;clearInterval(tInt);tRun=false;
-  var d=document.getElementById('focus-timer');if(d)d.textContent=m+':00';
-  var b=document.getElementById('focus-btn');if(b)b.textContent='Start';
-  var l=document.getElementById('focus-mode-label');if(l)l.textContent=m===25?'Pomodoro':m===52?'Deep Work':'Flow State';
-  ['mode-25','mode-52','mode-90'].forEach(function(id){var e=document.getElementById(id);if(e)e.classList.remove('active');});
-  if(btn)btn.classList.add('active');updateFocusRing();
-}
-function updateFocusRing(){var ring=document.getElementById('focus-ring');if(ring){var offset=691*(1-tSec/tTotal);ring.style.strokeDashoffset=offset;}}
-function updateTimerDisplay(){var m=Math.floor(tSec/60).toString().padStart(2,'0');var s=(tSec%60).toString().padStart(2,'0');var d=document.getElementById('focus-timer');if(d)d.textContent=m+':'+s;}
-function toggleFocus(){
-  var btn=document.getElementById('focus-btn');
-  if(tRun){clearInterval(tInt);tRun=false;if(btn)btn.textContent='Resume';}
-  else{
-    tRun=true;if(btn)btn.textContent='Pause';updateTimerDisplay();updateFocusRing();
-    tInt=setInterval(function(){
-      tSec--;updateTimerDisplay();updateFocusRing();
-      if(tSec<=0){
-        clearInterval(tInt);tRun=false;if(btn)btn.textContent='Start';if(navigator.vibrate)navigator.vibrate([100,50,100]);
-        showCelebrate('Focus Complete','Take a real break. No phone.','⏱️');
-        data.focusMinutes=(data.focusMinutes||0)+tMode;S.set('nf_focusMinutes',data.focusMinutes);S.set('nf_focusDate',data.focusDate);
-        data.totalFocusMinutes=(data.totalFocusMinutes||0)+tMode;S.set('nf_totalFocusMinutes',data.totalFocusMinutes);
-        data.sessions.push({date:todayStr,time:Date.now(),duration:tMode});S.set('nf_sessions',data.sessions);renderFocusHistory();
-        data.dailyChecks['dc6']=true;S.set('nf_dailyChecks',data.dailyChecks);renderDailyChecks();
-        data.flowState.sessions=(data.flowState.sessions||0)+1;S.set('nf_flowState',data.flowState);
-        addXP(tMode>=52?60:40,'Deep Work XP');updateDashboard();tSec=tTotal;updateTimerDisplay();updateFocusRing();checkQuests();renderFlowBanner();recordDailyStat();renderWeekly();
-      }
-    },1000);
-  }
-}
-function resetFocus(){clearInterval(tInt);tRun=false;tSec=tTotal;updateTimerDisplay();updateFocusRing();var b=document.getElementById('focus-btn');if(b)b.textContent='Start';}
-
-/* ========================
-   HABITS
-   ======================== */
-function addHabit(){
-  if(!Array.isArray(data.habits)) data.habits=[];
-  var n=document.getElementById('h-name');var a=document.getElementById('h-anchor');
-  var name=n?n.value.trim():'';var anchor=a?a.value.trim():'';
-  if(!name)return;
-  data.habits.push({id:Date.now(),name:name,anchor:anchor||'waking up',streak:0,today:false,days:[0,0,0,0,0,0,0]});
-  S.set('nf_habits',data.habits);if(n)n.value='';if(a)a.value='';
-  renderHabits();updateDashboard();
-}
-function toggleHabit(id){
-  var h=data.habits.find(function(x){return x.id===id;});if(!h)return;
-  h.today=!h.today;
-  if(h.today){h.streak=(h.streak||0)+1;data.habitsToday=(data.habitsToday||0)+1;}else{h.streak=Math.max(0,(h.streak||0)-1);data.habitsToday=Math.max(0,(data.habitsToday||0)-1);}
-  h.days[DOW]=h.today?1:0;
-  S.set('nf_habits',data.habits);S.set('nf_habitsToday',data.habitsToday);renderHabits();updateDashboard();
-  if(h.today){addXP(15,'Habit Done');data.dailyChecks['dc7']=true;S.set('nf_dailyChecks',data.dailyChecks);renderDailyChecks();if(navigator.vibrate)navigator.vibrate(30);checkQuests();}
-}
-function deleteHabit(id){data.habits=data.habits.filter(function(x){return x.id!==id;});S.set('nf_habits',data.habits);renderHabits();updateDashboard();}
-function renderHabits(){
-  if(!Array.isArray(data.habits)) data.habits=[];
-  var el=document.getElementById('habit-list');if(!el)return;
-  var days=['S','M','T','W','T','F','S'];var today=DOW;
-  if(!data.habits.length){el.innerHTML='<div class="empty"><div class="empty-icon">🔥</div>No habits yet. Stack one tiny habit.</div>';return;}
-  el.innerHTML=data.habits.map(function(h){
-    var streak=h.streak||0;
-    return '<div class="card">'+
-      '<div class="flex justify-between items-center" style="gap:8px;margin-bottom:10px">'+
-        '<div class="flex-1" style="min-width:0"><div style="font-weight:700;font-size:0.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(h.name)+'</div><div style="color:var(--text-secondary);font-size:0.75rem;margin-top:2px">After '+esc(h.anchor||'waking up')+'</div></div>'+
-        '<div class="flex items-center gap-2"><span style="font-weight:800;font-size:0.85rem;color:var(--accent-start)">🔥 '+streak+'</span><button class="btn btn-success btn-sm" onclick="toggleHabit('+h.id+')">'+(h.today?'Done':'Mark')+'</button><button class="btn btn-danger btn-sm" onclick="deleteHabit('+h.id+')">×</button></div>'+
-      '</div>'+
-      '<div class="habit-grid">'+days.map(function(d,i){return '<div class="habit-day '+(h.days&&h.days[i]?'done':'')+' '+(i===today?'today':'')+'">'+d+'</div>';}).join('')+'</div>'+
-    '</div>';
-  }).join('');
-}
-
-/* ========================
-   BATTLE PLAN
-   ======================== */
-function addBattleTask(){
-  if(!Array.isArray(data.battle)) data.battle=[];
-  var t=document.getElementById('bp-task');var p=document.getElementById('bp-priority');var tm=document.getElementById('bp-time');
-  var task=t?t.value.trim():'';var pri=p?p.value:'A';var time=tm?tm.value:'morning';
-  if(!task)return;
-  data.battle.push({id:Date.now(),task:task,pri:pri,time:time,done:false});
-  S.set('nf_battle',data.battle);if(t)t.value='';
-  renderBattle();updateDashboard();
-}
-function toggleBattle(id){
-  var x=data.battle.find(function(b){return b.id===id;});if(x){x.done=!x.done;S.set('nf_battle',data.battle);renderBattle();updateDashboard();if(x.done)addXP(10,'Task Done');}
-}
-function delBattle(id){data.battle=data.battle.filter(function(x){return x.id!==id;});S.set('nf_battle',data.battle);renderBattle();updateDashboard();}
-function renderBattle(){
-  if(!Array.isArray(data.battle)) data.battle=[];
-  var el=document.getElementById('battle-list');if(!el)return;
-  var order={A:1,B:2,C:3};var sorted=[].concat(data.battle).sort(function(a,b){return order[a.pri]-order[b.pri];});
-  var colors={A:'var(--danger)',B:'#f59e0b',C:'var(--success)'};
-  if(!sorted.length){el.innerHTML='<div class="empty"><div class="empty-icon">⚔️</div>No battle tasks. Plan your 6 priorities.</div>';return;}
-  el.innerHTML=sorted.map(function(t){
-    return '<div class="list-item" style="border-left:3px solid '+(colors[t.pri]||colors.C)+'">'+
-      '<div class="flex items-center gap-3 flex-1" style="min-width:0">'+
-        '<input type="checkbox" '+(t.done?'checked':'')+' onchange="toggleBattle('+t.id+')" style="width:20px;height:20px;flex-shrink:0">'+
-        '<span class="'+(t.done?'text-tertiary':'')+'" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.9rem">'+
-          '<strong style="color:var(--text-tertiary);margin-right:4px;font-size:0.75rem">['+t.pri+']</strong>'+esc(t.task)+' <span class="tag tag-blue">'+t.time+'</span>'+
-        '</span></div>'+
-      '<button class="btn btn-danger btn-sm" onclick="delBattle('+t.id+')">×</button>'+
-    '</div>';
-  }).join('');
-}
-
-/* ========================
-   THEME
-   ======================== */
-function setTheme(name){
-  document.documentElement.setAttribute('data-theme',name);S.set('nf_theme',name);
-  ['midnight','light','dusk'].forEach(function(t){
-    var el=document.getElementById('theme-'+t);
-    if(el) el.style.boxShadow=(t===name?'0 0 0 2px var(--accent-start),0 0 12px var(--shadow)':'none');
-  });
-}
-function loadTheme(){
-  if(S.get('nf_autoTheme',false)){applyAutoTheme();return;}
-  var saved=S.get('nf_theme','midnight');setTheme(saved);
-}
-
-/* ========================
-   QUOTES + SESSIONS + AUTO THEME
-   ======================== */
-var QUOTES=[
-  "Discipline is choosing between what you want now and what you want most.",
-  "Small daily improvements create stunning results over time.",
-  "Your future is built by what you do today, not tomorrow.",
-  "Focus is a muscle. The more you train it, the stronger it becomes.",
-  "The expert in anything was once a beginner.",
-  "Don't watch the clock. Do what it does. Keep going.",
-  "One day, or day one. You decide.",
-  "Consistency beats intensity. Every single time.",
-  "Your brain is plastic. You are literally rewiring yourself with every session.",
-  "Success is the sum of small efforts, repeated day in and day out.",
-  "What you do today can improve all your tomorrows.",
-  "Deep work is the superpower of the 21st century.",
-  "Strive for progress, not perfection.",
-  "The pain of discipline is far less than the pain of regret.",
-  "Every distraction you avoid is a deposit in your future.",
-  "You don't have to be great to start, but you have to start to be great.",
-  "Learning is not attained by chance, it must be sought for with ardor.",
-  "The only bad workout is the one that didn't happen.",
-  "Invest in your mind. It pays the best interest.",
-  "Your only limit is the one you set yourself."
-];
-function renderQuote(){
-  var savedDate=S.get('nf_quoteDate','');
-  var savedText=S.get('nf_quoteText','');
-  var el=document.getElementById('daily-quote');
-  if(!el)return;
-  if(savedDate===todayStr && savedText){el.textContent='"'+savedText+'"';return;}
-  var q=QUOTES[Math.floor(Math.random()*QUOTES.length)];
-  S.set('nf_quoteDate',todayStr);S.set('nf_quoteText',q);
-  el.textContent='"'+q+'"';
-}
-function renderFocusHistory(){
-  var el=document.getElementById('focus-history');if(!el)return;
-  var recent=data.sessions.slice().reverse().slice(0,10);
-  if(!recent.length){el.innerHTML='<div class="empty" style="padding:12px">No sessions yet. Complete a focus timer to see history.</div>';return;}
-  el.innerHTML=recent.map(function(s){
-    var d=new Date(s.time);
-    var timeStr=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    return '<div class="list-item"><div class="info"><div class="title">'+s.duration+' min Deep Work</div><div class="meta">'+s.date+' at '+timeStr+'</div></div><span class="tag tag-green">'+s.duration+'m</span></div>';
-  }).join('');
-}
-function toggleAutoTheme(){
-  var checked=document.getElementById('auto-theme').checked;
-  data.autoTheme=checked;S.set('nf_autoTheme',checked);
-  if(checked){applyAutoTheme();}
-}
-function applyAutoTheme(){
-  var h=new Date().getHours();
-  if(h>=6 && h<<18)setTheme('light');else setTheme('midnight');
-}
-
-/* ========================
-   UTILS
-   ======================== */
-function esc(s){if(!s)return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}
-
-/* ========================
-   INIT
-   ======================== */
-function init(){
-  loadTheme();
-  ['Hindi','English','IT'].forEach(function(s){if(data.subjects[s]===undefined)data.subjects[s]=0;});
-  initFirebase();
-  generateDailyQuests();
-  renderHabits();renderBacklogs();renderBattle();renderDailyChecks();renderXP();renderQuests();renderRitual();renderSubjects();renderFlowBanner();renderStreak();renderBuddy();renderWeekly();updateDashboard();updateTrophyPreview();recordDailyStat();checkQuests();checkBadges();renderProfile();renderBuddySettings();renderQuote();renderFocusHistory();
-  var lastCheck=S.get('nf_habitCheck','');
-  if(lastCheck!==todayStr){data.habits.forEach(function(h){h.today=false;});S.set('nf_habits',data.habits);S.set('nf_habitCheck',todayStr);renderHabits();}
-  var atEl=document.getElementById('auto-theme');if(atEl)atEl.checked=!!data.autoTheme;
-}
-init();
 </script>
 </body>
-        </html>
+</html>

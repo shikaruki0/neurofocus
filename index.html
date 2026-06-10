@@ -111,7 +111,6 @@
   .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
   .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;position:relative;overflow:hidden;text-align:center;transition:border-color 0.2s}
   .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent-start),var(--accent-end));opacity:0.5}
-  .stat-card:hover{border-color:var(--border-active)}
   .stat-num{font-size:1.4rem;font-weight:800;font-variant-numeric:tabular-nums;background:linear-gradient(180deg,var(--text),var(--text-secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
   .stat-label{font-size:0.65rem;font-weight:600;color:var(--text-tertiary);margin-top:4px;text-transform:uppercase;letter-spacing:0.05em}
 
@@ -224,6 +223,7 @@
   .subject-card.hindi::before{background:var(--hindi)}
   .subject-card.english::before{background:var(--english)}
   .subject-card.it::before{background:var(--it)}
+  .subject-card.other::before{background:var(--other)}
   .subject-name{font-weight:700;font-size:0.8rem;margin-bottom:4px}
   .subject-level{font-size:0.7rem;color:var(--text-tertiary);margin-bottom:6px}
   .subject-bar{height:4px;background:var(--bg);border-radius:999px;overflow:hidden}
@@ -392,6 +392,11 @@
     </div>
   </div>
 
+  <div class="card" style="text-align:center;padding:16px;border-left:3px solid var(--accent-start)">
+    <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:6px">Daily Fuel</div>
+    <div id="daily-quote" style="font-size:0.95rem;font-weight:600;color:var(--text);font-style:italic;line-height:1.5">"Loading your daily fuel..."</div>
+  </div>
+
   <div class="flow-banner hidden" id="flow-banner">
     <div class="flow-banner-icon">🌊</div>
     <div>
@@ -491,7 +496,7 @@
     <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px">Urges peak at 20–30 min then fade. Observe without acting.</div>
     <div class="timer-wrap">
       <div class="timer-ring-wrap">
-        <svg viewBox="0 0 240 240"><defs><linearGradient id="gradRing" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent-start)"/><stop offset="100%" stop-color="var(--accent-end)"/></linearGradient></defs><circle class="timer-ring-bg" cx="120" cy="120" r="110"/><circle class="timer-ring-fill" id="urge-ring" cx="120" cy="120" r="110" stroke="url(#gradRing)"/></svg>
+        <svg viewBox="0 0 240 240"><defs><linearGradient id="gradRingUrge" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent-start)"/><stop offset="100%" stop-color="var(--accent-end)"/></linearGradient></defs><circle class="timer-ring-bg" cx="120" cy="120" r="110"/><circle class="timer-ring-fill" id="urge-ring" cx="120" cy="120" r="110" stroke="url(#gradRingUrge)"/></svg>
         <div class="timer-text"><div class="timer-digits" id="urge-timer">20:00</div><div class="timer-label">Urge Timer</div></div>
       </div>
     </div>
@@ -554,9 +559,9 @@
     <div class="timer-wrap">
       <div class="timer-ring-wrap">
         <svg viewBox="0 0 240 240">
-          <defs><linearGradient id="gradRing" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent-start)"/><stop offset="100%" stop-color="var(--accent-end)"/></linearGradient></defs>
+          <defs><linearGradient id="gradRingFocus" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent-start)"/><stop offset="100%" stop-color="var(--accent-end)"/></linearGradient></defs>
           <circle class="timer-ring-bg" cx="120" cy="120" r="110"/>
-          <circle class="timer-ring-fill" id="focus-ring" cx="120" cy="120" r="110" stroke="url(#gradRing)"/>
+          <circle class="timer-ring-fill" id="focus-ring" cx="120" cy="120" r="110" stroke="url(#gradRingFocus)"/>
         </svg>
         <div class="timer-text">
           <div class="timer-digits" id="focus-timer">25:00</div>
@@ -578,6 +583,11 @@
     <div class="check-row"><input type="checkbox" id="f4"><label>Water + notebook ready</label></div>
     <div class="check-row"><input type="checkbox" id="f5"><label>Specific task written</label></div>
     <div class="tip"><strong>Specificity beats motivation.</strong> Vague tasks trigger procrastination. Write exactly what you will do.</div>
+  </div>
+
+  <div class="card" id="focus-history-card">
+    <div style="font-weight:700;font-size:0.9rem;margin-bottom:10px">Recent Sessions</div>
+    <div id="focus-history"><div class="empty" style="padding:12px">No sessions yet. Complete a focus timer to see history.</div></div>
   </div>
 </section>
 
@@ -743,6 +753,12 @@
             <span style="font-size:1.2rem">🌅</span><span style="font-size:0.65rem">Dusk</span>
           </button>
         </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.85rem;font-weight:500">
+            <input type="checkbox" id="auto-theme" style="width:18px;height:18px;accent-color:var(--accent-start)" onchange="toggleAutoTheme()">
+            <span>Auto-switch by time (Light 6AM–6PM, Dark 6PM–6AM)</span>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -783,7 +799,7 @@
     <div class="settings-section" style="margin-bottom:40px">
       <div class="card" style="background:transparent;border:none;padding:10px 0">
         <div style="text-align:center;font-size:0.7rem;color:var(--text-tertiary);line-height:1.6">
-          NeuroFocus v12<br>
+          NeuroFocus v13<br>
           Built for dopamine-driven discipline.<br>
           Data auto-saves locally. Enable cloud sync for cross-device backup.
         </div>
@@ -808,7 +824,7 @@
   var mb=new Blob([JSON.stringify(m)],{type:'application/json'});
   var l1=document.createElement('link');l1.rel='manifest';l1.href=URL.createObjectURL(mb);document.head.appendChild(l1);
   var l2=document.createElement('link');l2.rel='apple-touch-icon';l2.href=icon;document.head.appendChild(l2);
-  var sw="self.addEventListener('install',e=>e.waitUntil(caches.open('nf-v12').then(c=>c.addAll(['./']))).then(()=>self.skipWaiting()));self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>caches.match('./')))));";
+  var sw="self.addEventListener('install',e=>e.waitUntil(caches.open('nf-v13').then(c=>c.addAll(['./']))).then(()=>self.skipWaiting()));self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>caches.match('./')))));";
   var sb=new Blob([sw],{type:'application/javascript'});
   if('serviceWorker' in navigator)navigator.serviceWorker.register(URL.createObjectURL(sb)).catch(function(){});
 })();
@@ -816,16 +832,46 @@
 var audioCtx=null;
 function playSound(type){
   try{
-    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-    if(audioCtx.state==='suspended') audioCtx.resume();
-    var o=audioCtx.createOscillator();var g=audioCtx.createGain();
-    o.connect(g);g.connect(audioCtx.destination);
-    if(type==='success'){o.type='sine';o.frequency.setValueAtTime(523, audioCtx.currentTime);o.frequency.setValueAtTime(659, audioCtx.currentTime+0.1);o.frequency.setValueAtTime(784, audioCtx.currentTime+0.2);}
-    else if(type==='rank'){o.type='sine';o.frequency.setValueAtTime(392, audioCtx.currentTime);o.frequency.setValueAtTime(523, audioCtx.currentTime+0.15);o.frequency.setValueAtTime(659, audioCtx.currentTime+0.3);o.frequency.setValueAtTime(784, audioCtx.currentTime+0.45);o.frequency.setValueAtTime(1047, audioCtx.currentTime+0.6);}
-    else if(type==='tick'){o.type='sine';o.frequency.setValueAtTime(800, audioCtx.currentTime);}
-    else{o.type='sine';o.frequency.setValueAtTime(440, audioCtx.currentTime);}
-    g.gain.setValueAtTime(0.08, audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.4);
-    o.start();o.stop(audioCtx.currentTime+0.4);
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    if(!audioCtx) audioCtx = new AC();
+    var ctx = audioCtx;
+    var doPlay = function(){
+      try{
+        var o = ctx.createOscillator();
+        var g = ctx.createGain();
+        o.connect(g);
+        g.connect(ctx.destination);
+        if(type==='success'){
+          o.type='sine';
+          o.frequency.setValueAtTime(523, ctx.currentTime);
+          o.frequency.setValueAtTime(659, ctx.currentTime+0.1);
+          o.frequency.setValueAtTime(784, ctx.currentTime+0.2);
+        } else if(type==='rank'){
+          o.type='sine';
+          o.frequency.setValueAtTime(392, ctx.currentTime);
+          o.frequency.setValueAtTime(523, ctx.currentTime+0.15);
+          o.frequency.setValueAtTime(659, ctx.currentTime+0.3);
+          o.frequency.setValueAtTime(784, ctx.currentTime+0.45);
+          o.frequency.setValueAtTime(1047, ctx.currentTime+0.6);
+        } else if(type==='tick'){
+          o.type='sine';
+          o.frequency.setValueAtTime(800, ctx.currentTime);
+        } else {
+          o.type='sine';
+          o.frequency.setValueAtTime(440, ctx.currentTime);
+        }
+        g.gain.setValueAtTime(0.15, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.45);
+        o.start();
+        o.stop(ctx.currentTime+0.45);
+      }catch(e){}
+    };
+    if(ctx.state === 'suspended'){
+      ctx.resume().then(doPlay).catch(doPlay);
+    } else {
+      doPlay();
+    }
   }catch(e){}
 }
 
@@ -863,6 +909,7 @@ var data={
   habits:S.get('nf_habits',[]),
   battle:S.get('nf_battle',[]),
   focusMinutes:S.get('nf_focusMinutes',0),
+  totalFocusMinutes:S.get('nf_totalFocusMinutes',0),
   focusDate:S.get('nf_focusDate',todayStr),
   flowState:S.get('nf_flowState',{date:todayStr,sessions:0}),
   badgesUnlocked:S.get('nf_badges',[]),
@@ -874,7 +921,9 @@ var data={
   buddyName:S.get('nf_buddyName',''),
   rules:S.get('nf_rules',{}),
   backlogsToday:S.get('nf_backlogsToday',0),
-  habitsToday:S.get('nf_habitsToday',0)
+  habitsToday:S.get('nf_habitsToday',0),
+  sessions:S.get('nf_sessions',[]),
+  autoTheme:S.get('nf_autoTheme',false)
 };
 
 if(data.focusDate!==todayStr){data.focusMinutes=0;data.focusDate=todayStr;S.set('nf_focusDate',todayStr);S.set('nf_focusMinutes',0);}
@@ -978,13 +1027,13 @@ function scheduleSync(){
 function syncToCloud(){
   if(!currentUser||!firebaseDb)return;
   var payload={
-    xp:data.xp,detoxStreak:data.detoxStreak,consecutiveStreak:data.consecutiveStreak,lastStreakDate:data.lastStreakDate,
+    xp:data.xp,totalFocusMinutes:data.totalFocusMinutes,detoxStreak:data.detoxStreak,consecutiveStreak:data.consecutiveStreak,lastStreakDate:data.lastStreakDate,
     detoxLastDate:data.detoxLastDate,dailyChecks:data.dailyChecks,dailyCheckDate:data.dailyCheckDate,
     backlogs:data.backlogs,habits:data.habits,battle:data.battle,focusMinutes:data.focusMinutes,focusDate:data.focusDate,
     flowState:data.flowState,badgesUnlocked:data.badgesUnlocked,dailyQuests:data.dailyQuests,
     morningRitual:data.morningRitual,subjects:data.subjects,weeklyStats:data.weeklyStats,
     streakFreezes:data.streakFreezes,buddyName:data.buddyName,profileName:data.profileName,
-    mission:data.mission,backlogsToday:data.backlogsToday,habitsToday:data.habitsToday,
+    mission:data.mission,backlogsToday:data.backlogsToday,habitsToday:data.habitsToday,sessions:data.sessions,autoTheme:data.autoTheme,
     updatedAt:firebase.firestore.FieldValue.serverTimestamp()
   };
   firebaseDb.collection('users').doc(currentUser.uid).set(payload,{merge:true}).catch(function(e){console.error('Sync failed',e);});
@@ -1005,12 +1054,12 @@ function loadCloudData(uid){
 }
 
 function mergeCloudData(cloud){
-  var keys=['xp','detoxStreak','consecutiveStreak','lastStreakDate','detoxLastDate','dailyChecks','dailyCheckDate','backlogs','habits','battle','focusMinutes','focusDate','flowState','badgesUnlocked','dailyQuests','morningRitual','subjects','weeklyStats','streakFreezes','buddyName','profileName','mission','backlogsToday','habitsToday'];
+  var keys=['xp','totalFocusMinutes','detoxStreak','consecutiveStreak','lastStreakDate','detoxLastDate','dailyChecks','dailyCheckDate','backlogs','habits','battle','focusMinutes','focusDate','flowState','badgesUnlocked','dailyQuests','morningRitual','subjects','weeklyStats','streakFreezes','buddyName','profileName','mission','backlogsToday','habitsToday','sessions','autoTheme'];
   keys.forEach(function(k){if(cloud[k]!==undefined)data[k]=cloud[k];});
   keys.forEach(function(k){S.set('nf_'+k,data[k]);});
   S.set('nf_mission',data.mission);S.set('nf_profileName',data.profileName);
   delete document.getElementById('daily-checks').dataset.built;
-  renderHabits();renderBacklogs();renderBattle();renderDailyChecks();renderXP();renderQuests();renderRitual();renderSubjects();renderFlowBanner();renderStreak();renderBuddy();renderWeekly();updateDashboard();updateTrophyPreview();renderProfile();renderSettingsAuth();
+  renderHabits();renderBacklogs();renderBattle();renderDailyChecks();renderXP();renderQuests();renderRitual();renderSubjects();renderFlowBanner();renderStreak();renderBuddy();renderWeekly();updateDashboard();updateTrophyPreview();renderProfile();renderSettingsAuth();renderQuote();renderFocusHistory();
   showCelebrate('Cloud Data Loaded','Your progress is restored.','☁️');
 }
 
@@ -1022,10 +1071,10 @@ var RANK_TIERS=[
 ];
 
 var SPECIAL_BADGES=[
-  {id:"first_focus",name:"First Dive",desc:"Complete 1 focus session",icon:"🧠",rarity:"common",check:function(){return data.focusMinutes>=25}},
-  {id:"focus_10",name:"Flow State",desc:"10 focus sessions",icon:"⏱️",rarity:"rare",check:function(){return data.focusMinutes>=250}},
-  {id:"focus_50",name:"Machine",desc:"50 focus sessions",icon:"⚙️",rarity:"epic",check:function(){return data.focusMinutes>=1250}},
-  {id:"focus_100",name:"Deep Worker",desc:"100 focus sessions",icon:"🌊",rarity:"legendary",check:function(){return data.focusMinutes>=2500}},
+  {id:"first_focus",name:"First Dive",desc:"Complete 1 focus session",icon:"🧠",rarity:"common",check:function(){return data.totalFocusMinutes>=25}},
+  {id:"focus_10",name:"Flow State",desc:"10 focus sessions",icon:"⏱️",rarity:"rare",check:function(){return data.totalFocusMinutes>=250}},
+  {id:"focus_50",name:"Machine",desc:"50 focus sessions",icon:"⚙️",rarity:"epic",check:function(){return data.totalFocusMinutes>=1250}},
+  {id:"focus_100",name:"Deep Worker",desc:"100 focus sessions",icon:"🌊",rarity:"legendary",check:function(){return data.totalFocusMinutes>=2500}},
   {id:"detox_3",name:"Detox Warrior",desc:"3 day streak",icon:"🔥",rarity:"rare",check:function(){return data.consecutiveStreak>=3}},
   {id:"detox_7",name:"Detox Legend",desc:"7 day streak",icon:"🧘",rarity:"epic",check:function(){return data.consecutiveStreak>=7}},
   {id:"detox_30",name:"Unstoppable",desc:"30 day streak",icon:"💎",rarity:"legendary",check:function(){return data.consecutiveStreak>=30}},
@@ -1051,7 +1100,7 @@ function checkBadges(){
     data.badgesUnlocked=unlocked;S.set('nf_badges',unlocked);updateTrophyPreview();
     var rankBadge=newBadges.find(function(b){return b.isRank;});
     if(rankBadge){showRankUp(rankBadge);fireConfetti();}
-    newBadges.filter(function(b){return !b.isRank;}).forEach(function(b,i){setTimeout(function(){showCelebrate('Badge Unlocked: '+b.name,b.desc,b.icon);playSound('success');},i*400+300);});
+    newBadges.filter(function(b){return !b.isRank;}).forEach(function(b,i){setTimeout(function(){showCelebrate('Badge Unlocked: '+b.name,b.desc,b.icon);},i*400+300);});
   }
 }
 
@@ -1072,7 +1121,11 @@ function addXP(amount,reason){
   if(data.morningRitual.completed && mult>=2) reason=reason+" (2x Boost)";
   if(mult>=1.5 && mult<<2) reason=reason+" (Flow 1.5x)";
   renderXP();checkBadges();
-  if(reason) showCelebrate(reason,total>=amount?'+\"+total+\" XP (+'+amount+' x'+mult+')':'+'+total+' XP');
+  if(reason){
+    var sub='+'+total+' XP';
+    if(mult>1) sub+=' (x'+mult+')';
+    showCelebrate(reason,sub);
+  }
 }
 function renderXP(){
   var info=xpLevel(data.xp);
@@ -1108,7 +1161,8 @@ function fireConfetti(){
 /* ========================
    CELEBRATION
    ======================== */
-function showCelebrate(title,sub,emoji){
+function showCelebrate(title,sub,emoji,silent){
+  if(!silent) playSound('success');
   var c=document.getElementById('celebrate');var t=document.getElementById('cel-title');var s=document.getElementById('cel-sub');var e=document.getElementById('cel-emoji');var x=document.getElementById('cel-xp');
   if(t)t.textContent=title;if(s)s.textContent=sub||'Keep the momentum';if(e)e.textContent=emoji||'🎉';if(x)x.textContent=sub;
   if(c)c.classList.add('show');if(navigator.vibrate)navigator.vibrate([60,30,60]);
@@ -1177,14 +1231,15 @@ function setBuddyFromSettings(){
 
 function renderBuddySettings(){
   var form=document.getElementById('settings-buddy-form');var active=document.getElementById('settings-buddy-active');var display=document.getElementById('settings-buddy-display');
-  if(data.buddyName){if(form)form.classList.add('hidden');if(active)active.classList.remove('hidden');if(display)display.textContent=data.buddyName;}
-  else{if(form)form.classList.remove('hidden');if(active)active.classList.add('hidden');}
+  if(!form||!active)return;
+  if(data.buddyName){form.classList.add('hidden');active.classList.remove('hidden');if(display)display.textContent=data.buddyName;}
+  else{form.classList.remove('hidden');active.classList.add('hidden');}
 }
 
 function resetAllData(){
   if(!confirm('⚠️ This will DELETE ALL your progress forever. Are you sure?'))return;
   if(!confirm('Really sure? This cannot be undone.'))return;
-  var keys=['mission','xp','detoxStreak','consecutiveStreak','lastStreakDate','detoxLastDate','dailyChecks','dailyCheckDate','backlogs','habits','battle','focusMinutes','focusDate','flowState','badges','dailyQuests','morningRitual','subjects','weeklyStats','streakFreezes','buddyName','rules','profileName','backlogsToday','habitsToday'];
+  var keys=['mission','xp','totalFocusMinutes','detoxStreak','consecutiveStreak','lastStreakDate','detoxLastDate','dailyChecks','dailyCheckDate','backlogs','habits','battle','focusMinutes','focusDate','flowState','badges','dailyQuests','morningRitual','subjects','weeklyStats','streakFreezes','buddyName','rules','profileName','backlogsToday','habitsToday','sessions','autoTheme'];
   keys.forEach(function(k){try{localStorage.removeItem('nf_'+k);}catch(e){}});
   location.reload();
 }
@@ -1206,7 +1261,7 @@ function updateDashboard(){
     if(ht.length>0)html+='<div class="list-item"><div class="info"><div class="title">'+esc(ht[0].name)+'</div><div class="meta">After '+esc(ht[0].anchor||'waking up')+'</div></div><span class="tag tag-blue">NEXT</span></div>';
     dp.innerHTML=html||'<div class="empty"><div class="empty-icon">🎉</div>All caught up. Add a new skill.</div>';
   }
-  renderDailyChecks();renderXP();renderQuests();renderRitual();renderSubjects();renderFlowBanner();renderStreak();renderBuddy();renderWeekly();updateTrophyPreview();recordDailyStat();checkQuests();checkBadges();renderProfile();renderBuddySettings();
+  renderDailyChecks();renderXP();renderQuests();renderRitual();renderSubjects();renderFlowBanner();renderStreak();renderBuddy();renderWeekly();updateTrophyPreview();recordDailyStat();checkQuests();checkBadges();renderProfile();renderBuddySettings();renderQuote();renderFocusHistory();
 }
 
 /* ========================
@@ -1275,7 +1330,7 @@ function toggleRitual(idx){
   if(data.morningRitual.completed) return;
   data.morningRitual.steps[idx]=!data.morningRitual.steps[idx];
   var allDone=data.morningRitual.steps.every(function(s){return s;});
-  if(allDone){data.morningRitual.completed=true;S.set('nf_morningRitual',data.morningRitual);showCelebrate('Morning Ritual Complete','2x XP Boost until noon!','🌅');playSound('success');}
+  if(allDone){data.morningRitual.completed=true;S.set('nf_morningRitual',data.morningRitual);showCelebrate('Morning Ritual Complete','2x XP Boost until noon!','🌅');}
   else{S.set('nf_morningRitual',data.morningRitual);}
   renderRitual();checkQuests();
 }
@@ -1299,7 +1354,8 @@ function renderSubjects(){
     var xp=data.subjects[s.key]||0;var lvl=1;var need=50;var rem=xp;
     while(rem>=need){rem-=need;lvl++;need=Math.floor(need*1.3);}
     var pct=(rem/need)*100;
-    return '<div class="subject-card '+s.key.toLowerCase()+'">'+
+    var cls=SUBJECT_MAP[s.key]||s.key.toLowerCase();
+    return '<div class="subject-card '+cls+'">'+
       '<div class="subject-name" style="color:'+s.color+'">'+s.name+'</div>'+
       '<div class="subject-level">Level '+lvl+' · '+rem+'/'+need+' XP</div>'+
       '<div class="subject-bar"><div class="subject-fill" style="width:'+pct+'%;background:'+s.color+'"></div></div>'+
@@ -1329,12 +1385,12 @@ function renderStreak(){
 function useFreeze(){
   if(data.streakFreezes<=0)return;
   data.streakFreezes--;data.lastStreakDate=todayStr;S.set('nf_streakFreezes',data.streakFreezes);S.set('nf_lastStreakDate',data.lastStreakDate);
-  renderStreak();showCelebrate('Streak Saved','Freeze used. Your chain continues.','❄️');playSound('success');
+  renderStreak();showCelebrate('Streak Saved','Freeze used. Your chain continues.','❄️');
 }
 function maybeAddFreeze(){
   if(data.consecutiveStreak>0 && data.consecutiveStreak%7===0){
     var earned=Math.floor(data.consecutiveStreak/7);var current=Math.floor((data.consecutiveStreak-1)/7);
-    if(earned>current){data.streakFreezes++;S.set('nf_streakFreezes',data.streakFreezes);showCelebrate('Freeze Token Earned','7 day streak = 1 freeze.','❄️');playSound('success');}
+    if(earned>current){data.streakFreezes++;S.set('nf_streakFreezes',data.streakFreezes);showCelebrate('Freeze Token Earned','7 day streak = 1 freeze.','❄️');}
   }
 }
 
@@ -1399,7 +1455,7 @@ function renderBuddy(){
 function removeBuddy(){data.buddyName='';S.set('nf_buddyName','');renderBuddy();}
 function shareProgress(){
   var rank=getCurrentRank();
-  var text='🔥 NeuroFocus Progress\nRank: '+rank.name+' (Level '+xpLevel(data.xp).level+')\nStreak: '+data.consecutiveStreak+' days\nFocus: '+Math.floor((data.focusMinutes||0)/60)+'h total\nBacklogs: '+data.backlogs.reduce(function(a,b){return a+((b.total||0)-(b.done||0))},0)+' left\n\nAccountability partner: '+data.buddyName;
+  var text='🔥 NeuroFocus Progress\nRank: '+rank.name+' (Level '+xpLevel(data.xp).level+')\nStreak: '+data.consecutiveStreak+' days\nFocus: '+Math.floor((data.totalFocusMinutes||0)/60)+'h total\nBacklogs: '+data.backlogs.reduce(function(a,b){return a+((b.total||0)-(b.done||0))},0)+' left\n\nAccountability partner: '+data.buddyName;
   if(navigator.share){navigator.share({title:'NeuroFocus Progress',text:text});}
   else{navigator.clipboard.writeText(text).then(function(){showCelebrate('Progress Copied','Send to '+data.buddyName+'!','📤');});}
 }
@@ -1408,7 +1464,7 @@ function shareProgress(){
    BADGES
    ======================== */
 function updateTrophyPreview(){
-  var rank=getCurrentRank();var next=getNextRank();var unlocked=(data.badgesUnlocked||[]).length;var total=20+SPECIAL_BADGES.length;
+  var rank=getCurrentRank();var next=getNextRank();var unlocked=(data.badgesUnlocked||[]).length;var total=RANK_TIERS.length+SPECIAL_BADGES.length;
   var elIcon=document.getElementById('trophy-preview-icon');if(elIcon)elIcon.textContent=rank.icon;
   var elTitle=document.getElementById('trophy-preview-title');if(elTitle)elTitle.textContent=rank.name;
   var elSub=document.getElementById('trophy-preview-sub');if(elSub)elSub.textContent=unlocked+' of '+total+' badges unlocked';
@@ -1510,7 +1566,7 @@ function claimStreak(){
     if(diff===1){data.consecutiveStreak=(data.consecutiveStreak||0)+1;}else if(diff>1){data.consecutiveStreak=1;}
   }else{data.consecutiveStreak=1;}
   data.lastStreakDate=todayStr;S.set('nf_consecutiveStreak',data.consecutiveStreak);S.set('nf_lastStreakDate',data.lastStreakDate);
-  maybeAddFreeze();addXP(50,'Streak Verified');playSound('success');
+  maybeAddFreeze();addXP(50,'Streak Verified');
   var ds=document.getElementById('d-streak');if(ds)ds.textContent=data.detoxStreak;
   renderDailyChecks();updateDashboard();if(navigator.vibrate)navigator.vibrate([80,40,80,40,120]);
 }
@@ -1533,7 +1589,7 @@ function startUrge(){
   clearInterval(urgeInt);
   urgeInt=setInterval(function(){
     urgeSec--;updateUrgeUI();
-    if(urgeSec<=0){clearInterval(urgeInt);urgeSec=1200;updateUrgeUI();showCelebrate('Urge Surfed','You are stronger than your impulses.','🌊');playSound('success');}
+    if(urgeSec<=0){clearInterval(urgeInt);urgeSec=1200;updateUrgeUI();showCelebrate('Urge Surfed','You are stronger than your impulses.','🌊');}
   },1000);
 }
 function resetUrge(){clearInterval(urgeInt);urgeSec=1200;updateUrgeUI();}
@@ -1546,24 +1602,27 @@ function updateUrgeUI(){
 /* ========================
    BACKLOGS
    ======================== */
+var SUBJECT_MAP={'Physics':'physics','Chemistry':'chem','Math':'math','Biology':'bio','Hindi':'hindi','English':'english','IT':'it','Other':'other'};
 function selectBacklogSub(el){
   document.querySelectorAll('#bl-chip-row .chip').forEach(function(c){c.classList.remove('active');});
   el.classList.add('active');document.getElementById('bl-subject').value=el.dataset.sub;
 }
 function addBacklog(){
+  if(!Array.isArray(data.backlogs)) data.backlogs=[];
   var n=document.getElementById('bl-name');var c=document.getElementById('bl-count');var s=document.getElementById('bl-subject');
   var name=n?n.value.trim():'';var count=c?parseInt(c.value,10):0;var subject=s?s.value:'Physics';
-  if(!name||!count||count<<1)return;
+  if(!name||!count||count<<1){showCelebrate('Missing Info','Enter a topic and number of lectures','⚠️',true);return;}
   data.backlogs.push({id:Date.now(),name:name,total:count,done:0,subject:subject});
   S.set('nf_backlogs',data.backlogs);if(n)n.value='';if(c)c.value='';
   renderBacklogs();updateDashboard();addXP(10,'Backlog Added');
 }
 function renderBacklogs(){
+  if(!Array.isArray(data.backlogs)) data.backlogs=[];
   var el=document.getElementById('backlog-list');if(!el)return;
   if(!data.backlogs.length){el.innerHTML='<div class="empty"><div class="empty-icon">📚</div>No backlogs yet. Add your first lecture.</div>';return;}
   el.innerHTML=data.backlogs.map(function(b){
     var total=b.total||1;var done=b.done||0;var pct=Math.min(100,(done/total)*100);var left=total-done;
-    var subjectCls='tag-sub-'+(b.subject||'Other').toLowerCase().replace(/[^a-z]/g,'');
+    var subjectCls='tag-sub-'+(SUBJECT_MAP[b.subject]||'other');
     return '<div class="list-item">'+
       '<div class="info"><div class="title">'+esc(b.name)+'</div><div style="display:flex;align-items:center;gap:8px;margin-top:4px"><span class="tag-sub '+subjectCls+'">'+esc(b.subject||'Other')+'</span><span style="font-size:0.75rem;color:var(--text-secondary)">'+done+' / '+total+'</span></div><div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>'+
       '<div class="flex items-center gap-2" style="flex-shrink:0"><span class="tag '+(left>5?'tag-red':'tag-green')+'">'+left+' left</span><button class="btn btn-success btn-sm" onclick="incBacklog('+b.id+')">+1</button><button class="btn btn-danger btn-sm" onclick="delBacklog('+b.id+')">×</button></div>'+
@@ -1572,7 +1631,7 @@ function renderBacklogs(){
 }
 function incBacklog(id){
   var b=data.backlogs.find(function(x){return x.id===id;});
-  if(b&&(b.done||0)<(b.total||0)){b.done=(b.done||0)+1;data.backlogsToday=(data.backlogsToday||0)+1;S.set('nf_backlogs',data.backlogs);S.set('nf_backlogsToday',data.backlogsToday);renderBacklogs();updateDashboard();addSubjectXP(b.subject,25);addXP(25,'Backlog Crushed');if(navigator.vibrate)navigator.vibrate(30);playSound('success');}
+  if(b&&(b.done||0)<(b.total||0)){b.done=(b.done||0)+1;data.backlogsToday=(data.backlogsToday||0)+1;S.set('nf_backlogs',data.backlogs);S.set('nf_backlogsToday',data.backlogsToday);renderBacklogs();updateDashboard();addSubjectXP(b.subject,25);addXP(25,'Backlog Crushed');if(navigator.vibrate)navigator.vibrate(30);}
 }
 function delBacklog(id){data.backlogs=data.backlogs.filter(function(x){return x.id!==id;});S.set('nf_backlogs',data.backlogs);renderBacklogs();updateDashboard();}
 
@@ -1599,8 +1658,10 @@ function toggleFocus(){
       tSec--;updateTimerDisplay();updateFocusRing();
       if(tSec<=0){
         clearInterval(tInt);tRun=false;if(btn)btn.textContent='Start';if(navigator.vibrate)navigator.vibrate([100,50,100]);
-        showCelebrate('Focus Complete','Take a real break. No phone.','⏱️');playSound('success');
+        showCelebrate('Focus Complete','Take a real break. No phone.','⏱️');
         data.focusMinutes=(data.focusMinutes||0)+tMode;S.set('nf_focusMinutes',data.focusMinutes);S.set('nf_focusDate',data.focusDate);
+        data.totalFocusMinutes=(data.totalFocusMinutes||0)+tMode;S.set('nf_totalFocusMinutes',data.totalFocusMinutes);
+        data.sessions.push({date:todayStr,time:Date.now(),duration:tMode});S.set('nf_sessions',data.sessions);renderFocusHistory();
         data.dailyChecks['dc6']=true;S.set('nf_dailyChecks',data.dailyChecks);renderDailyChecks();
         data.flowState.sessions=(data.flowState.sessions||0)+1;S.set('nf_flowState',data.flowState);
         addXP(tMode>=52?60:40,'Deep Work XP');updateDashboard();tSec=tTotal;updateTimerDisplay();updateFocusRing();checkQuests();renderFlowBanner();recordDailyStat();renderWeekly();
@@ -1614,6 +1675,7 @@ function resetFocus(){clearInterval(tInt);tRun=false;tSec=tTotal;updateTimerDisp
    HABITS
    ======================== */
 function addHabit(){
+  if(!Array.isArray(data.habits)) data.habits=[];
   var n=document.getElementById('h-name');var a=document.getElementById('h-anchor');
   var name=n?n.value.trim():'';var anchor=a?a.value.trim():'';
   if(!name)return;
@@ -1627,10 +1689,11 @@ function toggleHabit(id){
   if(h.today){h.streak=(h.streak||0)+1;data.habitsToday=(data.habitsToday||0)+1;}else{h.streak=Math.max(0,(h.streak||0)-1);data.habitsToday=Math.max(0,(data.habitsToday||0)-1);}
   h.days[DOW]=h.today?1:0;
   S.set('nf_habits',data.habits);S.set('nf_habitsToday',data.habitsToday);renderHabits();updateDashboard();
-  if(h.today){addXP(15,'Habit Done');data.dailyChecks['dc7']=true;S.set('nf_dailyChecks',data.dailyChecks);renderDailyChecks();if(navigator.vibrate)navigator.vibrate(30);playSound('success');checkQuests();}
+  if(h.today){addXP(15,'Habit Done');data.dailyChecks['dc7']=true;S.set('nf_dailyChecks',data.dailyChecks);renderDailyChecks();if(navigator.vibrate)navigator.vibrate(30);checkQuests();}
 }
 function deleteHabit(id){data.habits=data.habits.filter(function(x){return x.id!==id;});S.set('nf_habits',data.habits);renderHabits();updateDashboard();}
 function renderHabits(){
+  if(!Array.isArray(data.habits)) data.habits=[];
   var el=document.getElementById('habit-list');if(!el)return;
   var days=['S','M','T','W','T','F','S'];var today=DOW;
   if(!data.habits.length){el.innerHTML='<div class="empty"><div class="empty-icon">🔥</div>No habits yet. Stack one tiny habit.</div>';return;}
@@ -1650,6 +1713,7 @@ function renderHabits(){
    BATTLE PLAN
    ======================== */
 function addBattleTask(){
+  if(!Array.isArray(data.battle)) data.battle=[];
   var t=document.getElementById('bp-task');var p=document.getElementById('bp-priority');var tm=document.getElementById('bp-time');
   var task=t?t.value.trim():'';var pri=p?p.value:'A';var time=tm?tm.value:'morning';
   if(!task)return;
@@ -1662,6 +1726,7 @@ function toggleBattle(id){
 }
 function delBattle(id){data.battle=data.battle.filter(function(x){return x.id!==id;});S.set('nf_battle',data.battle);renderBattle();updateDashboard();}
 function renderBattle(){
+  if(!Array.isArray(data.battle)) data.battle=[];
   var el=document.getElementById('battle-list');if(!el)return;
   var order={A:1,B:2,C:3};var sorted=[].concat(data.battle).sort(function(a,b){return order[a.pri]-order[b.pri];});
   var colors={A:'var(--danger)',B:'#f59e0b',C:'var(--success)'};
@@ -1689,7 +1754,63 @@ function setTheme(name){
   });
 }
 function loadTheme(){
+  if(S.get('nf_autoTheme',false)){applyAutoTheme();return;}
   var saved=S.get('nf_theme','midnight');setTheme(saved);
+}
+
+/* ========================
+   QUOTES + SESSIONS + AUTO THEME
+   ======================== */
+var QUOTES=[
+  "Discipline is choosing between what you want now and what you want most.",
+  "Small daily improvements create stunning results over time.",
+  "Your future is built by what you do today, not tomorrow.",
+  "Focus is a muscle. The more you train it, the stronger it becomes.",
+  "The expert in anything was once a beginner.",
+  "Don't watch the clock. Do what it does. Keep going.",
+  "One day, or day one. You decide.",
+  "Consistency beats intensity. Every single time.",
+  "Your brain is plastic. You are literally rewiring yourself with every session.",
+  "Success is the sum of small efforts, repeated day in and day out.",
+  "What you do today can improve all your tomorrows.",
+  "Deep work is the superpower of the 21st century.",
+  "Strive for progress, not perfection.",
+  "The pain of discipline is far less than the pain of regret.",
+  "Every distraction you avoid is a deposit in your future.",
+  "You don't have to be great to start, but you have to start to be great.",
+  "Learning is not attained by chance, it must be sought for with ardor.",
+  "The only bad workout is the one that didn't happen.",
+  "Invest in your mind. It pays the best interest.",
+  "Your only limit is the one you set yourself."
+];
+function renderQuote(){
+  var savedDate=S.get('nf_quoteDate','');
+  var savedText=S.get('nf_quoteText','');
+  var el=document.getElementById('daily-quote');
+  if(!el)return;
+  if(savedDate===todayStr && savedText){el.textContent='"'+savedText+'"';return;}
+  var q=QUOTES[Math.floor(Math.random()*QUOTES.length)];
+  S.set('nf_quoteDate',todayStr);S.set('nf_quoteText',q);
+  el.textContent='"'+q+'"';
+}
+function renderFocusHistory(){
+  var el=document.getElementById('focus-history');if(!el)return;
+  var recent=data.sessions.slice().reverse().slice(0,10);
+  if(!recent.length){el.innerHTML='<div class="empty" style="padding:12px">No sessions yet. Complete a focus timer to see history.</div>';return;}
+  el.innerHTML=recent.map(function(s){
+    var d=new Date(s.time);
+    var timeStr=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    return '<div class="list-item"><div class="info"><div class="title">'+s.duration+' min Deep Work</div><div class="meta">'+s.date+' at '+timeStr+'</div></div><span class="tag tag-green">'+s.duration+'m</span></div>';
+  }).join('');
+}
+function toggleAutoTheme(){
+  var checked=document.getElementById('auto-theme').checked;
+  data.autoTheme=checked;S.set('nf_autoTheme',checked);
+  if(checked){applyAutoTheme();}
+}
+function applyAutoTheme(){
+  var h=new Date().getHours();
+  if(h>=6 && h<<18)setTheme('light');else setTheme('midnight');
 }
 
 /* ========================
@@ -1705,11 +1826,12 @@ function init(){
   ['Hindi','English','IT'].forEach(function(s){if(data.subjects[s]===undefined)data.subjects[s]=0;});
   initFirebase();
   generateDailyQuests();
-  renderHabits();renderBacklogs();renderBattle();renderDailyChecks();renderXP();renderQuests();renderRitual();renderSubjects();renderFlowBanner();renderStreak();renderBuddy();renderWeekly();updateDashboard();updateTrophyPreview();recordDailyStat();checkQuests();checkBadges();renderProfile();renderBuddySettings();
+  renderHabits();renderBacklogs();renderBattle();renderDailyChecks();renderXP();renderQuests();renderRitual();renderSubjects();renderFlowBanner();renderStreak();renderBuddy();renderWeekly();updateDashboard();updateTrophyPreview();recordDailyStat();checkQuests();checkBadges();renderProfile();renderBuddySettings();renderQuote();renderFocusHistory();
   var lastCheck=S.get('nf_habitCheck','');
   if(lastCheck!==todayStr){data.habits.forEach(function(h){h.today=false;});S.set('nf_habits',data.habits);S.set('nf_habitCheck',todayStr);renderHabits();}
+  var atEl=document.getElementById('auto-theme');if(atEl)atEl.checked=!!data.autoTheme;
 }
 init();
 </script>
 </body>
-      </html>
+            </html>

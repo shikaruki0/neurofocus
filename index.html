@@ -62,7 +62,7 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
   html,body{height:100%;background:var(--bg)}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--text);overflow-x:hidden;padding-bottom:calc(80px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased;line-height:var(--line-normal)}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--text);overflow-x:hidden;padding-bottom:calc(120px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased;line-height:var(--line-normal)}
 
   /* AMBIENT BACKGROUND — Animated gradient blobs */
   .ambient{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 80% 50% at 15% 0%,var(--ambient-1) 0%,transparent 50%),radial-gradient(ellipse 80% 50% at 85% 100%,var(--ambient-2) 0%,transparent 50%),var(--bg)}
@@ -478,7 +478,6 @@
 </head>
 <body>
 <div class="ambient"></div>
-<canvas id="confetti-canvas"></canvas>
 
 <header class="header">
   <div class="brand">
@@ -664,7 +663,6 @@
     <div id="backlog-list" class="mt-4"></div>
   </div>
 </section>
-
 <!-- FOCUS -->
 <section id="tab-focus" class="tab-content hidden">
   <div class="section-label"><span>⏱️ Focus</span><div class="line"></div></div>
@@ -1422,8 +1420,7 @@ function renderQuests(){
     '</div>';
   }).join('');
 }
-
-/* ========================
+  /* ========================
    MORNING RITUAL
    ======================== */
 var RITUAL_STEPS=['Hydrate','Sanctuary','Organize','Goal','Mindfulness'];

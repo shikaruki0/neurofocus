@@ -5,11 +5,12 @@
 
 import { data, persist } from './data.js';
 import { xpLevel } from './xp.js';
+import { RANK_TIERS } from './ranks.js';
 
 /**
  * Total count of all unlockable badges (ranks + specials).
  */
-export const TOTAL_BADGES = 20 + 14; // 20 rank badges + 14 special badges
+export const TOTAL_BADGES = 21 + 14; // 21 rank badges + 14 special badges
 
 /**
  * Calculates total backlogs completed across all subjects.
@@ -156,11 +157,14 @@ export function checkBadges() {
 
   // Check rank badges
   const { level } = xpLevel(data.xp);
-  const rankId = `rank_${level}`;
-  if (!unlocked.includes(rankId)) {
-    unlocked.push(rankId);
-    // Rank badge info is generated dynamically
-    newBadges.push({ id: rankId, isRank: true, level });
+  for (const tier of RANK_TIERS) {
+    if (level >= tier.level) {
+      const rankId = `rank_${tier.level}`;
+      if (!unlocked.includes(rankId)) {
+        unlocked.push(rankId);
+        newBadges.push({ id: rankId, isRank: true, level: tier.level });
+      }
+    }
   }
 
   if (newBadges.length > 0) {

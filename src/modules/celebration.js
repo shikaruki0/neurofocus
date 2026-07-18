@@ -12,8 +12,9 @@ import { playSound } from './sound.js';
  * @param {string} subtitle - Secondary text
  * @param {string} [emoji='🎉'] - Display emoji
  * @param {boolean} [silent=false] - Skip sound
+ * @param {number|string|null} [xp=null] - Optional XP reward amount
  */
-export function showCelebrate(title, subtitle, emoji = '🎉', silent = false) {
+export function showCelebrate(title, subtitle, emoji = '🎉', silent = false, xp = null) {
   if (!silent) playSound('success');
 
   const container = qs('#celebrate');
@@ -25,7 +26,15 @@ export function showCelebrate(title, subtitle, emoji = '🎉', silent = false) {
   if (elTitle) elTitle.textContent = title;
   if (elSub) elSub.textContent = subtitle || 'Keep the momentum';
   if (elEmoji) elEmoji.textContent = emoji;
-  if (elXp) elXp.textContent = subtitle;
+
+  if (elXp) {
+    if (xp !== null && xp !== undefined) {
+      elXp.textContent = typeof xp === 'number' ? `+${xp} XP` : xp;
+      elXp.classList.remove('hidden');
+    } else {
+      elXp.classList.add('hidden');
+    }
+  }
 
   if (container) container.classList.add('show');
   if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
@@ -57,7 +66,8 @@ export function showRankUp(rank) {
   if (emoji) emoji.textContent = rank.icon;
   if (title) title.textContent = 'Rank Up!';
   if (newName) newName.textContent = rank.name;
-  if (sub) sub.textContent = `You have ascended to ${rank.rarity.toUpperCase()} tier. Your brain is evolving.`;
+  if (sub)
+    sub.textContent = `You have ascended to ${rank.rarity.toUpperCase()} tier. Your brain is evolving.`;
 
   if (overlay) overlay.classList.add('show');
   if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 120]);

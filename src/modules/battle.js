@@ -60,9 +60,7 @@ export function deleteTask(id) {
  * @returns {object[]}
  */
 export function getTasksSorted() {
-  return [...data.battle].sort(
-    (a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority],
-  );
+  return [...data.battle].sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
 }
 
 /**

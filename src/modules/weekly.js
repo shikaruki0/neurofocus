@@ -16,7 +16,7 @@ export function recordDailyStat() {
   const backlogsToday = data.backlogsToday || 0;
   const habitsToday = data.habitsToday || 0;
   const streakToday = data.detoxLastDate === today ? 1 : 0;
-  const focusHrs = Math.floor((data.focusMinutes || 0) / 60 * 10) / 10;
+  const focusHrs = Math.floor(((data.focusMinutes || 0) / 60) * 10) / 10;
   const score = Math.floor(focusHrs * 10) + backlogsToday + habitsToday * 2 + streakToday * 5;
 
   const existing = stats.find((s) => s.date === today);

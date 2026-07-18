@@ -23,7 +23,13 @@ import {
   onComplete,
   TIMER_MODES,
 } from './modules/focus.js';
-import { startTimer as startUrge, resetTimer as resetUrge, getState as getUrgeState, onTick as onUrgeTick, onComplete as onUrgeComplete } from './modules/urge.js';
+import {
+  startTimer as startUrge,
+  resetTimer as resetUrge,
+  getState as getUrgeState,
+  onTick as onUrgeTick,
+  onComplete as onUrgeComplete,
+} from './modules/urge.js';
 import { addBacklog, incrementBacklog, deleteBacklog, getBacklogs } from './modules/backlogs.js';
 import { addHabit, toggleHabit, deleteHabit, getHabits } from './modules/habits.js';
 import { addTask, toggleTask, deleteTask, getTasksSorted } from './modules/battle.js';
@@ -32,7 +38,15 @@ import { setBuddy, removeBuddy, getBuddy, shareProgress } from './modules/buddy.
 import { setTheme, loadTheme, setAutoTheme, getCurrentTheme } from './modules/theme.js';
 import { getDailyQuote } from './modules/quotes.js';
 import { showCelebrate, hideCelebrate, hideRankUp } from './modules/celebration.js';
-import { initFirebase, saveConfig, login, signup, logout, getCurrentUser, scheduleSync } from './modules/firebase.js';
+import {
+  initFirebase,
+  saveConfig,
+  login,
+  signup,
+  logout,
+  getCurrentUser,
+  scheduleSync,
+} from './modules/firebase.js';
 import { escapeHTML } from './utils/sanitize.js';
 import { qs, qsa } from './utils/dom.js';
 import { todayStr, currentDOW, DAY_LABELS } from './utils/date.js';
@@ -100,7 +114,9 @@ function renderHero() {
   if (elTitle) elTitle.textContent = rank.name;
   if (elSub) elSub.textContent = `Level ${info.level} · ${info.current}/${info.need} XP`;
   if (elBadge) {
-    elBadge.textContent = next ? `Next: ${next.name} at Level ${next.level}` : 'The Enlightened · Max Rank';
+    elBadge.textContent = next
+      ? `Next: ${next.name} at Level ${next.level}`
+      : 'The Enlightened · Max Rank';
   }
 }
 
@@ -274,7 +290,8 @@ function renderDailyChecks() {
   const claimed = data.detoxLastDate === todayStr();
 
   if (claimed) {
-    el.innerHTML = '<div class="text-center" style="padding:14px;color:var(--success);font-weight:700;font-size:0.9rem">🔥 Verification claimed for today. Come back tomorrow.</div>';
+    el.innerHTML =
+      '<div class="text-center" style="padding:14px;color:var(--success);font-weight:700;font-size:0.9rem">🔥 Verification claimed for today. Come back tomorrow.</div>';
     const status = qs('#checkin-status');
     const btn = qs('#claim-btn');
     if (status) status.style.display = 'none';
@@ -302,10 +319,11 @@ function renderDailyChecks() {
         renderDailyChecks();
       };
       if (row) row.addEventListener('click', toggle);
-      if (chk) chk.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggle();
-      });
+      if (chk)
+        chk.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggle();
+        });
     });
 
     dailyChecksBuilt = true;
@@ -349,13 +367,20 @@ function renderBacklogs() {
 
   const backlogs = getBacklogs();
   if (!backlogs.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">📚</div>No backlogs yet. Add your first lecture.</div>';
+    el.innerHTML =
+      '<div class="empty"><div class="empty-icon">📚</div>No backlogs yet. Add your first lecture.</div>';
     return;
   }
 
   const SUBJECT_MAP = {
-    Physics: 'physics', Chemistry: 'chem', Math: 'math', Biology: 'bio',
-    Hindi: 'hindi', English: 'english', IT: 'it', Other: 'other',
+    Physics: 'physics',
+    Chemistry: 'chem',
+    Math: 'math',
+    Biology: 'bio',
+    Hindi: 'hindi',
+    English: 'english',
+    IT: 'it',
+    Other: 'other',
   };
 
   el.innerHTML = backlogs
@@ -410,7 +435,8 @@ function renderHabits() {
   const today = currentDOW();
 
   if (!habits.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">🔥</div>No habits yet. Stack one tiny habit.</div>';
+    el.innerHTML =
+      '<div class="empty"><div class="empty-icon">🔥</div>No habits yet. Stack one tiny habit.</div>';
     return;
   }
 
@@ -460,7 +486,8 @@ function renderBattle() {
   const colors = { A: 'var(--danger)', B: '#f59e0b', C: 'var(--success)' };
 
   if (!tasks.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">⚔️</div>No battle tasks. Plan your 6 priorities.</div>';
+    el.innerHTML =
+      '<div class="empty"><div class="empty-icon">⚔️</div>No battle tasks. Plan your 6 priorities.</div>';
     return;
   }
 
@@ -501,7 +528,8 @@ function renderFocusHistory() {
 
   const sessions = getRecentSessions(10);
   if (!sessions.length) {
-    el.innerHTML = '<div class="empty" style="padding:12px">No sessions yet. Complete a focus timer to see history.</div>';
+    el.innerHTML =
+      '<div class="empty" style="padding:12px">No sessions yet. Complete a focus timer to see history.</div>';
     return;
   }
 
@@ -601,7 +629,7 @@ function updateDashboard() {
 
   if (ds) ds.textContent = data.detoxStreak || 0;
   if (db) db.textContent = data.backlogs.reduce((a, b) => a + ((b.total || 0) - (b.done || 0)), 0);
-  if (df) df.textContent = (Math.floor((data.focusMinutes || 0) / 60 * 10) / 10).toFixed(1);
+  if (df) df.textContent = (Math.floor(((data.focusMinutes || 0) / 60) * 10) / 10).toFixed(1);
   if (dh) dh.textContent = data.habits.filter((h) => h.today).length;
 
   // Priority section
@@ -617,7 +645,9 @@ function updateDashboard() {
     if (ht.length > 0) {
       html += `<div class="list-item"><div class="info"><div class="title">${escapeHTML(ht[0].name)}</div><div class="meta">After ${escapeHTML(ht[0].anchor || 'waking up')}</div></div><span class="tag tag-blue">NEXT</span></div>`;
     }
-    dp.innerHTML = html || '<div class="empty"><div class="empty-icon">🎉</div>All caught up. Add a new skill.</div>';
+    dp.innerHTML =
+      html ||
+      '<div class="empty"><div class="empty-icon">🎉</div>All caught up. Add a new skill.</div>';
   }
 
   renderDailyChecks();
@@ -739,7 +769,11 @@ function setupEventListeners() {
     data.focusMinutes = 0;
     data.focusDate = todayStr();
     data.flowState = { date: todayStr(), sessions: 0 };
-    data.morningRitual = { date: todayStr(), completed: false, steps: [false, false, false, false, false] };
+    data.morningRitual = {
+      date: todayStr(),
+      completed: false,
+      steps: [false, false, false, false, false],
+    };
     data.dailyQuests = null;
     data.backlogsToday = 0;
     data.habitsToday = 0;
@@ -761,12 +795,34 @@ function setupEventListeners() {
     if (!confirm('⚠️ This will DELETE ALL your progress forever. Are you sure?')) return;
     if (!confirm('Really sure? This cannot be undone.')) return;
     const keys = [
-      'profileName', 'mission', 'xp', 'totalFocusMinutes', 'detoxStreak',
-      'consecutiveStreak', 'lastStreakDate', 'detoxLastDate', 'dailyChecks',
-      'dailyCheckDate', 'backlogs', 'habits', 'battle', 'focusMinutes',
-      'focusDate', 'flowState', 'badges', 'dailyQuests', 'morningRitual',
-      'subjects', 'weeklyStats', 'streakFreezes', 'buddyName', 'backlogsToday',
-      'habitsToday', 'sessions', 'autoTheme', 'theme',
+      'profileName',
+      'mission',
+      'xp',
+      'totalFocusMinutes',
+      'detoxStreak',
+      'consecutiveStreak',
+      'lastStreakDate',
+      'detoxLastDate',
+      'dailyChecks',
+      'dailyCheckDate',
+      'backlogs',
+      'habits',
+      'battle',
+      'focusMinutes',
+      'focusDate',
+      'flowState',
+      'badges',
+      'dailyQuests',
+      'morningRitual',
+      'subjects',
+      'weeklyStats',
+      'streakFreezes',
+      'buddyName',
+      'backlogsToday',
+      'habitsToday',
+      'sessions',
+      'autoTheme',
+      'theme',
     ];
     keys.forEach((k) => localStorage.removeItem(`nf_${k}`));
     location.reload();
@@ -834,7 +890,11 @@ function setupEventListeners() {
   qs('#bl-add-btn')?.addEventListener('click', () => {
     const name = qs('#bl-name')?.value || '';
     const count = qs('#bl-count')?.value || '';
-    const result = addBacklog({ name, count: parseInt(count, 10), subject: selectedBacklogSubject });
+    const result = addBacklog({
+      name,
+      count: parseInt(count, 10),
+      subject: selectedBacklogSubject,
+    });
     if (!result.success) {
       showCelebrate('Missing Info', result.error || 'Enter details', '⚠️', true);
       return;
@@ -979,7 +1039,8 @@ function updateFocusUI() {
   }
   if (elLabel) elLabel.textContent = state.modeLabel;
   if (elRing) {
-    const offset = 691 * (1 - (state.minutes * 60 + state.seconds) / (TIMER_MODES[state.mode].minutes * 60));
+    const offset =
+      691 * (1 - (state.minutes * 60 + state.seconds) / (TIMER_MODES[state.mode].minutes * 60));
     elRing.style.strokeDashoffset = offset;
   }
 }
@@ -1004,7 +1065,9 @@ function updateThemeButtons() {
   const current = getCurrentTheme();
   qsa('[data-theme]').forEach((btn) => {
     const isActive = btn.dataset.theme === current;
-    btn.style.boxShadow = isActive ? '0 0 0 2px var(--accent-start), 0 0 12px var(--shadow)' : 'none';
+    btn.style.boxShadow = isActive
+      ? '0 0 0 2px var(--accent-start), 0 0 12px var(--shadow)'
+      : 'none';
   });
 }
 
@@ -1022,7 +1085,8 @@ async function updateTrophyModal() {
 
   if (elIcon) elIcon.textContent = rank.icon;
   if (elName) elName.textContent = rank.name;
-  if (elTier) elTier.textContent = `Rank · ${rank.rarity.charAt(0).toUpperCase() + rank.rarity.slice(1)}`;
+  if (elTier)
+    elTier.textContent = `Rank · ${rank.rarity.charAt(0).toUpperCase() + rank.rarity.slice(1)}`;
   if (elNext) {
     if (next) {
       const needed = xpForLevel(next.level) - data.xp;
@@ -1086,8 +1150,8 @@ onTick((state) => {
   }
 });
 
-onComplete((_mode) => {
-  showCelebrate('Focus Complete', 'Take a real break. No phone.', '⏱️');
+onComplete((mode) => {
+  showCelebrate('Focus Complete', 'Take a real break. No phone.', '⏱️', false, mode.xp);
   const btn = qs('#focus-btn');
   if (btn) btn.textContent = 'Start';
   updateDashboard();

@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  base: '/neurofocus/',
   root: '.',
   publicDir: 'public',
   build: {
@@ -24,7 +25,7 @@ export default defineConfig({
       manifest: {
         name: 'NeuroFocus',
         short_name: 'NeuroFocus',
-        description: 'Gamified productivity & study app with XP, streaks, habits, and focus timer.',
+        description: 'Gamified productivity &amp; study app with XP, streaks, habits, and focus timer.',
         theme_color: '#050810',
         background_color: '#050810',
         display: 'standalone',

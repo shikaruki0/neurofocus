@@ -1,0 +1,246 @@
+/* ===================================================================
+   VARIABLES — Design Tokens
+   Colors, spacing, typography, radii, shadows, transitions
+   =================================================================== */
+
+:root {
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 48px;
+
+  /* Border radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
+  --radius-full: 999px;
+
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+
+  /* Typography */
+  --font-xs: 0.7rem;
+  --font-sm: 0.8rem;
+  --font-base: 0.9rem;
+  --font-lg: 1.05rem;
+  --font-xl: 1.25rem;
+  --font-2xl: 1.5rem;
+  --line-tight: 1.2;
+  --line-normal: 1.5;
+  --line-relaxed: 1.7;
+
+  /* Default theme (Midnight) */
+  --bg: #050810;
+  --surface: #0a0e1a;
+  --surface-2: #0f1525;
+  --elevated: #141b2d;
+  --accent-start: #00d9ff;
+  --accent-end: #a855f7;
+  --success: #00e676;
+  --danger: #ff5252;
+  --gold: #ffd740;
+  --text: #f0f5ff;
+  --text-secondary: #8b9bb4;
+  --text-tertiary: #4a5568;
+  --border: rgba(255, 255, 255, 0.055);
+  --border-active: rgba(255, 255, 255, 0.12);
+
+  /* Rarity colors */
+  --common: #94a3b8;
+  --rare: #00e676;
+  --epic: #a855f7;
+  --legendary: #ffd740;
+  --mythic: #ff5252;
+  --ultra: #00d9ff;
+
+  /* Subject colors */
+  --physics: #00d9ff;
+  --chem: #ff5252;
+  --math: #ffd740;
+  --bio: #00e676;
+  --hindi: #ff6b6b;
+  --english: #4ecdc4;
+  --it: #45b7d1;
+  --other: #8b9bb4;
+
+  /* Component backgrounds */
+  --header-bg: rgba(5, 8, 16, 0.92);
+  --nav-bg: rgba(5, 8, 16, 0.95);
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+  --glass-bg: rgba(0, 0, 0, 0.3);
+
+  /* Ambient glow */
+  --ambient-1: rgba(0, 217, 255, 0.06);
+  --ambient-2: rgba(168, 85, 247, 0.05);
+  --shadow: rgba(0, 217, 255, 0.15);
+  --accent-start-fade: rgba(0, 217, 255, 0.08);
+  --accent-end-fade: rgba(168, 85, 247, 0.06);
+
+  /* Gold fades */
+  --gold-fade-1: rgba(255, 215, 64, 0.1);
+  --gold-fade-2: rgba(255, 171, 0, 0.08);
+  --gold-fade-3: rgba(255, 215, 64, 0.04);
+
+  /* Status fades */
+  --success-fade: rgba(0, 230, 118, 0.08);
+  --danger-fade: rgba(255, 82, 82, 0.08);
+  --tip-fade: rgba(0, 217, 255, 0.04);
+
+  /* Subject fades & borders */
+  --physics-fade: rgba(0, 217, 255, 0.12);
+  --physics-border: rgba(0, 217, 255, 0.25);
+  --chem-fade: rgba(255, 82, 82, 0.12);
+  --chem-border: rgba(255, 82, 82, 0.25);
+  --math-fade: rgba(255, 215, 64, 0.12);
+  --math-border: rgba(255, 215, 64, 0.25);
+  --bio-fade: rgba(0, 230, 118, 0.12);
+  --bio-border: rgba(0, 230, 118, 0.25);
+  --hindi-fade: rgba(255, 107, 107, 0.12);
+  --hindi-border: rgba(255, 107, 107, 0.25);
+  --english-fade: rgba(78, 205, 196, 0.12);
+  --english-border: rgba(78, 205, 196, 0.25);
+  --it-fade: rgba(69, 183, 209, 0.12);
+  --it-border: rgba(69, 183, 209, 0.25);
+  --other-fade: rgba(148, 163, 184, 0.12);
+  --other-border: rgba(148, 163, 184, 0.25);
+}
+
+/* Light Theme */
+[data-theme='light'] {
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --surface-2: #f5f2ed;
+  --elevated: #ebe7e1;
+  --accent-start: #e11d48;
+  --accent-end: #7c3aed;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --gold: #d97706;
+  --text: #1e1b4b;
+  --text-secondary: #4c4a6e;
+  --text-tertiary: #7a7894;
+  --border: rgba(0, 0, 0, 0.06);
+  --border-active: rgba(0, 0, 0, 0.12);
+  --common: #64748b;
+  --rare: #16a34a;
+  --epic: #7c3aed;
+  --legendary: #d97706;
+  --mythic: #dc2626;
+  --ultra: #e11d48;
+  --physics: #2563eb;
+  --chem: #dc2626;
+  --math: #d97706;
+  --bio: #16a34a;
+  --hindi: #e11d48;
+  --english: #0d9488;
+  --it: #2563eb;
+  --other: #64748b;
+  --header-bg: rgba(250, 248, 245, 0.92);
+  --nav-bg: rgba(250, 248, 245, 0.95);
+  --overlay-bg: rgba(0, 0, 0, 0.4);
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --ambient-1: rgba(225, 29, 72, 0.04);
+  --ambient-2: rgba(124, 58, 237, 0.04);
+  --shadow: rgba(225, 29, 72, 0.1);
+  --accent-start-fade: rgba(225, 29, 72, 0.06);
+  --accent-end-fade: rgba(124, 58, 237, 0.04);
+  --gold-fade-1: rgba(217, 119, 6, 0.08);
+  --gold-fade-2: rgba(217, 119, 6, 0.06);
+  --gold-fade-3: rgba(217, 119, 6, 0.03);
+  --success-fade: rgba(22, 163, 74, 0.08);
+  --danger-fade: rgba(220, 38, 38, 0.08);
+  --tip-fade: rgba(225, 29, 72, 0.03);
+  --physics-fade: rgba(37, 99, 235, 0.08);
+  --physics-border: rgba(37, 99, 235, 0.15);
+  --chem-fade: rgba(220, 38, 38, 0.08);
+  --chem-border: rgba(220, 38, 38, 0.15);
+  --math-fade: rgba(217, 119, 6, 0.08);
+  --math-border: rgba(217, 119, 6, 0.15);
+  --bio-fade: rgba(22, 163, 74, 0.08);
+  --bio-border: rgba(22, 163, 74, 0.15);
+  --hindi-fade: rgba(225, 29, 72, 0.08);
+  --hindi-border: rgba(225, 29, 72, 0.15);
+  --english-fade: rgba(13, 148, 136, 0.08);
+  --english-border: rgba(13, 148, 136, 0.15);
+  --it-fade: rgba(37, 99, 235, 0.08);
+  --it-border: rgba(37, 99, 235, 0.15);
+  --other-fade: rgba(100, 116, 139, 0.08);
+  --other-border: rgba(100, 116, 139, 0.15);
+}
+
+/* Dusk Theme */
+[data-theme='dusk'] {
+  --bg: #0c0a1a;
+  --surface: #13122a;
+  --surface-2: #1a1933;
+  --elevated: #222140;
+  --accent-start: #f59e0b;
+  --accent-end: #ec4899;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --gold: #fbbf24;
+  --text: #f5f5ff;
+  --text-secondary: #9a9ab4;
+  --text-tertiary: #5a5a8a;
+  --border: rgba(255, 255, 255, 0.05);
+  --border-active: rgba(255, 255, 255, 0.12);
+  --common: #94a3b8;
+  --rare: #22c55e;
+  --epic: #a855f7;
+  --legendary: #fbbf24;
+  --mythic: #ef4444;
+  --ultra: #f59e0b;
+  --physics: #38bdf8;
+  --chem: #f87171;
+  --math: #fbbf24;
+  --bio: #4ade80;
+  --hindi: #fb7185;
+  --english: #2dd4bf;
+  --it: #60a5fa;
+  --other: #94a3b8;
+  --header-bg: rgba(12, 10, 26, 0.92);
+  --nav-bg: rgba(12, 10, 26, 0.95);
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+  --glass-bg: rgba(0, 0, 0, 0.3);
+  --ambient-1: rgba(245, 158, 11, 0.06);
+  --ambient-2: rgba(236, 72, 153, 0.05);
+  --shadow: rgba(245, 158, 11, 0.15);
+  --accent-start-fade: rgba(245, 158, 11, 0.08);
+  --accent-end-fade: rgba(236, 72, 153, 0.06);
+  --gold-fade-1: rgba(251, 191, 36, 0.1);
+  --gold-fade-2: rgba(251, 191, 36, 0.08);
+  --gold-fade-3: rgba(251, 191, 36, 0.04);
+  --success-fade: rgba(34, 197, 94, 0.08);
+  --danger-fade: rgba(239, 68, 68, 0.08);
+  --tip-fade: rgba(245, 158, 11, 0.03);
+  --physics-fade: rgba(56, 189, 248, 0.12);
+  --physics-border: rgba(56, 189, 248, 0.25);
+  --chem-fade: rgba(248, 113, 113, 0.12);
+  --chem-border: rgba(248, 113, 113, 0.25);
+  --math-fade: rgba(251, 191, 36, 0.12);
+  --math-border: rgba(251, 191, 36, 0.25);
+  --bio-fade: rgba(74, 222, 128, 0.12);
+  --bio-border: rgba(74, 222, 128, 0.25);
+  --hindi-fade: rgba(251, 113, 133, 0.12);
+  --hindi-border: rgba(251, 113, 133, 0.25);
+  --english-fade: rgba(45, 212, 191, 0.12);
+  --english-border: rgba(45, 212, 191, 0.25);
+  --it-fade: rgba(96, 165, 250, 0.12);
+  --it-border: rgba(96, 165, 250, 0.25);
+  --other-fade: rgba(148, 163, 184, 0.12);
+  --other-border: rgba(148, 163, 184, 0.25);
+}

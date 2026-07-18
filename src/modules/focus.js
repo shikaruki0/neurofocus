@@ -99,10 +99,17 @@ function completeSession() {
   // Auto-check daily check #6 (neural training)
   data.dailyChecks.dc6 = true;
 
-  persistMany(['focusMinutes', 'totalFocusMinutes', 'focusDate', 'sessions', 'flowState', 'dailyChecks']);
+  persistMany([
+    'focusMinutes',
+    'totalFocusMinutes',
+    'focusDate',
+    'sessions',
+    'flowState',
+    'dailyChecks',
+  ]);
 
   // Award XP
-  addXP(mode.minutes >= 52 ? 60 : 40, 'Deep Work XP');
+  addXP(mode.xp, 'Deep Work XP');
 
   // Reset timer
   remainingSeconds = mode.minutes * 60;

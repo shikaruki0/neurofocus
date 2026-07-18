@@ -85,8 +85,8 @@ export function canUseFreeze() {
   yesterday.setDate(yesterday.getDate() - 1);
   const yStr = yesterday.toDateString();
 
-  // Can use if missed today or yesterday
-  return data.lastStreakDate !== today && data.lastStreakDate !== yStr;
+  // Can use if yesterday was claimed and today is not
+  return data.lastStreakDate === yStr && data.lastStreakDate !== today;
 }
 
 /**

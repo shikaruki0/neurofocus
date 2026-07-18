@@ -66,7 +66,11 @@ describe('Validation', () => {
 
   describe('validateBattleTask', () => {
     it('validates correct input', () => {
-      const result = validateBattleTask({ task: 'Study chapter 5', priority: 'A', time: 'morning' });
+      const result = validateBattleTask({
+        task: 'Study chapter 5',
+        priority: 'A',
+        time: 'morning',
+      });
       expect(result.valid).toBe(true);
     });
 
@@ -141,7 +145,8 @@ describe('Validation', () => {
 
   describe('validateFirebaseConfig', () => {
     it('validates correct config', () => {
-      const config = '{"apiKey":"abc123","projectId":"myproject","authDomain":"myproject.firebaseapp.com"}';
+      const config =
+        '{"apiKey":"abc123","projectId":"myproject","authDomain":"myproject.firebaseapp.com"}';
       const result = validateFirebaseConfig(config);
       expect(result.valid).toBe(true);
       expect(result.data.apiKey).toBe('abc123');

@@ -32,8 +32,21 @@ export const data = {
   flowState: get('flowState', { date: TODAY, sessions: 0 }),
   badgesUnlocked: get('badges', []),
   dailyQuests: get('dailyQuests', null),
-  morningRitual: get('morningRitual', { date: '', completed: false, steps: [false, false, false, false, false] }),
-  subjects: get('subjects', { Physics: 0, Chemistry: 0, Math: 0, Biology: 0, Hindi: 0, English: 0, IT: 0, Other: 0 }),
+  morningRitual: get('morningRitual', {
+    date: '',
+    completed: false,
+    steps: [false, false, false, false, false],
+  }),
+  subjects: get('subjects', {
+    Physics: 0,
+    Chemistry: 0,
+    Math: 0,
+    Biology: 0,
+    Hindi: 0,
+    English: 0,
+    IT: 0,
+    Other: 0,
+  }),
   weeklyStats: get('weeklyStats', []),
   streakFreezes: get('streakFreezes', 0),
   buddyName: get('buddyName', ''),
@@ -68,7 +81,11 @@ function applyDailyResets() {
   }
 
   if (data.morningRitual.date !== TODAY) {
-    data.morningRitual = { date: TODAY, completed: false, steps: [false, false, false, false, false] };
+    data.morningRitual = {
+      date: TODAY,
+      completed: false,
+      steps: [false, false, false, false, false],
+    };
     set('morningRitual', data.morningRitual);
   }
 

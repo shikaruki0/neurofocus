@@ -49,9 +49,7 @@ export function toggleStep(idx) {
  */
 export function isBoostActive() {
   return (
-    data.morningRitual.completed &&
-    data.morningRitual.date === todayStr() &&
-    currentHour() < 12
+    data.morningRitual.completed && data.morningRitual.date === todayStr() && currentHour() < 12
   );
 }
 

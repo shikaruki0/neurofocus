@@ -27,7 +27,10 @@ export function validateHabit({ name, anchor }) {
   const cleanName = String(name || '').trim();
   if (!cleanName) return { valid: false, error: 'Enter a habit name' };
   if (cleanName.length > 80) return { valid: false, error: 'Habit name too long' };
-  const cleanAnchor = String(anchor || '').trim().slice(0, 80) || 'waking up';
+  const cleanAnchor =
+    String(anchor || '')
+      .trim()
+      .slice(0, 80) || 'waking up';
   return { valid: true, data: { name: cleanName, anchor: cleanAnchor } };
 }
 

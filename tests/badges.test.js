@@ -1,0 +1,48 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { checkBadges, TOTAL_BADGES, SPECIAL_BADGES } from '../src/modules/badges.js';
+import { data } from '../src/modules/data.js';
+
+describe('Badge System', () => {
+  beforeEach(() => {
+    // Reset data values before each test
+    data.xp = 0;
+    data.badgesUnlocked = [];
+    data.totalFocusMinutes = 0;
+    data.consecutiveStreak = 0;
+    data.backlogs = [];
+    data.habits = [];
+  });
+
+  it('has correct TOTAL_BADGES constant', () => {
+    expect(TOTAL_BADGES).toBe(35);
+  });
+
+  it('unlocks Initiate rank badge at level 1 (XP = 0)', () => {
+    const unlocked = checkBadges();
+    // Reaching level 1 should unlock level 0 (Initiate) rank badge
+    expect(data.badgesUnlocked).toContain('rank_0');
+    expect(unlocked.some((b) => b.id === 'rank_0')).toBe(true);
+  });
+
+  it('unlocks all lower rank badges when jumping levels', () => {
+    // If we gain enough XP to reach level 12 (e.g. XP = 5000)
+    data.xp = 5000; // Level is around 11+
+    checkBadges();
+
+    // Should contain rank_0 (Initiate), rank_5 (Apprentice), rank_10 (Disciple)
+    expect(data.badgesUnlocked).toContain('rank_0');
+    expect(data.badgesUnlocked).toContain('rank_5');
+    expect(data.badgesUnlocked).toContain('rank_10');
+  });
+
+  it('unlocks special achievement badges under correct conditions', () => {
+    data.totalFocusMinutes = 25; // Completes 1 focus session
+    let unlocked = checkBadges();
+    expect(data.badgesUnlocked).toContain('first_focus');
+    expect(unlocked.some((b) => b.id === 'first_focus')).toBe(true);
+
+    data.consecutiveStreak = 3; // Completes 3 day streak
+    unlocked = checkBadges();
+    expect(data.badgesUnlocked).toContain('detox_3');
+  });
+});

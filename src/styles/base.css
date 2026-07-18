@@ -34,15 +34,18 @@ body {
   pointer-events: none;
   background:
     radial-gradient(ellipse 80% 50% at 15% 0%, var(--ambient-1) 0%, transparent 50%),
-    radial-gradient(ellipse 80% 50% at 85% 100%, var(--ambient-2) 0%, transparent 50%),
-    var(--bg);
+    radial-gradient(ellipse 80% 50% at 85% 100%, var(--ambient-2) 0%, transparent 50%), var(--bg);
 }
 
 .ambient::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 60% 40% at 70% 20%, var(--accent-start-fade) 0%, transparent 60%);
+  background: radial-gradient(
+    ellipse 60% 40% at 70% 20%,
+    var(--accent-start-fade) 0%,
+    transparent 60%
+  );
   animation: ambientShift 20s ease-in-out infinite alternate;
   pointer-events: none;
 }
@@ -51,7 +54,11 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 50% 50% at 30% 80%, var(--accent-end-fade) 0%, transparent 60%);
+  background: radial-gradient(
+    ellipse 50% 50% at 30% 80%,
+    var(--accent-end-fade) 0%,
+    transparent 60%
+  );
   animation: ambientShift 25s ease-in-out infinite alternate-reverse;
   pointer-events: none;
 }
@@ -91,8 +98,12 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
-  box-shadow: 0 0 16px var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow:
+    0 0 16px var(--shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .brand-icon:hover {

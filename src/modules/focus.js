@@ -35,18 +35,22 @@ export function setMode(modeIndex) {
 /**
  * Starts or resumes the timer.
  */
+let startTimestamp = 0; // tracks when timer started for background accuracy
+
 export function startTimer() {
   if (isRunning) return;
   isRunning = true;
+  startTimestamp = Date.now();
 
   intervalId = setInterval(() => {
-    remainingSeconds--;
+    const elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
+    remainingSeconds = Math.max(0, totalSeconds - elapsed);
     notifyTick();
 
     if (remainingSeconds <= 0) {
       completeSession();
     }
-  }, 1000);
+  }, 500);
 }
 
 /**

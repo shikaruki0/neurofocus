@@ -1718,6 +1718,7 @@ select.input {
   border: 1px solid var(--border);
   border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
   padding: var(--space-5);
+  padding-bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
   width: 100%;
   max-width: 640px;
   transform: translateY(100%);

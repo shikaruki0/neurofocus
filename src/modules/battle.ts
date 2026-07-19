@@ -1,0 +1,98 @@
+/**
+ * Battle Plan — Priority-based daily task planning.
+ * Tasks are sorted by priority (A > B > C) and time of day.
+ */
+
+import { data, persist } from './data.ts';
+import { addXP } from './xp.ts';
+import { validateBattleTask } from '../utils/validation.ts';
+
+type Priority = 'A' | 'B' | 'C';
+type TimeOfDay = 'morning' | 'afternoon' | 'evening';
+
+const PRIORITY_ORDER: Record<Priority, number> = { A: 1, B: 2, C: 3 };
+
+export interface BattleTaskInput {
+  task: string;
+  priority: string;
+  time: string;
+}
+
+export interface BattleTaskResult {
+  success: boolean;
+  error?: string;
+}
+
+export interface BattleTask {
+  id: number;
+  task: string;
+  priority: Priority;
+  time: TimeOfDay;
+  done: boolean;
+}
+
+/**
+ * Adds a new battle task.
+ * @param input - Task input
+ * @returns Result
+ */
+export function addTask(input: BattleTaskInput): BattleTaskResult {
+  const validation = validateBattleTask(input);
+  if (!validation.valid || !validation.data) return { success: false, error: validation.error };
+
+  data.battle.push({
+    id: Date.now(),
+    task: validation.data.task,
+    priority: validation.data.priority,
+    time: validation.data.time,
+    done: false,
+  });
+
+  persist('battle');
+  return { success: true };
+}
+
+/**
+ * Toggles a task's completion.
+ * @param id - Task ID
+ */
+export function toggleTask(id: number): void {
+  const task = data.battle.find((t) => t.id === id);
+  if (!task) return;
+
+  task.done = !task.done;
+  persist('battle');
+
+  if (task.done) {
+    addXP(10, 'Task Done');
+  }
+}
+
+/**
+ * Deletes a task.
+ * @param id - Task ID
+ */
+export function deleteTask(id: number): void {
+  data.battle = data.battle.filter((t) => t.id !== id);
+  persist('battle');
+}
+
+/**
+ * Gets all tasks sorted by priority.
+ * @returns Sorted tasks
+ */
+export function getTasksSorted(): BattleTask[] {
+  return [...data.battle].sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
+}
+
+/**
+ * Gets tasks grouped by time of day.
+ * @returns Grouped tasks
+ */
+export function getTasksByTime(): Record<TimeOfDay, BattleTask[]> {
+  const groups: Record<TimeOfDay, BattleTask[]> = { morning: [], afternoon: [], evening: [] };
+  for (const task of data.battle) {
+    if (groups[task.time]) groups[task.time].push(task);
+  }
+  return groups;
+}

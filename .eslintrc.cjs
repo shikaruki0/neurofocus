@@ -24,5 +24,5 @@ module.exports = {
     'no-new-func': 'error',
     'no-script-url': 'error',
   },
-  ignorePatterns: ['dist/', 'node_modules/', 'coverage/', 'src/**/*.ts'],
+  ignorePatterns: ['dist/', 'node_modules/', 'coverage/'],
 };

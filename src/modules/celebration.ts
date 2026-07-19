@@ -132,7 +132,9 @@ export function fireConfetti(canvas: HTMLCanvasElement): void {
   }
 
   function draw(): void {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // ctx is non-null here due to early return above
+    const c = ctx!;
+    c.clearRect(0, 0, canvas.width, canvas.height);
     let alive = false;
 
     for (const p of particles) {
@@ -144,17 +146,17 @@ export function fireConfetti(canvas: HTMLCanvasElement): void {
       p.life -= p.decay;
       p.rot += p.rotSpeed;
 
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate((p.rot * Math.PI) / 180);
-      ctx.globalAlpha = p.life;
-      ctx.fillStyle = p.color;
-      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-      ctx.restore();
+      c.save();
+      c.translate(p.x, p.y);
+      c.rotate((p.rot * Math.PI) / 180);
+      c.globalAlpha = p.life;
+      c.fillStyle = p.color;
+      c.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+      c.restore();
     }
 
     if (alive) requestAnimationFrame(draw);
-    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    else c.clearRect(0, 0, canvas.width, canvas.height);
   }
 
   draw();

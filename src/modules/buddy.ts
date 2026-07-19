@@ -41,7 +41,7 @@ export function removeBuddy(): void {
  * @returns Buddy name
  */
 export function getBuddy(): string {
-  return data.buddyName ?? '';
+  return (data.buddyName as string) ?? '';
 }
 
 /**

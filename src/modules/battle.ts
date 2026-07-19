@@ -43,8 +43,8 @@ export function addTask(input: BattleTaskInput): BattleTaskResult {
   data.battle.push({
     id: Date.now(),
     task: validation.data.task,
-    priority: validation.data.priority,
-    time: validation.data.time,
+    priority: validation.data.priority as Priority,
+    time: validation.data.time as TimeOfDay,
     done: false,
   });
 

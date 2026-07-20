@@ -1,7 +1,20 @@
 /**
- * NeuroFocus v14 — Main Entry Point
+ * NeuroFocus v14 — Main Entry Point (Fixed)
  * Wires modules to the DOM and initializes the app.
+ * Fixes:
+ *  - CSS imported via JS so Vite bundles correctly with base /neurofocus/
+ *  - Base-aware SW registration (was absolute /sw.js causing 404 on GH Pages)
+ *  - Typed DOM helpers to avoid runtime dataset/style/checked errors
+ *  - Null guards for dailyQuests
+ *  - Fixed focus timer resume logic (done in focus.ts)
+ *  - Fixed dailyChecksBuilt stale flag across days
  */
+
+// Import styles directly so Vite bundles them correctly (fixes 404s when base is /neurofocus/)
+import './styles/variables.css';
+import './styles/base.css';
+import './styles/components.css';
+import './styles/animations.css';
 
 import { data, resetHabitsForNewDay } from './modules/data.ts';
 import { xpLevel, xpForLevel, addXP } from './modules/xp.ts';
@@ -58,25 +71,27 @@ import { validateProfileName, validateMission } from './utils/validation.ts';
 
 let selectedBacklogSubject = 'Physics';
 let dailyChecksBuilt = false;
+let lastDailyCheckDate = '';
 
 // ===================================================================
 // TAB NAVIGATION
 // ===================================================================
 
-function switchTab(tabId) {
+function switchTab(tabId: string) {
   // Hide all tabs
-  qsa('.tab-content').forEach((el) => el.classList.add('hidden'));
+  qsa<HTMLElement>('.tab-content').forEach((el) => el.classList.add('hidden'));
 
   // Show target tab
-  const target = qs(`#tab-${tabId}`);
+  const target = qs<HTMLElement>(`#tab-${tabId}`);
   if (target) {
     target.classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   // Update nav active state
-  qsa('.nav-item').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.tab === tabId);
+  qsa<HTMLElement>('.nav-item').forEach((btn) => {
+    const b = btn as HTMLElement;
+    b.classList.toggle('active', b.dataset.tab === tabId);
   });
 
   // Refresh home dashboard
@@ -89,10 +104,10 @@ function switchTab(tabId) {
 
 function renderXP() {
   const info = xpLevel(data.xp);
-  const elCount = qs('#xp-count');
-  const elBar = qs('#xp-bar');
-  const elBadge = qs('#xp-badge');
-  const elNext = qs('#xp-next');
+  const elCount = qs<HTMLElement>('#xp-count');
+  const elBar = qs<HTMLElement>('#xp-bar');
+  const elBadge = qs<HTMLElement>('#xp-badge');
+  const elNext = qs<HTMLElement>('#xp-next');
 
   if (elCount) elCount.textContent = `${data.xp} XP`;
   if (elBar) elBar.style.width = `${info.pct}%`;
@@ -105,27 +120,27 @@ function renderHero() {
   const next = getNextRank(xpLevel(data.xp).level);
   const info = xpLevel(data.xp);
 
-  const elIcon = qs('#hero-icon');
-  const elTitle = qs('#hero-title');
-  const elSub = qs('#hero-sub');
-  const elBadge = qs('#hero-badge');
+  const elIcon = qs<HTMLElement>('#hero-icon');
+  const elTitle = qs<HTMLElement>('#hero-title');
+  const elSub = qs<HTMLElement>('#hero-sub');
+  const elBadge = qs<HTMLElement>('#hero-badge');
 
   if (elIcon) elIcon.textContent = rank.icon;
   if (elTitle) elTitle.textContent = rank.name;
   if (elSub) elSub.textContent = `Level ${info.level} · ${info.current}/${info.need} XP`;
   if (elBadge) {
-    elBadge.textContent = next
-      ? `Next: ${next.name} at Level ${next.level}`
-      : 'The Enlightened · Max Rank';
+    elBadge.textContent = next ? `Next: ${next.name} at Level ${next.level}` : 'The Enlightened · Max Rank';
   }
 }
 
 function renderQuests() {
-  const el = qs('#daily-quests');
+  const el = qs<HTMLElement>('#daily-quests');
   if (!el) return;
 
   generateDailyQuests();
-  const quests = data.dailyQuests.quests;
+  const dq = data.dailyQuests;
+  if (!dq || !dq.quests) return;
+  const quests = dq.quests;
   const icons = ['🎯', '⚡', '🔥'];
 
   el.innerHTML = quests
@@ -144,7 +159,7 @@ function renderQuests() {
 }
 
 function renderRitual() {
-  const el = qs('#ritual-grid');
+  const el = qs<HTMLElement>('#ritual-grid');
   if (!el) return;
 
   const r = getRitual();
@@ -157,9 +172,9 @@ function renderRitual() {
   ).join('');
 
   // Add click handlers
-  qsa('.ritual-step', el).forEach((step) => {
+  qsa<HTMLElement>('.ritual-step', el).forEach((step) => {
     step.addEventListener('click', () => {
-      const idx = parseInt(step.dataset.idx, 10);
+      const idx = parseInt((step as HTMLElement).dataset.idx || '0', 10);
       const result = toggleStep(idx);
       if (result.allDone) {
         showCelebrate('Morning Ritual Complete', '2x XP Boost until noon!', '🌅');
@@ -170,7 +185,7 @@ function renderRitual() {
   });
 
   // Show/hide boost banner
-  const boost = qs('#ritual-boost');
+  const boost = qs<HTMLElement>('#ritual-boost');
   if (boost) {
     const hour = new Date().getHours();
     boost.classList.toggle('hidden', !(r.completed && r.date === todayStr() && hour < 12));
@@ -178,7 +193,7 @@ function renderRitual() {
 }
 
 function renderSubjects() {
-  const el = qs('#subject-grid');
+  const el = qs<HTMLElement>('#subject-grid');
   if (!el) return;
 
   const subjects = getSubjectsWithInfo();
@@ -197,18 +212,18 @@ function renderSubjects() {
 }
 
 function renderFlowBanner() {
-  const el = qs('#flow-banner');
+  const el = qs<HTMLElement>('#flow-banner');
   if (!el) return;
   el.classList.toggle('hidden', !isFlowActive());
 }
 
 function renderStreak() {
   const info = getStreakInfo();
-  const elNum = qs('#consecutive-streak');
-  const elFreeze = qs('#freeze-badge');
-  const btn = qs('#freeze-btn');
+  const elNum = qs<HTMLElement>('#consecutive-streak');
+  const elFreeze = qs<HTMLElement>('#freeze-badge');
+  const btn = qs<HTMLElement>('#freeze-btn');
 
-  if (elNum) elNum.textContent = info.consecutive;
+  if (elNum) elNum.textContent = String(info.consecutive);
   if (elFreeze) elFreeze.textContent = `❄️ ${info.freezes} Freezes`;
 
   if (btn) {
@@ -219,9 +234,9 @@ function renderStreak() {
 
 function renderBuddy() {
   const buddy = getBuddy();
-  const elForm = qs('#settings-buddy-form');
-  const elActive = qs('#settings-buddy-active');
-  const elDisplay = qs('#settings-buddy-display');
+  const elForm = qs<HTMLElement>('#settings-buddy-form');
+  const elActive = qs<HTMLElement>('#settings-buddy-active');
+  const elDisplay = qs<HTMLElement>('#settings-buddy-display');
 
   if (buddy) {
     if (elForm) elForm.classList.add('hidden');
@@ -237,20 +252,20 @@ function renderWeekly() {
   const totals = getWeekTotals();
   const stats = getWeekStats();
 
-  const elF = qs('#wk-focus');
-  const elB = qs('#wk-backlogs');
-  const elH = qs('#wk-habits');
-  const elS = qs('#wk-streaks');
-  const elN = qs('#week-total-num');
+  const elF = qs<HTMLElement>('#wk-focus');
+  const elB = qs<HTMLElement>('#wk-backlogs');
+  const elH = qs<HTMLElement>('#wk-habits');
+  const elS = qs<HTMLElement>('#wk-streaks');
+  const elN = qs<HTMLElement>('#week-total-num');
 
   if (elF) elF.textContent = totals.focus.toFixed(1);
-  if (elB) elB.textContent = totals.backlogs;
-  if (elH) elH.textContent = totals.habits;
-  if (elS) elS.textContent = totals.streaks;
-  if (elN) elN.textContent = totals.score;
+  if (elB) elB.textContent = String(totals.backlogs);
+  if (elH) elH.textContent = String(totals.habits);
+  if (elS) elS.textContent = String(totals.streaks);
+  if (elN) elN.textContent = String(totals.score);
 
   // Bar chart
-  const elWrap = qs('#week-bar-wrap');
+  const elWrap = qs<HTMLElement>('#week-bar-wrap');
   if (!elWrap) return;
 
   const maxScore = Math.max(...stats.map((s) => s.score || 0), 1);
@@ -274,7 +289,7 @@ function renderWeekly() {
 }
 
 function renderDailyChecks() {
-  const el = qs('#daily-checks');
+  const el = qs<HTMLElement>('#daily-checks');
   if (!el) return;
 
   const CHECK_ITEMS = [
@@ -292,12 +307,19 @@ function renderDailyChecks() {
   if (claimed) {
     el.innerHTML =
       '<div class="text-center" style="padding:14px;color:var(--success);font-weight:700;font-size:0.9rem">🔥 Verification claimed for today. Come back tomorrow.</div>';
-    const status = qs('#checkin-status');
-    const btn = qs('#claim-btn');
-    if (status) status.style.display = 'none';
-    if (btn) btn.style.display = 'none';
+    const status = qs<HTMLElement>('#checkin-status');
+    const btn = qs<HTMLElement>('#claim-btn');
+    if (status) (status as HTMLElement).style.display = 'none';
+    if (btn) (btn as HTMLElement).style.display = 'none';
     return;
   }
+
+  // Reset built flag if date changed
+  const today = todayStr();
+  if (lastDailyCheckDate && lastDailyCheckDate !== today) {
+    dailyChecksBuilt = false;
+  }
+  lastDailyCheckDate = today;
 
   if (!dailyChecksBuilt) {
     el.innerHTML = CHECK_ITEMS.map(
@@ -310,12 +332,17 @@ function renderDailyChecks() {
 
     // Add click handlers
     CHECK_ITEMS.forEach((item) => {
-      const row = qs(`#row-${item.id}`);
-      const chk = qs(`#chk-${item.id}`);
+      const row = qs<HTMLElement>(`#row-${item.id}`);
+      const chk = qs<HTMLInputElement>(`#chk-${item.id}`);
       const toggle = () => {
         if (data.detoxLastDate === todayStr()) return;
         data.dailyChecks[item.id] = !data.dailyChecks[item.id];
-        localStorage.setItem('nf_dailyChecks', JSON.stringify(data.dailyChecks));
+        try {
+          localStorage.setItem('nf_dailyChecks', JSON.stringify(data.dailyChecks));
+        } catch {
+          // ignore storage errors
+        }
+        dailyChecksBuilt = false; // force re-render of checks state
         renderDailyChecks();
       };
       if (row) row.addEventListener('click', toggle);
@@ -333,46 +360,45 @@ function renderDailyChecks() {
   CHECK_ITEMS.forEach((item) => {
     const checked = !!data.dailyChecks[item.id];
     if (checked) doneCount++;
-    const row = qs(`#row-${item.id}`);
-    const chk = qs(`#chk-${item.id}`);
+    const row = qs<HTMLElement>(`#row-${item.id}`);
+    const chk = qs<HTMLInputElement>(`#chk-${item.id}`);
     if (row) row.classList.toggle('done', checked);
     if (chk) chk.checked = checked;
   });
 
-  const status = qs('#checkin-status');
-  const btn = qs('#claim-btn');
+  const status = qs<HTMLElement>('#checkin-status');
+  const btn = qs<HTMLButtonElement>('#claim-btn');
   const allChecked = doneCount === CHECK_ITEMS.length;
 
   if (status) {
-    status.style.display = 'block';
+    (status as HTMLElement).style.display = 'block';
     if (allChecked) {
       status.textContent = 'All 7 checks complete. Claim your streak.';
-      status.style.color = 'var(--success)';
+      (status as HTMLElement).style.color = 'var(--success)';
     } else {
       status.textContent = `${doneCount} / 7 checks — complete all to claim`;
-      status.style.color = 'var(--danger)';
+      (status as HTMLElement).style.color = 'var(--danger)';
     }
   }
 
   if (btn) {
-    btn.style.display = 'block';
+    (btn as HTMLElement).style.display = 'block';
     btn.disabled = !allChecked;
-    btn.style.opacity = allChecked ? '1' : '0.5';
+    (btn as HTMLElement).style.opacity = allChecked ? '1' : '0.5';
   }
 }
 
 function renderBacklogs() {
-  const el = qs('#backlog-list');
+  const el = qs<HTMLElement>('#backlog-list');
   if (!el) return;
 
   const backlogs = getBacklogs();
   if (!backlogs.length) {
-    el.innerHTML =
-      '<div class="empty"><div class="empty-icon">📚</div>No backlogs yet. Add your first lecture.</div>';
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📚</div>No backlogs yet. Add your first lecture.</div>';
     return;
   }
 
-  const SUBJECT_MAP = {
+  const SUBJECT_MAP: Record<string, string> = {
     Physics: 'physics',
     Chemistry: 'chem',
     Math: 'math',
@@ -410,16 +436,18 @@ function renderBacklogs() {
     .join('');
 
   // Add handlers
-  qsa('[data-action="inc-backlog"]', el).forEach((btn) => {
+  qsa<HTMLElement>('[data-action="inc-backlog"]', el).forEach((btn) => {
     btn.addEventListener('click', () => {
-      incrementBacklog(parseInt(btn.dataset.id, 10));
+      const id = parseInt((btn as HTMLElement).dataset.id || '0', 10);
+      incrementBacklog(id);
       renderBacklogs();
       updateDashboard();
     });
   });
-  qsa('[data-action="del-backlog"]', el).forEach((btn) => {
+  qsa<HTMLElement>('[data-action="del-backlog"]', el).forEach((btn) => {
     btn.addEventListener('click', () => {
-      deleteBacklog(parseInt(btn.dataset.id, 10));
+      const id = parseInt((btn as HTMLElement).dataset.id || '0', 10);
+      deleteBacklog(id);
       renderBacklogs();
       updateDashboard();
     });
@@ -427,7 +455,7 @@ function renderBacklogs() {
 }
 
 function renderHabits() {
-  const el = qs('#habit-list');
+  const el = qs<HTMLElement>('#habit-list');
   if (!el) return;
 
   const habits = getHabits();
@@ -435,8 +463,7 @@ function renderHabits() {
   const today = currentDOW();
 
   if (!habits.length) {
-    el.innerHTML =
-      '<div class="empty"><div class="empty-icon">🔥</div>No habits yet. Stack one tiny habit.</div>';
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🔥</div>No habits yet. Stack one tiny habit.</div>';
     return;
   }
 
@@ -462,16 +489,18 @@ function renderHabits() {
     )
     .join('');
 
-  qsa('[data-action="toggle-habit"]', el).forEach((btn) => {
+  qsa<HTMLElement>('[data-action="toggle-habit"]', el).forEach((btn) => {
     btn.addEventListener('click', () => {
-      toggleHabit(parseInt(btn.dataset.id, 10));
+      const id = parseInt((btn as HTMLElement).dataset.id || '0', 10);
+      toggleHabit(id);
       renderHabits();
       updateDashboard();
     });
   });
-  qsa('[data-action="del-habit"]', el).forEach((btn) => {
+  qsa<HTMLElement>('[data-action="del-habit"]', el).forEach((btn) => {
     btn.addEventListener('click', () => {
-      deleteHabit(parseInt(btn.dataset.id, 10));
+      const id = parseInt((btn as HTMLElement).dataset.id || '0', 10);
+      deleteHabit(id);
       renderHabits();
       updateDashboard();
     });
@@ -479,26 +508,25 @@ function renderHabits() {
 }
 
 function renderBattle() {
-  const el = qs('#battle-list');
+  const el = qs<HTMLElement>('#battle-list');
   if (!el) return;
 
   const tasks = getTasksSorted();
-  const colors = { A: 'var(--danger)', B: '#f59e0b', C: 'var(--success)' };
+  const colors: Record<string, string> = { A: 'var(--danger)', B: '#f59e0b', C: 'var(--success)' };
 
   if (!tasks.length) {
-    el.innerHTML =
-      '<div class="empty"><div class="empty-icon">⚔️</div>No battle tasks. Plan your 6 priorities.</div>';
+    el.innerHTML = '<div class="empty"><div class="empty-icon">⚔️</div>No battle tasks. Plan your 6 priorities.</div>';
     return;
   }
 
   el.innerHTML = tasks
     .map(
       (t) => `
-      <div class="list-item" style="border-left:3px solid ${colors[t.pri] || colors.C}">
+      <div class="list-item" style="border-left:3px solid ${colors[t.priority] || colors.C}">
         <div class="flex items-center gap-3 flex-1" style="min-width:0">
           <input type="checkbox" ${t.done ? 'checked' : ''} data-action="toggle-battle" data-id="${t.id}" style="width:20px;height:20px;flex-shrink:0">
           <span class="${t.done ? 'text-tertiary' : ''}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.9rem">
-            <strong style="color:var(--text-tertiary);margin-right:4px;font-size:0.75rem">[${t.pri}]</strong>${escapeHTML(t.task)} <span class="tag tag-blue">${t.time}</span>
+            <strong style="color:var(--text-tertiary);margin-right:4px;font-size:0.75rem">[${t.priority}]</strong>${escapeHTML(t.task)} <span class="tag tag-blue">${t.time}</span>
           </span>
         </div>
         <button class="btn btn-danger btn-sm" data-action="del-battle" data-id="${t.id}">×</button>
@@ -506,16 +534,18 @@ function renderBattle() {
     )
     .join('');
 
-  qsa('[data-action="toggle-battle"]', el).forEach((chk) => {
+  qsa<HTMLInputElement>('[data-action="toggle-battle"]', el).forEach((chk) => {
     chk.addEventListener('change', () => {
-      toggleTask(parseInt(chk.dataset.id, 10));
+      const id = parseInt((chk as HTMLElement).dataset.id || '0', 10);
+      toggleTask(id);
       renderBattle();
       updateDashboard();
     });
   });
-  qsa('[data-action="del-battle"]', el).forEach((btn) => {
+  qsa<HTMLElement>('[data-action="del-battle"]', el).forEach((btn) => {
     btn.addEventListener('click', () => {
-      deleteTask(parseInt(btn.dataset.id, 10));
+      const id = parseInt((btn as HTMLElement).dataset.id || '0', 10);
+      deleteTask(id);
       renderBattle();
       updateDashboard();
     });
@@ -523,13 +553,12 @@ function renderBattle() {
 }
 
 function renderFocusHistory() {
-  const el = qs('#focus-history');
+  const el = qs<HTMLElement>('#focus-history');
   if (!el) return;
 
   const sessions = getRecentSessions(10);
   if (!sessions.length) {
-    el.innerHTML =
-      '<div class="empty" style="padding:12px">No sessions yet. Complete a focus timer to see history.</div>';
+    el.innerHTML = '<div class="empty" style="padding:12px">No sessions yet. Complete a focus timer to see history.</div>';
     return;
   }
 
@@ -553,12 +582,12 @@ function renderProfile() {
   const rank = getCurrentRank(xpLevel(data.xp).level);
   const info = xpLevel(data.xp);
 
-  const elName = qs('#profile-name');
-  const elRank = qs('#profile-rank');
-  const elAvatar = qs('#profile-avatar');
-  const elMission = qs('#profile-mission');
-  const elInput = qs('#profile-name-input');
-  const elMissionInput = qs('#mission-input');
+  const elName = qs<HTMLElement>('#profile-name');
+  const elRank = qs<HTMLElement>('#profile-rank');
+  const elAvatar = qs<HTMLElement>('#profile-avatar');
+  const elMission = qs<HTMLElement>('#profile-mission');
+  const elInput = qs<HTMLInputElement>('#profile-name-input');
+  const elMissionInput = qs<HTMLTextAreaElement>('#mission-input');
 
   if (elName) elName.textContent = data.profileName || 'Warrior';
   if (elRank) elRank.textContent = `${rank.name} · Level ${info.level}`;
@@ -572,10 +601,10 @@ function renderTrophyPreview() {
   const rank = getCurrentRank(xpLevel(data.xp).level);
   const unlocked = (data.badgesUnlocked || []).length;
 
-  const elIcon = qs('#trophy-preview-icon');
-  const elTitle = qs('#trophy-preview-title');
-  const elSub = qs('#trophy-preview-sub');
-  const elCount = qs('#trophy-count');
+  const elIcon = qs<HTMLElement>('#trophy-preview-icon');
+  const elTitle = qs<HTMLElement>('#trophy-preview-title');
+  const elSub = qs<HTMLElement>('#trophy-preview-sub');
+  const elCount = qs<HTMLElement>('#trophy-count');
 
   if (elIcon) elIcon.textContent = rank.icon;
   if (elTitle) elTitle.textContent = rank.name;
@@ -584,16 +613,16 @@ function renderTrophyPreview() {
 }
 
 function renderQuote() {
-  const el = qs('#daily-quote');
+  const el = qs<HTMLElement>('#daily-quote');
   if (el) el.textContent = `"${getDailyQuote()}"`;
 }
 
 function renderSettingsAuth() {
   const config = localStorage.getItem('nf_firebase_config') || '';
-  const setupEl = qs('#firebase-setup');
-  const authPanel = qs('#firebase-auth-panel');
-  const guestView = qs('#auth-guest-view');
-  const userView = qs('#auth-user-view');
+  const setupEl = qs<HTMLElement>('#firebase-setup');
+  const authPanel = qs<HTMLElement>('#firebase-auth-panel');
+  const guestView = qs<HTMLElement>('#auth-guest-view');
+  const userView = qs<HTMLElement>('#auth-user-view');
 
   if (!config) {
     if (setupEl) setupEl.classList.remove('hidden');
@@ -608,8 +637,8 @@ function renderSettingsAuth() {
   if (user) {
     if (guestView) guestView.classList.add('hidden');
     if (userView) userView.classList.remove('hidden');
-    const elEmail = qs('#auth-email-display');
-    if (elEmail) elEmail.textContent = user.email;
+    const elEmail = qs<HTMLElement>('#auth-email-display');
+    if (elEmail) elEmail.textContent = user.email || '';
   } else {
     if (guestView) guestView.classList.remove('hidden');
     if (userView) userView.classList.add('hidden');
@@ -622,27 +651,27 @@ function renderSettingsAuth() {
 
 function updateDashboard() {
   // Stats
-  const ds = qs('#d-streak');
-  const db = qs('#d-backlogs');
-  const df = qs('#d-focus');
-  const dh = qs('#d-habits');
+  const ds = qs<HTMLElement>('#d-streak');
+  const db = qs<HTMLElement>('#d-backlogs');
+  const df = qs<HTMLElement>('#d-focus');
+  const dh = qs<HTMLElement>('#d-habits');
 
-  if (ds) ds.textContent = data.detoxStreak || 0;
-  if (db) db.textContent = data.backlogs.reduce((a, b) => a + ((b.total || 0) - (b.done || 0)), 0);
+  if (ds) ds.textContent = String(data.detoxStreak || 0);
+  if (db) db.textContent = String(data.backlogs.reduce((a, b) => a + ((b.total || 0) - (b.done || 0)), 0));
   if (df) df.textContent = (Math.floor(((data.focusMinutes || 0) / 60) * 10) / 10).toFixed(1);
-  if (dh) dh.textContent = data.habits.filter((h) => h.today).length;
+  if (dh) dh.textContent = String(data.habits.filter((h) => h.today).length);
 
   // Priority section
-  const dp = qs('#dash-priority');
+  const dp = qs<HTMLElement>('#dash-priority');
   if (dp) {
     const inc = data.backlogs.filter((b) => (b.done || 0) < (b.total || 0));
     const ht = data.habits.filter((h) => !h.today);
     let html = '';
 
-    if (inc.length > 0) {
+    if (inc.length > 0 && inc[0]) {
       html += `<div class="list-item"><div class="info"><div class="title">${escapeHTML(inc[0].name)}</div><div class="meta">${(inc[0].total || 0) - (inc[0].done || 0)} lectures remaining</div></div><span class="tag tag-red">URGENT</span></div>`;
     }
-    if (ht.length > 0) {
+    if (ht.length > 0 && ht[0]) {
       html += `<div class="list-item"><div class="info"><div class="title">${escapeHTML(ht[0].name)}</div><div class="meta">After ${escapeHTML(ht[0].anchor || 'waking up')}</div></div><span class="tag tag-blue">NEXT</span></div>`;
     }
     dp.innerHTML =
@@ -674,41 +703,48 @@ function updateDashboard() {
 
 function setupEventListeners() {
   // Tab navigation
-  qsa('.nav-item').forEach((btn) => {
-    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  qsa<HTMLElement>('.nav-item').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const tab = (btn as HTMLElement).dataset.tab;
+      if (tab) switchTab(tab);
+    });
   });
 
   // Settings button
-  qs('#settings-btn')?.addEventListener('click', () => {
-    qs('#settings-overlay')?.classList.add('show');
+  qs<HTMLElement>('#settings-btn')?.addEventListener('click', () => {
+    qs<HTMLElement>('#settings-overlay')?.classList.add('show');
     renderProfile();
     renderSettingsAuth();
   });
 
   // Close settings
-  qs('#settings-close-btn')?.addEventListener('click', () => {
-    qs('#settings-overlay')?.classList.remove('show');
+  qs<HTMLElement>('#settings-close-btn')?.addEventListener('click', () => {
+    qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
   });
-  qs('#settings-overlay')?.addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) qs('#settings-overlay').classList.remove('show');
+  qs<HTMLElement>('#settings-overlay')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
   });
 
   // Theme buttons
-  qsa('[data-theme]').forEach((btn) => {
+  qsa<HTMLElement>('[data-theme]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      setTheme(btn.dataset.theme);
-      updateThemeButtons();
+      const theme = (btn as HTMLElement).dataset.theme as any;
+      if (theme) {
+        setTheme(theme);
+        updateThemeButtons();
+      }
     });
   });
 
   // Auto theme toggle
-  qs('#auto-theme')?.addEventListener('change', (e) => {
-    setAutoTheme(e.target.checked);
+  qs<HTMLInputElement>('#auto-theme')?.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    setAutoTheme(target.checked);
   });
 
   // Profile name save
-  qs('#save-name-btn')?.addEventListener('click', () => {
-    const input = qs('#profile-name-input');
+  qs<HTMLElement>('#save-name-btn')?.addEventListener('click', () => {
+    const input = qs<HTMLInputElement>('#profile-name-input');
     const name = input?.value.trim();
     if (!name) return;
     const validation = validateProfileName(name);
@@ -716,15 +752,17 @@ function setupEventListeners() {
       showCelebrate('Invalid Name', validation.error || 'Try again', '⚠️', true);
       return;
     }
-    data.profileName = validation.data;
-    localStorage.setItem('nf_profileName', JSON.stringify(validation.data));
+    data.profileName = validation.data as string;
+    try {
+      localStorage.setItem('nf_profileName', JSON.stringify(validation.data));
+    } catch {}
     renderProfile();
     showCelebrate('Profile Updated', 'Your warrior name is set.', '👤');
   });
 
   // Mission save
-  qs('#save-mission-btn')?.addEventListener('click', () => {
-    const input = qs('#mission-input');
+  qs<HTMLElement>('#save-mission-btn')?.addEventListener('click', () => {
+    const input = qs<HTMLTextAreaElement>('#mission-input');
     const m = input?.value.trim();
     if (!m) return;
     const validation = validateMission(m);
@@ -732,15 +770,17 @@ function setupEventListeners() {
       showCelebrate('Invalid Mission', validation.error || 'Try again', '⚠️', true);
       return;
     }
-    data.mission = validation.data;
-    localStorage.setItem('nf_mission', JSON.stringify(validation.data));
+    data.mission = validation.data as string;
+    try {
+      localStorage.setItem('nf_mission', JSON.stringify(validation.data));
+    } catch {}
     renderProfile();
     showCelebrate('Mission Updated', 'Your north star is locked.', '🎯');
   });
 
   // Buddy
-  qs('#set-buddy-btn')?.addEventListener('click', () => {
-    const input = qs('#settings-buddy-name');
+  qs<HTMLElement>('#set-buddy-btn')?.addEventListener('click', () => {
+    const input = qs<HTMLInputElement>('#settings-buddy-name');
     const result = setBuddy(input?.value || '');
     if (!result.success) {
       showCelebrate('Invalid Name', result.error || 'Try again', '⚠️', true);
@@ -749,12 +789,12 @@ function setupEventListeners() {
     renderBuddy();
   });
 
-  qs('#remove-buddy-btn')?.addEventListener('click', () => {
+  qs<HTMLElement>('#remove-buddy-btn')?.addEventListener('click', () => {
     removeBuddy();
     renderBuddy();
   });
 
-  qs('#share-progress-btn')?.addEventListener('click', async () => {
+  qs<HTMLElement>('#share-progress-btn')?.addEventListener('click', async () => {
     const result = await shareProgress();
     if (result.success) {
       showCelebrate('Progress Copied', `Send to ${data.buddyName}!`, '📤');
@@ -762,7 +802,7 @@ function setupEventListeners() {
   });
 
   // Reset buttons
-  qs('#reset-today-btn')?.addEventListener('click', () => {
+  qs<HTMLElement>('#reset-today-btn')?.addEventListener('click', () => {
     if (!confirm("Reset today's progress?")) return;
     data.dailyChecks = {};
     data.detoxLastDate = null;
@@ -777,21 +817,23 @@ function setupEventListeners() {
     data.dailyQuests = null;
     data.backlogsToday = 0;
     data.habitsToday = 0;
-    localStorage.setItem('nf_dailyChecks', '{}');
-    localStorage.setItem('nf_detoxLastDate', 'null');
-    localStorage.setItem('nf_focusMinutes', '0');
-    localStorage.setItem('nf_focusDate', JSON.stringify(todayStr()));
-    localStorage.setItem('nf_flowState', JSON.stringify(data.flowState));
-    localStorage.setItem('nf_morningRitual', JSON.stringify(data.morningRitual));
-    localStorage.setItem('nf_dailyQuests', 'null');
-    localStorage.setItem('nf_backlogsToday', '0');
-    localStorage.setItem('nf_habitsToday', '0');
+    try {
+      localStorage.setItem('nf_dailyChecks', '{}');
+      localStorage.setItem('nf_detoxLastDate', 'null');
+      localStorage.setItem('nf_focusMinutes', '0');
+      localStorage.setItem('nf_focusDate', JSON.stringify(todayStr()));
+      localStorage.setItem('nf_flowState', JSON.stringify(data.flowState));
+      localStorage.setItem('nf_morningRitual', JSON.stringify(data.morningRitual));
+      localStorage.setItem('nf_dailyQuests', 'null');
+      localStorage.setItem('nf_backlogsToday', '0');
+      localStorage.setItem('nf_habitsToday', '0');
+    } catch {}
     dailyChecksBuilt = false;
     renderDailyChecks();
     updateDashboard();
   });
 
-  qs('#reset-all-btn')?.addEventListener('click', () => {
+  qs<HTMLElement>('#reset-all-btn')?.addEventListener('click', () => {
     if (!confirm('⚠️ This will DELETE ALL your progress forever. Are you sure?')) return;
     if (!confirm('Really sure? This cannot be undone.')) return;
     const keys = [
@@ -824,36 +866,40 @@ function setupEventListeners() {
       'autoTheme',
       'theme',
     ];
-    keys.forEach((k) => localStorage.removeItem(`nf_${k}`));
+    keys.forEach((k) => {
+      try {
+        localStorage.removeItem(`nf_${k}`);
+      } catch {}
+    });
     location.reload();
   });
 
   // Trophy preview
-  qs('#trophy-preview')?.addEventListener('click', () => {
-    qs('#trophy-overlay')?.classList.add('show');
+  qs<HTMLElement>('#trophy-preview')?.addEventListener('click', () => {
+    qs<HTMLElement>('#trophy-overlay')?.classList.add('show');
     updateTrophyModal();
   });
 
-  qs('#trophy-close-btn')?.addEventListener('click', () => {
-    qs('#trophy-overlay')?.classList.remove('show');
+  qs<HTMLElement>('#trophy-close-btn')?.addEventListener('click', () => {
+    qs<HTMLElement>('#trophy-overlay')?.classList.remove('show');
   });
-  qs('#trophy-overlay')?.addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) qs('#trophy-overlay').classList.remove('show');
+  qs<HTMLElement>('#trophy-overlay')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) qs<HTMLElement>('#trophy-overlay')?.classList.remove('show');
   });
 
   // Rank up close
-  qs('#rank-up-close-btn')?.addEventListener('click', hideRankUp);
-  qs('#rank-overlay')?.addEventListener('click', (e) => {
+  qs<HTMLElement>('#rank-up-close-btn')?.addEventListener('click', hideRankUp);
+  qs<HTMLElement>('#rank-overlay')?.addEventListener('click', (e) => {
     if (e.target === e.currentTarget) hideRankUp();
   });
 
   // Celebration click to dismiss
-  qs('#celebrate')?.addEventListener('click', (e) => {
+  qs<HTMLElement>('#celebrate')?.addEventListener('click', (e) => {
     if (e.target === e.currentTarget) hideCelebrate();
   });
 
   // Freeze button
-  qs('#freeze-btn')?.addEventListener('click', () => {
+  qs<HTMLElement>('#freeze-btn')?.addEventListener('click', () => {
     if (useFreeze()) {
       renderStreak();
       showCelebrate('Streak Saved', 'Freeze used. Your chain continues.', '❄️');
@@ -861,7 +907,7 @@ function setupEventListeners() {
   });
 
   // Claim streak
-  qs('#claim-btn')?.addEventListener('click', () => {
+  qs<HTMLElement>('#claim-btn')?.addEventListener('click', () => {
     const CHECK_ITEMS = ['dc1', 'dc2', 'dc3', 'dc4', 'dc5', 'dc6', 'dc7'];
     const allChecked = CHECK_ITEMS.every((id) => !!data.dailyChecks[id]);
     if (!allChecked) return;
@@ -869,6 +915,7 @@ function setupEventListeners() {
     const result = claimStreak();
     if (result.success) {
       addXP(50, 'Streak Verified');
+      dailyChecksBuilt = false;
       renderDailyChecks();
       updateDashboard();
       if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 120]);
@@ -876,111 +923,120 @@ function setupEventListeners() {
   });
 
   // Backlog subject chips
-  qsa('#bl-chip-row .chip').forEach((chip) => {
+  qsa<HTMLElement>('#bl-chip-row .chip').forEach((chip) => {
     chip.addEventListener('click', () => {
-      qsa('#bl-chip-row .chip').forEach((c) => c.classList.remove('active'));
+      qsa<HTMLElement>('#bl-chip-row .chip').forEach((c) => c.classList.remove('active'));
       chip.classList.add('active');
-      selectedBacklogSubject = chip.dataset.sub;
-      const input = qs('#bl-subject');
-      if (input) input.value = chip.dataset.sub;
+      selectedBacklogSubject = (chip as HTMLElement).dataset.sub || 'Physics';
+      const input = qs<HTMLInputElement>('#bl-subject');
+      if (input) input.value = selectedBacklogSubject;
     });
   });
 
   // Add backlog
-  qs('#bl-add-btn')?.addEventListener('click', () => {
-    const name = qs('#bl-name')?.value || '';
-    const count = qs('#bl-count')?.value || '';
+  qs<HTMLElement>('#bl-add-btn')?.addEventListener('click', () => {
+    const name = (qs<HTMLInputElement>('#bl-name')?.value || '') as string;
+    const countStr = (qs<HTMLInputElement>('#bl-count')?.value || '') as string;
     const result = addBacklog({
       name,
-      count: parseInt(count, 10),
+      count: parseInt(countStr, 10),
       subject: selectedBacklogSubject,
     });
     if (!result.success) {
       showCelebrate('Missing Info', result.error || 'Enter details', '⚠️', true);
       return;
     }
-    if (qs('#bl-name')) qs('#bl-name').value = '';
-    if (qs('#bl-count')) qs('#bl-count').value = '';
+    const nameEl = qs<HTMLInputElement>('#bl-name');
+    const countEl = qs<HTMLInputElement>('#bl-count');
+    if (nameEl) nameEl.value = '';
+    if (countEl) countEl.value = '';
     renderBacklogs();
     updateDashboard();
   });
 
   // Add habit
-  qs('#h-add-btn')?.addEventListener('click', () => {
-    const name = qs('#h-name')?.value || '';
-    const anchor = qs('#h-anchor')?.value || '';
+  qs<HTMLElement>('#h-add-btn')?.addEventListener('click', () => {
+    const name = (qs<HTMLInputElement>('#h-name')?.value || '') as string;
+    const anchor = (qs<HTMLInputElement>('#h-anchor')?.value || '') as string;
     const result = addHabit({ name, anchor });
     if (!result.success) {
       showCelebrate('Missing Info', result.error || 'Enter a habit name', '⚠️', true);
       return;
     }
-    if (qs('#h-name')) qs('#h-name').value = '';
-    if (qs('#h-anchor')) qs('#h-anchor').value = '';
+    const nEl = qs<HTMLInputElement>('#h-name');
+    const aEl = qs<HTMLInputElement>('#h-anchor');
+    if (nEl) nEl.value = '';
+    if (aEl) aEl.value = '';
     renderHabits();
     updateDashboard();
   });
 
   // Add battle task
-  qs('#bp-add-btn')?.addEventListener('click', () => {
-    const task = qs('#bp-task')?.value || '';
-    const priority = qs('#bp-priority')?.value || 'B';
-    const time = qs('#bp-time')?.value || 'morning';
+  qs<HTMLElement>('#bp-add-btn')?.addEventListener('click', () => {
+    const task = (qs<HTMLInputElement>('#bp-task')?.value || '') as string;
+    const priority = (qs<HTMLSelectElement>('#bp-priority')?.value || 'B') as string;
+    const time = (qs<HTMLSelectElement>('#bp-time')?.value || 'morning') as string;
     const result = addTask({ task, priority, time });
     if (!result.success) {
       showCelebrate('Missing Info', result.error || 'Enter a task', '⚠️', true);
       return;
     }
-    if (qs('#bp-task')) qs('#bp-task').value = '';
+    const taskEl = qs<HTMLInputElement>('#bp-task');
+    if (taskEl) taskEl.value = '';
     renderBattle();
     updateDashboard();
   });
 
   // Focus timer modes
-  qsa('.timer-chip').forEach((chip) => {
+  qsa<HTMLElement>('.timer-chip').forEach((chip) => {
     chip.addEventListener('click', () => {
-      const mode = parseInt(chip.dataset.mode, 10);
+      const mode = parseInt((chip as HTMLElement).dataset.mode || '0', 10);
       setMode(mode);
-      qsa('.timer-chip').forEach((c) => c.classList.remove('active'));
+      qsa<HTMLElement>('.timer-chip').forEach((c) => c.classList.remove('active'));
       chip.classList.add('active');
       updateFocusUI();
     });
   });
 
   // Focus start/pause
-  qs('#focus-btn')?.addEventListener('click', () => {
+  qs<HTMLElement>('#focus-btn')?.addEventListener('click', () => {
     const state = getTimerState();
+    const btn = qs<HTMLElement>('#focus-btn');
+    if (!btn) return;
     if (state.running) {
       pauseTimer();
-      qs('#focus-btn').textContent = 'Resume';
+      btn.textContent = 'Resume';
     } else {
       startTimer();
-      qs('#focus-btn').textContent = 'Pause';
+      btn.textContent = 'Pause';
     }
   });
 
   // Focus reset
-  qs('#focus-reset-btn')?.addEventListener('click', () => {
+  qs<HTMLElement>('#focus-reset-btn')?.addEventListener('click', () => {
     stopTimer();
-    const btn = qs('#focus-btn');
+    const btn = qs<HTMLElement>('#focus-btn');
     if (btn) btn.textContent = 'Start';
     updateFocusUI();
   });
 
   // Urge timer
-  qs('#urge-start-btn')?.addEventListener('click', () => {
+  qs<HTMLElement>('#urge-start-btn')?.addEventListener('click', () => {
     startUrge();
-    qs('#urge-start-btn').textContent = 'Surfing...';
+    const btn = qs<HTMLElement>('#urge-start-btn');
+    if (btn) btn.textContent = 'Surfing...';
   });
 
-  qs('#urge-reset-btn')?.addEventListener('click', () => {
+  qs<HTMLElement>('#urge-reset-btn')?.addEventListener('click', () => {
     resetUrge();
-    qs('#urge-start-btn').textContent = 'Start Surf';
+    const btn = qs<HTMLElement>('#urge-start-btn');
+    if (btn) btn.textContent = 'Start Surf';
     updateUrgeUI();
   });
 
   // Firebase config
-  qs('#save-fb-config-btn')?.addEventListener('click', () => {
-    const val = qs('#fb-config')?.value || '';
+  qs<HTMLElement>('#save-fb-config-btn')?.addEventListener('click', () => {
+    const val = (qs<HTMLTextAreaElement>('#fb-config')?.value || '') as string;
     const result = saveConfig(val);
     if (!result.success) {
       showCelebrate('Error', result.error || 'Failed', '⚠️', true);
@@ -991,9 +1047,9 @@ function setupEventListeners() {
   });
 
   // Firebase auth
-  qs('#login-btn')?.addEventListener('click', async () => {
-    const email = qs('#auth-email')?.value || '';
-    const password = qs('#auth-password')?.value || '';
+  qs<HTMLElement>('#login-btn')?.addEventListener('click', async () => {
+    const email = (qs<HTMLInputElement>('#auth-email')?.value || '') as string;
+    const password = (qs<HTMLInputElement>('#auth-password')?.value || '') as string;
     const result = await login(email, password);
     if (!result.success) {
       showCelebrate('Login Failed', result.error || 'Try again', '⚠️', true);
@@ -1001,9 +1057,9 @@ function setupEventListeners() {
     renderSettingsAuth();
   });
 
-  qs('#signup-btn')?.addEventListener('click', async () => {
-    const email = qs('#auth-email')?.value || '';
-    const password = qs('#auth-password')?.value || '';
+  qs<HTMLElement>('#signup-btn')?.addEventListener('click', async () => {
+    const email = (qs<HTMLInputElement>('#auth-email')?.value || '') as string;
+    const password = (qs<HTMLInputElement>('#auth-password')?.value || '') as string;
     const result = await signup(email, password);
     if (!result.success) {
       showCelebrate('Sign Up Failed', result.error || 'Try again', '⚠️', true);
@@ -1011,13 +1067,13 @@ function setupEventListeners() {
     renderSettingsAuth();
   });
 
-  qs('#logout-btn')?.addEventListener('click', () => {
+  qs<HTMLElement>('#logout-btn')?.addEventListener('click', () => {
     logout();
     renderSettingsAuth();
   });
 
-  qs('#manual-sync-btn')?.addEventListener('click', () => {
-    scheduleSync(data, 0);
+  qs<HTMLElement>('#manual-sync-btn')?.addEventListener('click', () => {
+    scheduleSync(data as unknown as Record<string, unknown>, 0);
     showCelebrate('Synced', 'Your data is backed up to cloud.', '☁️');
   });
 }
@@ -1028,9 +1084,9 @@ function setupEventListeners() {
 
 function updateFocusUI() {
   const state = getTimerState();
-  const elTimer = qs('#focus-timer');
-  const elLabel = qs('#focus-mode-label');
-  const elRing = qs('#focus-ring');
+  const elTimer = qs<HTMLElement>('#focus-timer');
+  const elLabel = qs<HTMLElement>('#focus-mode-label');
+  const elRing = qs<HTMLElement>('#focus-ring');
 
   if (elTimer) {
     const m = state.minutes.toString().padStart(2, '0');
@@ -1039,16 +1095,17 @@ function updateFocusUI() {
   }
   if (elLabel) elLabel.textContent = state.modeLabel;
   if (elRing) {
-    const offset =
-      691 * (1 - (state.minutes * 60 + state.seconds) / (TIMER_MODES[state.mode].minutes * 60));
-    elRing.style.strokeDashoffset = offset;
+    const offset = 691 * (1 - (state.minutes * 60 + state.seconds) / (TIMER_MODES[state.mode].minutes * 60));
+    (elRing as unknown as HTMLElement).style.strokeDashoffset = String(offset);
+    // Actually set attribute for SVG circle
+    (elRing as unknown as SVGCircleElement).style.strokeDashoffset = `${offset}`;
   }
 }
 
 function updateUrgeUI() {
   const state = getUrgeState();
-  const elTimer = qs('#urge-timer');
-  const elRing = qs('#urge-ring');
+  const elTimer = qs<HTMLElement>('#urge-timer');
+  const elRing = qs<HTMLElement>('#urge-ring');
 
   if (elTimer) {
     const m = state.minutes.toString().padStart(2, '0');
@@ -1057,17 +1114,16 @@ function updateUrgeUI() {
   }
   if (elRing) {
     const offset = 691 * (1 - state.pct / 100);
-    elRing.style.strokeDashoffset = offset;
+    (elRing as unknown as SVGCircleElement).style.strokeDashoffset = `${offset}`;
   }
 }
 
 function updateThemeButtons() {
   const current = getCurrentTheme();
-  qsa('[data-theme]').forEach((btn) => {
-    const isActive = btn.dataset.theme === current;
-    btn.style.boxShadow = isActive
-      ? '0 0 0 2px var(--accent-start), 0 0 12px var(--shadow)'
-      : 'none';
+  qsa<HTMLElement>('[data-theme]').forEach((btn) => {
+    const b = btn as HTMLElement;
+    const isActive = b.dataset.theme === current;
+    b.style.boxShadow = isActive ? '0 0 0 2px var(--accent-start), 0 0 12px var(--shadow)' : 'none';
   });
 }
 
@@ -1078,15 +1134,14 @@ async function updateTrophyModal() {
   const info = xpLevel(data.xp);
 
   // Update rank display in modal
-  const elIcon = qs('#trophy-rank-icon');
-  const elName = qs('#trophy-rank-name');
-  const elTier = qs('#trophy-rank-tier');
-  const elNext = qs('#trophy-rank-next');
+  const elIcon = qs<HTMLElement>('#trophy-rank-icon');
+  const elName = qs<HTMLElement>('#trophy-rank-name');
+  const elTier = qs<HTMLElement>('#trophy-rank-tier');
+  const elNext = qs<HTMLElement>('#trophy-rank-next');
 
   if (elIcon) elIcon.textContent = rank.icon;
   if (elName) elName.textContent = rank.name;
-  if (elTier)
-    elTier.textContent = `Rank · ${rank.rarity.charAt(0).toUpperCase() + rank.rarity.slice(1)}`;
+  if (elTier) elTier.textContent = `Rank · ${rank.rarity.charAt(0).toUpperCase() + rank.rarity.slice(1)}`;
   if (elNext) {
     if (next) {
       const needed = xpForLevel(next.level) - data.xp;
@@ -1097,7 +1152,7 @@ async function updateTrophyModal() {
   }
 
   // Render badges grid
-  const elBadges = qs('#trophy-badges');
+  const elBadges = qs<HTMLElement>('#trophy-badges');
   if (!elBadges) return;
 
   const { RANK_TIERS } = await import('./modules/ranks.ts');
@@ -1136,8 +1191,8 @@ async function updateTrophyModal() {
 // ===================================================================
 
 onTick((state) => {
-  const elTimer = qs('#focus-timer');
-  const elRing = qs('#focus-ring');
+  const elTimer = qs<HTMLElement>('#focus-timer');
+  const elRing = qs<HTMLElement>('#focus-ring') as unknown as SVGCircleElement;
   if (elTimer) {
     const m = state.minutes.toString().padStart(2, '0');
     const s = state.seconds.toString().padStart(2, '0');
@@ -1146,13 +1201,13 @@ onTick((state) => {
   if (elRing) {
     const total = TIMER_MODES[state.mode].minutes * 60;
     const elapsed = total - (state.minutes * 60 + state.seconds);
-    elRing.style.strokeDashoffset = 691 * (1 - elapsed / total);
+    elRing.style.strokeDashoffset = `${691 * (1 - elapsed / total)}`;
   }
 });
 
 onComplete((mode) => {
   showCelebrate('Focus Complete', 'Take a real break. No phone.', '⏱️', false, mode.xp);
-  const btn = qs('#focus-btn');
+  const btn = qs<HTMLElement>('#focus-btn');
   if (btn) btn.textContent = 'Start';
   updateDashboard();
   checkQuests();
@@ -1163,21 +1218,21 @@ onComplete((mode) => {
 });
 
 onUrgeTick((state) => {
-  const elTimer = qs('#urge-timer');
-  const elRing = qs('#urge-ring');
+  const elTimer = qs<HTMLElement>('#urge-timer');
+  const elRing = qs<HTMLElement>('#urge-ring') as unknown as SVGCircleElement;
   if (elTimer) {
     const m = state.minutes.toString().padStart(2, '0');
     const s = state.seconds.toString().padStart(2, '0');
     elTimer.textContent = `${m}:${s}`;
   }
   if (elRing) {
-    elRing.style.strokeDashoffset = 691 * (1 - state.pct / 100);
+    elRing.style.strokeDashoffset = `${691 * (1 - state.pct / 100)}`;
   }
 });
 
 onUrgeComplete(() => {
   showCelebrate('Urge Surfed', 'You are stronger than your impulses.', '🌊');
-  const btn = qs('#urge-start-btn');
+  const btn = qs<HTMLElement>('#urge-start-btn');
   if (btn) btn.textContent = 'Start Surf';
 });
 
@@ -1186,54 +1241,86 @@ onUrgeComplete(() => {
 // ===================================================================
 
 function init() {
-  // Register service worker for background timer support
+  // Service Worker: vite-plugin-pwa handles registration via registerSW.js
+  // Fallback base-aware registration only if not already controlled
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
-      console.warn('SW registration failed:', err);
-    });
+    const base = (import.meta.env.BASE_URL as string) || '/neurofocus/';
+    setTimeout(() => {
+      if (!navigator.serviceWorker.controller) {
+        navigator.serviceWorker.register(`${base}sw.js`).catch((err) => {
+          console.debug('SW fallback registration:', (err as Error)?.message || err);
+        });
+      }
+    }, 2000);
   }
-  loadTheme();
+  try {
+    loadTheme();
+  } catch (e) {
+    console.warn('Theme load failed', e);
+  }
   updateThemeButtons();
-  resetHabitsForNewDay();
-  initFirebase();
-  generateDailyQuests();
+  try {
+    resetHabitsForNewDay();
+  } catch {}
+  try {
+    initFirebase();
+  } catch {}
+  try {
+    generateDailyQuests();
+  } catch {}
 
-  // Initial renders
-  renderHabits();
-  renderBacklogs();
-  renderBattle();
-  renderDailyChecks();
-  renderXP();
-  renderQuests();
-  renderRitual();
-  renderSubjects();
-  renderFlowBanner();
-  renderStreak();
-  renderBuddy();
-  renderWeekly();
-  updateDashboard();
-  renderTrophyPreview();
-  recordDailyStat();
-  checkQuests();
-  checkBadges();
-  renderProfile();
-  renderQuote();
-  renderFocusHistory();
-  renderHero();
+  // Initial renders - each wrapped to prevent one failure breaking entire app
+  const safe = (fn: () => void, label: string) => {
+    try {
+      fn();
+    } catch (e) {
+      console.error(`Render failed [${label}]`, e);
+    }
+  };
+
+  safe(() => renderHabits(), 'habits');
+  safe(() => renderBacklogs(), 'backlogs');
+  safe(() => renderBattle(), 'battle');
+  safe(() => renderDailyChecks(), 'dailyChecks');
+  safe(() => renderXP(), 'xp');
+  safe(() => renderQuests(), 'quests');
+  safe(() => renderRitual(), 'ritual');
+  safe(() => renderSubjects(), 'subjects');
+  safe(() => renderFlowBanner(), 'flow');
+  safe(() => renderStreak(), 'streak');
+  safe(() => renderBuddy(), 'buddy');
+  safe(() => renderWeekly(), 'weekly');
+  safe(() => updateDashboard(), 'dashboard');
+  safe(() => renderTrophyPreview(), 'trophyPreview');
+  safe(() => recordDailyStat(), 'recordStat');
+  safe(() => checkQuests(), 'checkQuests');
+  safe(() => checkBadges(), 'checkBadges');
+  safe(() => renderProfile(), 'profile');
+  safe(() => renderQuote(), 'quote');
+  safe(() => renderFocusHistory(), 'focusHistory');
+  safe(() => renderHero(), 'hero');
 
   // Setup auto-theme checkbox
-  const atEl = qs('#auto-theme');
-  if (atEl) atEl.checked = !!data.autoTheme;
+  const atEl = qs<HTMLInputElement>('#auto-theme');
+  if (atEl) {
+    try {
+      atEl.checked = !!data.autoTheme;
+    } catch {}
+  }
 
   // Setup event listeners
-  setupEventListeners();
+  try {
+    setupEventListeners();
+  } catch (e) {
+    console.error('Failed to setup listeners', e);
+  }
 
   // Header scroll effect
   let ticking = false;
   window.addEventListener('scroll', () => {
     if (!ticking) {
       requestAnimationFrame(() => {
-        const header = qs('#app-header');
+        const header = qs<HTMLElement>('#app-header');
         if (header) header.classList.toggle('scrolled', window.scrollY > 10);
         ticking = false;
       });
@@ -1242,5 +1329,13 @@ function init() {
   });
 }
 
-// Start the app
-init();
+// Start the app with global error handler
+try {
+  init();
+} catch (e) {
+  console.error('NeuroFocus init crashed', e);
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#050810;color:#fff;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;font-family:sans-serif';
+  el.innerHTML = `<div><h2>⚠️ Something went wrong</h2><p>Please refresh. If persists, clear site data from Settings.</p><pre style="font-size:12px;opacity:0.7;margin-top:12px;max-width:90vw;overflow:auto">${escapeHTML(String(e))}</pre><button onclick="localStorage.clear();location.reload()" style="margin-top:16px;padding:10px 20px;background:#00d9ff;color:#000;border:none;border-radius:8px;font-weight:700">Clear Data & Reload</button></div>`;
+  document.body.appendChild(el);
+}

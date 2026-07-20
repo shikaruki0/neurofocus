@@ -7,7 +7,10 @@
 import { get, set } from './storage.ts';
 import { todayStr } from '../utils/date.ts';
 
-const TODAY = todayStr();
+function getToday(): string {
+  return todayStr();
+}
+const TODAY = getToday();
 
 interface MorningRitual {
   date: string;
@@ -134,30 +137,31 @@ export const data = {
 
 // --- Daily resets ---
 
-/** Resets per-day counters if the day has changed. */
+/** Resets per-day counters if the day has changed. Uses dynamic today for correctness. */
 function applyDailyResets(): void {
-  if (data.focusDate !== TODAY) {
+  const today = getToday();
+  if (data.focusDate !== today) {
     data.focusMinutes = 0;
-    data.focusDate = TODAY;
-    set('focusDate', TODAY);
+    data.focusDate = today;
+    set('focusDate', today);
     set('focusMinutes', 0);
   }
 
-  if (data.flowState.date !== TODAY) {
-    data.flowState = { date: TODAY, sessions: 0 };
+  if (data.flowState.date !== today) {
+    data.flowState = { date: today, sessions: 0 };
     set('flowState', data.flowState);
   }
 
-  if (data.dailyCheckDate !== TODAY) {
+  if (data.dailyCheckDate !== today) {
     data.dailyChecks = {};
-    data.dailyCheckDate = TODAY;
+    data.dailyCheckDate = today;
     set('dailyChecks', {});
-    set('dailyCheckDate', TODAY);
+    set('dailyCheckDate', today);
   }
 
-  if (data.morningRitual.date !== TODAY) {
+  if (data.morningRitual.date !== today) {
     data.morningRitual = {
-      date: TODAY,
+      date: today,
       completed: false,
       steps: [false, false, false, false, false],
     };
@@ -165,12 +169,12 @@ function applyDailyResets(): void {
   }
 
   const statCheck = get<string>('statCheck', '');
-  if (statCheck !== TODAY) {
+  if (statCheck !== today) {
     data.backlogsToday = 0;
     data.habitsToday = 0;
     set('backlogsToday', 0);
     set('habitsToday', 0);
-    set('statCheck', TODAY);
+    set('statCheck', today);
   }
 }
 
@@ -198,13 +202,14 @@ export function persistMany(keys: (keyof typeof data)[]): void {
  * Resets habit "today" flags if it's a new day.
  */
 export function resetHabitsForNewDay(): void {
+  const today = getToday();
   const lastCheck = get<string>('habitCheck', '');
-  if (lastCheck !== TODAY) {
+  if (lastCheck !== today) {
     data.habits.forEach((h) => {
       h.today = false;
     });
     set('habits', data.habits);
-    set('habitCheck', TODAY);
+    set('habitCheck', today);
   }
 }
 

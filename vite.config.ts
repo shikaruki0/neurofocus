@@ -1,7 +1,11 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // Base path for GitHub Pages project site https://shikaruki0.github.io/neurofocus/
+  // In dev we use '/' for convenience, in production build for GH Pages we use '/neurofocus/'
+  // If you use a custom domain, change this to '/'
+  base: mode === 'production' ? '/neurofocus/' : '/',
   root: '.',
   publicDir: 'public',
   build: {
@@ -20,7 +24,7 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'NeuroFocus',
         short_name: 'NeuroFocus',
@@ -63,4 +67,4 @@ export default defineConfig({
       },
     }),
   ],
-});
+}));

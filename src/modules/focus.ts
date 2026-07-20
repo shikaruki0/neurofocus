@@ -50,12 +50,16 @@ export function setMode(modeIndex: number): void {
 }
 
 /**
- * Starts or resumes the timer.
+ * Starts or resumes the timer. Fixed: correctly resumes from paused state.
  */
 export function startTimer(): void {
   if (isRunning) return;
   isRunning = true;
-  startTimestamp = Date.now();
+  // For accurate background timing, track start timestamp based on remaining time
+  // remainingSeconds holds time left; totalSeconds is the full mode duration for progress calc
+  // On resume, we set startTimestamp so that elapsed calculation yields correct remaining
+  const elapsedBefore = totalSeconds - remainingSeconds;
+  startTimestamp = Date.now() - elapsedBefore * 1000;
 
   intervalId = setInterval(() => {
     const elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
@@ -69,13 +73,26 @@ export function startTimer(): void {
 }
 
 /**
- * Pauses the timer.
+ * Pauses the timer. Preserves remaining time for correct resume.
  */
 export function pauseTimer(): void {
+  if (!isRunning) {
+    // Already paused, just clear interval safety
+    if (intervalId) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+    return;
+  }
   isRunning = false;
   if (intervalId) {
     clearInterval(intervalId);
     intervalId = null;
+  }
+  // Freeze remainingSeconds at pause time so resume is accurate
+  if (startTimestamp) {
+    const elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
+    remainingSeconds = Math.max(0, totalSeconds - elapsed);
   }
 }
 

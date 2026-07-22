@@ -20,10 +20,10 @@ function spaFallbackPlugin() {
 }
 
 export default defineConfig(({ mode }) => ({
-  // Base path for GitHub Pages project site https://shikaruki0.github.io/neurofocus/
-  // In dev we use '/' for convenience, in production build for GH Pages we use '/neurofocus/'
-  // If you use a custom domain, change this to '/'
-  base: mode === 'production' ? '/neurofocus/' : '/',
+  // Base path
+  // Netlify (recommended): use '/'
+  // GitHub Pages project site: change to '/neurofocus/' if needed
+  base: mode === 'production' ? '/' : '/',
   root: '.',
   publicDir: 'public',
   build: {

@@ -3,11 +3,9 @@
  * All form inputs should pass through these before processing.
  */
 
-interface ValidationResult<T> {
-  valid: boolean;
-  error?: string;
-  data?: T;
-}
+type ValidationResult<T = void> =
+  | (T extends void ? { valid: true; data?: undefined } : { valid: true; data: T })
+  | { valid: false; error: string; data?: never };
 
 interface BacklogInput {
   name: string;
@@ -23,12 +21,6 @@ interface BattleTaskInput {
   task: string;
   priority: string;
   time: string;
-}
-
-interface FirebaseConfigInput {
-  apiKey: string;
-  projectId: string;
-  [key: string]: unknown;
 }
 
 /**
@@ -120,50 +112,4 @@ export function validateBuddyName(name: string): ValidationResult<string> {
   if (!clean) return { valid: false, error: 'Enter partner name' };
   if (clean.length > 50) return { valid: false, error: 'Name too long' };
   return { valid: true, data: clean };
-}
-
-/**
- * Validates a Firebase config JSON string.
- * @param jsonStr - JSON string
- * @returns Validation result
- */
-export function validateFirebaseConfig(jsonStr: string): ValidationResult<FirebaseConfigInput> {
-  const clean = String(jsonStr || '').trim();
-  if (!clean) return { valid: false, error: 'Paste your Firebase config JSON first' };
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(clean);
-  } catch {
-    return { valid: false, error: 'Invalid JSON. Paste the exact config object.' };
-  }
-  if (typeof parsed !== 'object' || parsed === null) {
-    return { valid: false, error: 'Config must be a JSON object' };
-  }
-  const required = ['apiKey', 'projectId'];
-  const missing = required.filter((k) => !(parsed as Record<string, unknown>)[k]);
-  if (missing.length) {
-    return { valid: false, error: `Missing required fields: ${missing.join(', ')}` };
-  }
-  return { valid: true, data: parsed as FirebaseConfigInput };
-}
-
-/**
- * Validates email format (basic).
- * @param email - Email string
- * @returns True if valid
- */
-export function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
-}
-
-/**
- * Validates password strength.
- * @param password - Password string
- * @returns Validation result
- */
-export function validatePassword(password: string): ValidationResult<void> {
-  if (!password || password.length < 6) {
-    return { valid: false, error: 'Password must be at least 6 characters' };
-  }
-  return { valid: true };
 }

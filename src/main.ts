@@ -17,8 +17,9 @@ import './styles/components.css';
 import './styles/animations.css';
 
 import { data, resetHabitsForNewDay } from './modules/data.ts';
+import { clearAll } from './modules/storage.ts';
 import { xpLevel, xpForLevel, addXP } from './modules/xp.ts';
-import { getCurrentRank, getNextRank } from './modules/ranks.ts';
+import { getCurrentRank, getNextRank, RANK_TIERS } from './modules/ranks.ts';
 import { checkBadges, SPECIAL_BADGES, TOTAL_BADGES } from './modules/badges.ts';
 import { generateDailyQuests, checkQuests } from './modules/quests.ts';
 import { toggleStep, getRitual, RITUAL_STEPS, RITUAL_ICONS } from './modules/ritual.ts';
@@ -51,15 +52,7 @@ import { setBuddy, removeBuddy, getBuddy, shareProgress } from './modules/buddy.
 import { setTheme, loadTheme, setAutoTheme, getCurrentTheme } from './modules/theme.ts';
 import { getDailyQuote } from './modules/quotes.ts';
 import { showCelebrate, hideCelebrate, hideRankUp } from './modules/celebration.ts';
-import {
-  initFirebase,
-  saveConfig,
-  login,
-  signup,
-  logout,
-  getCurrentUser,
-  scheduleSync,
-} from './modules/firebase.ts';
+import { endLocalSession, isSessionStarted, startLocalSession } from './modules/session.ts';
 import { escapeHTML } from './utils/sanitize.ts';
 import { qs, qsa } from './utils/dom.ts';
 import { todayStr, currentDOW, DAY_LABELS } from './utils/date.ts';
@@ -129,7 +122,9 @@ function renderHero() {
   if (elTitle) elTitle.textContent = rank.name;
   if (elSub) elSub.textContent = `Level ${info.level} · ${info.current}/${info.need} XP`;
   if (elBadge) {
-    elBadge.textContent = next ? `Next: ${next.name} at Level ${next.level}` : 'The Enlightened · Max Rank';
+    elBadge.textContent = next
+      ? `Next: ${next.name} at Level ${next.level}`
+      : 'The Enlightened · Max Rank';
   }
 }
 
@@ -394,7 +389,8 @@ function renderBacklogs() {
 
   const backlogs = getBacklogs();
   if (!backlogs.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">📚</div>No backlogs yet. Add your first lecture.</div>';
+    el.innerHTML =
+      '<div class="empty"><div class="empty-icon">📚</div>No backlogs yet. Add your first lecture.</div>';
     return;
   }
 
@@ -463,7 +459,8 @@ function renderHabits() {
   const today = currentDOW();
 
   if (!habits.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">🔥</div>No habits yet. Stack one tiny habit.</div>';
+    el.innerHTML =
+      '<div class="empty"><div class="empty-icon">🔥</div>No habits yet. Stack one tiny habit.</div>';
     return;
   }
 
@@ -515,7 +512,8 @@ function renderBattle() {
   const colors: Record<string, string> = { A: 'var(--danger)', B: '#f59e0b', C: 'var(--success)' };
 
   if (!tasks.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">⚔️</div>No battle tasks. Plan your 6 priorities.</div>';
+    el.innerHTML =
+      '<div class="empty"><div class="empty-icon">⚔️</div>No battle tasks. Plan your 6 priorities.</div>';
     return;
   }
 
@@ -558,7 +556,8 @@ function renderFocusHistory() {
 
   const sessions = getRecentSessions(10);
   if (!sessions.length) {
-    el.innerHTML = '<div class="empty" style="padding:12px">No sessions yet. Complete a focus timer to see history.</div>';
+    el.innerHTML =
+      '<div class="empty" style="padding:12px">No sessions yet. Complete a focus timer to see history.</div>';
     return;
   }
 
@@ -617,32 +616,25 @@ function renderQuote() {
   if (el) el.textContent = `"${getDailyQuote()}"`;
 }
 
-function renderSettingsAuth() {
-  const config = localStorage.getItem('nf_firebase_config') || '';
-  const setupEl = qs<HTMLElement>('#firebase-setup');
-  const authPanel = qs<HTMLElement>('#firebase-auth-panel');
-  const guestView = qs<HTMLElement>('#auth-guest-view');
-  const userView = qs<HTMLElement>('#auth-user-view');
+function renderSession() {
+  const overlay = qs<HTMLElement>('#login-overlay');
+  if (!overlay) return;
 
-  if (!config) {
-    if (setupEl) setupEl.classList.remove('hidden');
-    if (authPanel) authPanel.classList.add('hidden');
+  if (isSessionStarted()) {
+    overlay.classList.add('hidden');
+    overlay.classList.remove('show');
     return;
   }
 
-  if (setupEl) setupEl.classList.add('hidden');
-  if (authPanel) authPanel.classList.remove('hidden');
+  const nameInput = qs<HTMLInputElement>('#login-name');
+  const missionInput = qs<HTMLTextAreaElement>('#login-mission');
+  if (nameInput)
+    nameInput.value = data.profileName && data.profileName !== 'Warrior' ? data.profileName : '';
+  if (missionInput) missionInput.value = data.mission || '';
 
-  const user = getCurrentUser();
-  if (user) {
-    if (guestView) guestView.classList.add('hidden');
-    if (userView) userView.classList.remove('hidden');
-    const elEmail = qs<HTMLElement>('#auth-email-display');
-    if (elEmail) elEmail.textContent = user.email || '';
-  } else {
-    if (guestView) guestView.classList.remove('hidden');
-    if (userView) userView.classList.add('hidden');
-  }
+  overlay.classList.remove('hidden');
+  overlay.classList.add('show');
+  setTimeout(() => nameInput?.focus(), 50);
 }
 
 // ===================================================================
@@ -657,7 +649,10 @@ function updateDashboard() {
   const dh = qs<HTMLElement>('#d-habits');
 
   if (ds) ds.textContent = String(data.detoxStreak || 0);
-  if (db) db.textContent = String(data.backlogs.reduce((a, b) => a + ((b.total || 0) - (b.done || 0)), 0));
+  if (db)
+    db.textContent = String(
+      data.backlogs.reduce((a, b) => a + ((b.total || 0) - (b.done || 0)), 0),
+    );
   if (df) df.textContent = (Math.floor(((data.focusMinutes || 0) / 60) * 10) / 10).toFixed(1);
   if (dh) dh.textContent = String(data.habits.filter((h) => h.today).length);
 
@@ -714,7 +709,6 @@ function setupEventListeners() {
   qs<HTMLElement>('#settings-btn')?.addEventListener('click', () => {
     qs<HTMLElement>('#settings-overlay')?.classList.add('show');
     renderProfile();
-    renderSettingsAuth();
   });
 
   // Close settings
@@ -722,7 +716,30 @@ function setupEventListeners() {
     qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
   });
   qs<HTMLElement>('#settings-overlay')?.addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
+    if (e.target === e.currentTarget)
+      qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
+  });
+
+  // Simple local login
+  qs<HTMLElement>('#login-continue-btn')?.addEventListener('click', () => {
+    const name = qs<HTMLInputElement>('#login-name')?.value || '';
+    const mission = qs<HTMLTextAreaElement>('#login-mission')?.value || '';
+    const result = startLocalSession({ name, mission });
+
+    if (!result.success) {
+      showCelebrate('Check Details', result.error || 'Enter your name to continue', '⚠️', true);
+      return;
+    }
+
+    renderSession();
+    renderProfile();
+    showCelebrate('Welcome Back', `Ready when you are, ${data.profileName}.`, '🧠');
+  });
+
+  qs<HTMLElement>('#switch-profile-btn')?.addEventListener('click', () => {
+    endLocalSession();
+    qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
+    renderSession();
   });
 
   // Theme buttons
@@ -836,41 +853,7 @@ function setupEventListeners() {
   qs<HTMLElement>('#reset-all-btn')?.addEventListener('click', () => {
     if (!confirm('⚠️ This will DELETE ALL your progress forever. Are you sure?')) return;
     if (!confirm('Really sure? This cannot be undone.')) return;
-    const keys = [
-      'profileName',
-      'mission',
-      'xp',
-      'totalFocusMinutes',
-      'detoxStreak',
-      'consecutiveStreak',
-      'lastStreakDate',
-      'detoxLastDate',
-      'dailyChecks',
-      'dailyCheckDate',
-      'backlogs',
-      'habits',
-      'battle',
-      'focusMinutes',
-      'focusDate',
-      'flowState',
-      'badges',
-      'dailyQuests',
-      'morningRitual',
-      'subjects',
-      'weeklyStats',
-      'streakFreezes',
-      'buddyName',
-      'backlogsToday',
-      'habitsToday',
-      'sessions',
-      'autoTheme',
-      'theme',
-    ];
-    keys.forEach((k) => {
-      try {
-        localStorage.removeItem(`nf_${k}`);
-      } catch {}
-    });
+    clearAll();
     location.reload();
   });
 
@@ -1033,49 +1016,6 @@ function setupEventListeners() {
     if (btn) btn.textContent = 'Start Surf';
     updateUrgeUI();
   });
-
-  // Firebase config
-  qs<HTMLElement>('#save-fb-config-btn')?.addEventListener('click', () => {
-    const val = (qs<HTMLTextAreaElement>('#fb-config')?.value || '') as string;
-    const result = saveConfig(val);
-    if (!result.success) {
-      showCelebrate('Error', result.error || 'Failed', '⚠️', true);
-    } else {
-      showCelebrate('Connected', 'Firebase config saved!', '☁️');
-      renderSettingsAuth();
-    }
-  });
-
-  // Firebase auth
-  qs<HTMLElement>('#login-btn')?.addEventListener('click', async () => {
-    const email = (qs<HTMLInputElement>('#auth-email')?.value || '') as string;
-    const password = (qs<HTMLInputElement>('#auth-password')?.value || '') as string;
-    const result = await login(email, password);
-    if (!result.success) {
-      showCelebrate('Login Failed', result.error || 'Try again', '⚠️', true);
-    }
-    renderSettingsAuth();
-  });
-
-  qs<HTMLElement>('#signup-btn')?.addEventListener('click', async () => {
-    const email = (qs<HTMLInputElement>('#auth-email')?.value || '') as string;
-    const password = (qs<HTMLInputElement>('#auth-password')?.value || '') as string;
-    const result = await signup(email, password);
-    if (!result.success) {
-      showCelebrate('Sign Up Failed', result.error || 'Try again', '⚠️', true);
-    }
-    renderSettingsAuth();
-  });
-
-  qs<HTMLElement>('#logout-btn')?.addEventListener('click', () => {
-    logout();
-    renderSettingsAuth();
-  });
-
-  qs<HTMLElement>('#manual-sync-btn')?.addEventListener('click', () => {
-    scheduleSync(data as unknown as Record<string, unknown>, 0);
-    showCelebrate('Synced', 'Your data is backed up to cloud.', '☁️');
-  });
 }
 
 // ===================================================================
@@ -1095,7 +1035,8 @@ function updateFocusUI() {
   }
   if (elLabel) elLabel.textContent = state.modeLabel;
   if (elRing) {
-    const offset = 691 * (1 - (state.minutes * 60 + state.seconds) / (TIMER_MODES[state.mode].minutes * 60));
+    const offset =
+      691 * (1 - (state.minutes * 60 + state.seconds) / (TIMER_MODES[state.mode].minutes * 60));
     (elRing as unknown as HTMLElement).style.strokeDashoffset = String(offset);
     // Actually set attribute for SVG circle
     (elRing as unknown as SVGCircleElement).style.strokeDashoffset = `${offset}`;
@@ -1127,7 +1068,7 @@ function updateThemeButtons() {
   });
 }
 
-async function updateTrophyModal() {
+function updateTrophyModal() {
   const rank = getCurrentRank(xpLevel(data.xp).level);
   const next = getNextRank(xpLevel(data.xp).level);
   const unlocked = data.badgesUnlocked || [];
@@ -1141,7 +1082,8 @@ async function updateTrophyModal() {
 
   if (elIcon) elIcon.textContent = rank.icon;
   if (elName) elName.textContent = rank.name;
-  if (elTier) elTier.textContent = `Rank · ${rank.rarity.charAt(0).toUpperCase() + rank.rarity.slice(1)}`;
+  if (elTier)
+    elTier.textContent = `Rank · ${rank.rarity.charAt(0).toUpperCase() + rank.rarity.slice(1)}`;
   if (elNext) {
     if (next) {
       const needed = xpForLevel(next.level) - data.xp;
@@ -1154,8 +1096,6 @@ async function updateTrophyModal() {
   // Render badges grid
   const elBadges = qs<HTMLElement>('#trophy-badges');
   if (!elBadges) return;
-
-  const { RANK_TIERS } = await import('./modules/ranks.ts');
 
   let html = '<div class="category-label">Rank Tiers</div><div class="badge-grid">';
   html += RANK_TIERS.map((t) => {
@@ -1263,9 +1203,6 @@ function init() {
     resetHabitsForNewDay();
   } catch {}
   try {
-    initFirebase();
-  } catch {}
-  try {
     generateDailyQuests();
   } catch {}
 
@@ -1296,6 +1233,7 @@ function init() {
   safe(() => checkQuests(), 'checkQuests');
   safe(() => checkBadges(), 'checkBadges');
   safe(() => renderProfile(), 'profile');
+  safe(() => renderSession(), 'session');
   safe(() => renderQuote(), 'quote');
   safe(() => renderFocusHistory(), 'focusHistory');
   safe(() => renderHero(), 'hero');
@@ -1335,7 +1273,12 @@ try {
 } catch (e) {
   console.error('NeuroFocus init crashed', e);
   const el = document.createElement('div');
-  el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#050810;color:#fff;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;font-family:sans-serif';
-  el.innerHTML = `<div><h2>⚠️ Something went wrong</h2><p>Please refresh. If persists, clear site data from Settings.</p><pre style="font-size:12px;opacity:0.7;margin-top:12px;max-width:90vw;overflow:auto">${escapeHTML(String(e))}</pre><button onclick="localStorage.clear();location.reload()" style="margin-top:16px;padding:10px 20px;background:#00d9ff;color:#000;border:none;border-radius:8px;font-weight:700">Clear Data & Reload</button></div>`;
+  el.style.cssText =
+    'position:fixed;inset:0;z-index:9999;background:#050810;color:#fff;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;font-family:sans-serif';
+  el.innerHTML = `<div><h2>⚠️ Something went wrong</h2><p>Please refresh. If persists, clear site data from Settings.</p><pre style="font-size:12px;opacity:0.7;margin-top:12px;max-width:90vw;overflow:auto">${escapeHTML(String(e))}</pre><button id="nf-crash-clear-btn" type="button" style="margin-top:16px;padding:10px 20px;background:#00d9ff;color:#000;border:none;border-radius:8px;font-weight:700">Clear Data & Reload</button></div>`;
+  el.querySelector<HTMLButtonElement>('#nf-crash-clear-btn')?.addEventListener('click', () => {
+    localStorage.clear();
+    location.reload();
+  });
   document.body.appendChild(el);
 }

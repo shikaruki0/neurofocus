@@ -138,10 +138,10 @@ export function exportAll(): Record<string, unknown> {
  * @param data
  * @returns Number of keys imported
  */
-export function importAll(data: Record<string, unknown>): number {
+export function importAll(data: unknown): number {
   let count = 0;
-  if (!data || typeof data !== 'object') return 0;
-  for (const [key, value] of Object.entries(data)) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return 0;
+  for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
     set(key, value);
     count++;
   }

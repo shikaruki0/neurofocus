@@ -60,26 +60,3 @@ export function sanitizeString(str: unknown, maxLength = 500): string {
   if (str === null || str === undefined) return '';
   return String(str).trim().slice(0, maxLength);
 }
-
-interface FirebaseConfig {
-  apiKey: string;
-  projectId: string;
-  authDomain: string;
-  [key: string]: unknown;
-}
-
-/**
- * Validates a Firebase config object structure.
- * Only checks for required keys — does NOT validate values.
- * @param config - Parsed config object
- * @returns True if structure is valid
- */
-export function isValidFirebaseConfig(config: unknown): config is FirebaseConfig {
-  if (!config || typeof config !== 'object') return false;
-  const required = ['apiKey', 'projectId', 'authDomain'];
-  return required.every(
-    (key) =>
-      typeof (config as Record<string, unknown>)[key] === 'string' &&
-      (config as Record<string, unknown>)[key] !== '',
-  );
-}

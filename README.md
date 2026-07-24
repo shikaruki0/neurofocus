@@ -4,7 +4,7 @@
 
 **Gamified Productivity & Study App**
 
-*Level up your brain. Build unbreakable discipline. Track everything that matters.*
+_Level up your brain. Build unbreakable discipline. Track everything that matters._
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
@@ -27,7 +27,7 @@
 - 🌅 **Morning Ritual** — 5-step priming routine for 2x XP boost
 - 🧘 **Detox Protocol** — Urge surfing timer for digital discipline
 - 📊 **Weekly Reports** — Visual activity breakdown
-- ☁️ **Cloud Sync** — Optional Firebase backup
+- 🔐 **Frictionless Local Login** — Start instantly with a private on-device profile
 - 🎨 **3 Themes** — Midnight, Cream, Dusk + auto-switch by time
 - 📱 **PWA** — Installable, works offline
 - 🔔 **Haptic Feedback** — Vibration on milestones (mobile)
@@ -38,8 +38,8 @@
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+ 
-- npm or yarn
+- [Node.js](https://nodejs.org/) 20.19+ (22 LTS recommended)
+- npm 10+ or yarn
 
 ### Installation
 
@@ -78,7 +78,7 @@ neurofocus/
 │   │   ├── components.css   # Cards, buttons, inputs, modals
 │   │   └── animations.css   # Keyframes and transitions
 │   ├── modules/             # Feature modules
-│   │   ├── storage.js       # LocalStorage abstraction + sync
+│   │   ├── storage.js       # LocalStorage abstraction
 │   │   ├── xp.js            # XP, levels, ranks
 │   │   ├── quests.js        # Daily quest generation + checking
 │   │   ├── ritual.js        # Morning ritual logic
@@ -96,7 +96,7 @@ neurofocus/
 │   │   ├── quotes.js        # Daily quotes
 │   │   ├── celebration.js   # Confetti + modal celebrations
 │   │   ├── sound.js         # Web Audio sound engine
-│   │   └── firebase.js      # Cloud sync
+│   │   └── session.js       # Frictionless local login
 │   ├── ui/                  # DOM rendering
 │   │   ├── render.js        # Main render orchestrator
 │   │   ├── home.js          # Home tab rendering
@@ -139,19 +139,16 @@ npm run test:coverage
 
 ## 🔧 Configuration
 
-### Firebase Cloud Sync (Optional)
+### Login & Data Storage
 
-1. Go to [firebase.google.com](https://firebase.google.com)
-2. Create a project → Add Web App
-3. Copy the config JSON
-4. Paste in Settings → Cloud Sync
+NeuroFocus uses a frictionless local profile login. Users enter a display name once, then continue instantly. Progress is saved privately in the browser with no external account setup.
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `VITE_APP_TITLE` | App title (default: NeuroFocus) |
-| `VITE_APP_VERSION` | Version displayed in settings |
+| Variable           | Description                     |
+| ------------------ | ------------------------------- |
+| `VITE_APP_TITLE`   | App title (default: NeuroFocus) |
+| `VITE_APP_VERSION` | Version displayed in settings   |
 
 ---
 

@@ -27,7 +27,8 @@ _Level up your brain. Build unbreakable discipline. Track everything that matter
 - 🌅 **Morning Ritual** — 5-step priming routine for 2x XP boost
 - 🧘 **Detox Protocol** — Urge surfing timer for digital discipline
 - 📊 **Weekly Reports** — Visual activity breakdown
-- 🔐 **Frictionless Local Login** — Start instantly with a private on-device profile
+- 🔐 **Safe account start** — Continue with email for cross-device sync or skip for a local-only profile
+- 💾 **Progress protection** — Local backups and explicit local/cloud/merge choices prevent silent overwrites
 - 🎨 **3 Themes** — Midnight, Cream, Dusk + auto-switch by time
 - 📱 **PWA** — Installable, works offline
 - 🔔 **Haptic Feedback** — Vibration on milestones (mobile)
@@ -141,14 +142,20 @@ npm run test:coverage
 
 ### Login & Data Storage
 
-NeuroFocus uses a frictionless local profile login. Users enter a display name once, then continue instantly. Progress is saved privately in the browser with no external account setup.
+The first screen offers **Continue with Email** (a Supabase magic link for cross-device sync) and **Skip for now** (a display-name profile saved locally). Missing cloud configuration never blocks local use. Existing local data is not deleted when logging out. When both local and cloud data exist, the app backs up locally and requires an explicit local, cloud, or safe merge choice before replacing anything.
+
+See [docs/supabase-setup.md](docs/supabase-setup.md) for the one-time database and Auth setup.
 
 ### Environment Variables
 
-| Variable           | Description                     |
-| ------------------ | ------------------------------- |
-| `VITE_APP_TITLE`   | App title (default: NeuroFocus) |
-| `VITE_APP_VERSION` | Version displayed in settings   |
+| Variable                 | Description                                        |
+| ------------------------ | -------------------------------------------------- |
+| `VITE_SUPABASE_URL`      | Supabase project URL (optional for local mode)     |
+| `VITE_SUPABASE_ANON_KEY` | Public Supabase anon key (optional for local mode) |
+| `VITE_APP_TITLE`         | App title (default: NeuroFocus)                    |
+| `VITE_APP_VERSION`       | Version displayed in settings                      |
+
+Never commit `.env.local` or real credentials.
 
 ---
 

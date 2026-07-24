@@ -2309,3 +2309,11 @@ select.input {
     grid-template-columns: 1fr;
   }
 }
+
+/* Account start screen */
+#login-overlay .modal {
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+#login-overlay .btn {
+  min-height: 48px;
+}

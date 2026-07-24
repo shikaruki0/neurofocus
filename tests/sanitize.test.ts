@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  escapeHTML,
-  sanitizeAttr,
-  sanitizeNumber,
-  sanitizeString,
-  isValidFirebaseConfig,
-} from '../src/utils/sanitize.ts';
+import { escapeHTML, sanitizeAttr, sanitizeNumber, sanitizeString } from '../src/utils/sanitize.ts';
 
 describe('Sanitize', () => {
   describe('escapeHTML', () => {
@@ -105,29 +99,6 @@ describe('Sanitize', () => {
 
     it('returns empty for null', () => {
       expect(sanitizeString(null)).toBe('');
-    });
-  });
-
-  describe('isValidFirebaseConfig', () => {
-    it('validates correct config', () => {
-      const config = { apiKey: 'abc', projectId: 'proj', authDomain: 'proj.firebaseapp.com' };
-      expect(isValidFirebaseConfig(config)).toBe(true);
-    });
-
-    it('rejects null', () => {
-      expect(isValidFirebaseConfig(null)).toBe(false);
-    });
-
-    it('rejects non-object', () => {
-      expect(isValidFirebaseConfig('string')).toBe(false);
-    });
-
-    it('rejects missing apiKey', () => {
-      expect(isValidFirebaseConfig({ projectId: 'proj' })).toBe(false);
-    });
-
-    it('rejects empty apiKey', () => {
-      expect(isValidFirebaseConfig({ apiKey: '', projectId: 'proj' })).toBe(false);
     });
   });
 });

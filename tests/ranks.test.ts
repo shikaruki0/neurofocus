@@ -52,8 +52,9 @@ describe('Ranks', () => {
   describe('getNextRank', () => {
     it('returns Apprentice for level 1', () => {
       const next = getNextRank(1);
-      expect(next.name).toBe('Apprentice');
-      expect(next.level).toBe(5);
+      expect(next).not.toBeNull();
+      expect(next?.name).toBe('Apprentice');
+      expect(next?.level).toBe(5);
     });
 
     it('returns null for max level', () => {
@@ -70,7 +71,8 @@ describe('Ranks', () => {
   describe('getRankByLevel', () => {
     it('finds rank by exact level', () => {
       const rank = getRankByLevel(25);
-      expect(rank.name).toBe('Analyst');
+      expect(rank).toBeDefined();
+      expect(rank?.name).toBe('Analyst');
     });
 
     it('returns undefined for non-existent level', () => {

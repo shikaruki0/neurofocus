@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <!-- Relaxed CSP for PWA + Firebase compat SDK -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googleapis.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://www.gstatic.com https://firestore.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https:; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
+  <!-- Strict CSP: no third-party account scripts required -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
   <meta name="theme-color" content="#050810">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,6 +20,30 @@
 </head>
 <body>
   <div class="ambient"></div>
+
+
+  <!-- Frictionless Local Login -->
+  <div class="overlay center hidden" id="login-overlay" role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <div class="modal" style="max-width:420px">
+      <div style="text-align:center;margin-bottom:var(--space-4)">
+        <div class="rank-icon" style="margin-bottom:var(--space-3)">🧠</div>
+        <div class="modal-title" id="login-title" style="margin-bottom:var(--space-2)">Welcome to NeuroFocus</div>
+        <p style="font-size:var(--font-sm);color:var(--text-secondary);line-height:var(--line-relaxed)">
+          Enter your name once. Your progress auto-saves on this device — no technical setup, no email verification, no friction.
+        </p>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <label class="text-xs font-bold text-tertiary" for="login-name">Display Name</label>
+        <input type="text" class="input mt-2" id="login-name" placeholder="e.g., Aarav" maxlength="30" autocomplete="name">
+        <label class="text-xs font-bold text-tertiary" for="login-mission" style="display:block;margin-top:var(--space-3)">Mission (optional)</label>
+        <textarea class="input mt-2" id="login-mission" rows="3" placeholder="What are you working toward?" maxlength="300"></textarea>
+        <button class="btn btn-block mt-3" id="login-continue-btn">Continue</button>
+        <div class="tip">
+          <strong>Private by default.</strong> This is a simple local profile login. Your data stays in this browser until you delete it.
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Header -->
   <header class="header" id="app-header">
@@ -365,7 +389,7 @@
             <div class="profile-info">
               <div class="profile-name" id="profile-name">Warrior</div>
               <div class="profile-rank" id="profile-rank">Initiate · Level 1</div>
-              <div class="sync-status offline" id="sync-status">📵 Offline — Local Only</div>
+              <div class="sync-status online" id="sync-status">💾 Auto-saved locally</div>
             </div>
           </div>
           <div class="profile-mission" id="profile-mission">I am building discipline to score 100% and master my skills.</div>
@@ -373,38 +397,7 @@
             <input type="text" class="input" id="profile-name-input" placeholder="Your display name" maxlength="30">
             <button class="btn btn-sm" id="save-name-btn" style="width:auto;flex-shrink:0">Save</button>
           </div>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <div class="section-label"><span>☁️ Cloud Sync</span><div class="line"></div></div>
-        <div class="card" id="firebase-config-panel">
-          <div id="firebase-setup">
-            <div style="font-size:var(--font-sm);font-weight:700;margin-bottom:var(--space-2)">Enable Cloud Backup</div>
-            <p style="font-size:var(--font-xs);color:var(--text-secondary);line-height:var(--line-relaxed);margin-bottom:var(--space-3)">
-              1. Go to <strong>firebase.google.com</strong> on your phone<br>
-              2. Create a project → Add Web App<br>
-              3. Copy the config JSON and paste below
-            </p>
-            <textarea class="input" id="fb-config" rows="3" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}' style="font-size:0.7rem;font-family:monospace;margin-bottom:var(--space-3)"></textarea>
-            <button class="btn btn-sm btn-block" id="save-fb-config-btn">Connect Firebase</button>
-          </div>
-          <div id="firebase-auth-panel" class="hidden">
-            <div id="auth-guest-view">
-              <input type="email" class="input mb-2" id="auth-email" placeholder="Email">
-              <input type="password" class="input mb-2" id="auth-password" placeholder="Password">
-              <div class="btn-group">
-                <button class="btn btn-sm" id="login-btn">Login</button>
-                <button class="btn btn-ghost btn-sm" id="signup-btn">Sign Up</button>
-              </div>
-            </div>
-            <div id="auth-user-view" class="hidden">
-              <div style="font-size:var(--font-sm);font-weight:700" id="auth-email-display"></div>
-              <div class="sync-status online mt-2" id="cloud-sync-status">☁️ Auto-sync enabled</div>
-              <button class="btn btn-ghost btn-sm btn-block mt-3" id="manual-sync-btn">🔄 Sync Now</button>
-              <button class="btn btn-danger btn-sm btn-block mt-2" id="logout-btn">Logout</button>
-            </div>
-          </div>
+          <button class="btn btn-ghost btn-sm btn-block mt-2" id="switch-profile-btn">↪ Switch Profile</button>
         </div>
       </div>
 
@@ -471,7 +464,7 @@
           <div style="text-align:center;font-size:var(--font-xs);color:var(--text-tertiary);line-height:var(--line-relaxed)">
             NeuroFocus v14<br>
             Built for dopamine-driven discipline.<br>
-            Data auto-saves locally. Enable cloud sync for cross-device backup.
+            Data auto-saves locally on this device. No account setup required.
           </div>
         </div>
       </div>

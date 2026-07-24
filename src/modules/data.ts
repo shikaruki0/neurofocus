@@ -128,6 +128,8 @@ export const data = {
   weeklyStats: get<WeeklyStat[]>('weeklyStats', []),
   streakFreezes: get<number>('streakFreezes', 0),
   buddyName: get<string>('buddyName', ''),
+  hasOnboarded: get<boolean>('hasOnboarded', false),
+  lastLoginAt: get<number | null>('lastLoginAt', null),
   backlogsToday: get<number>('backlogsToday', 0),
   habitsToday: get<number>('habitsToday', 0),
   sessions: get<Session[]>('sessions', []),

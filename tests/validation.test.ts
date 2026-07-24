@@ -6,9 +6,6 @@ import {
   validateProfileName,
   validateMission,
   validateBuddyName,
-  validateFirebaseConfig,
-  isValidEmail,
-  validatePassword,
 } from '../src/utils/validation.ts';
 
 describe('Validation', () => {
@@ -16,8 +13,8 @@ describe('Validation', () => {
     it('validates correct input', () => {
       const result = validateBacklog({ name: 'Rotational Motion', count: 10 });
       expect(result.valid).toBe(true);
-      expect(result.data.name).toBe('Rotational Motion');
-      expect(result.data.count).toBe(10);
+      expect(result.data!.name).toBe('Rotational Motion');
+      expect(result.data!.count).toBe(10);
     });
 
     it('rejects empty name', () => {
@@ -60,7 +57,7 @@ describe('Validation', () => {
     it('provides default anchor', () => {
       const result = validateHabit({ name: 'Meditate', anchor: '' });
       expect(result.valid).toBe(true);
-      expect(result.data.anchor).toBe('waking up');
+      expect(result.data!.anchor).toBe('waking up');
     });
   });
 
@@ -82,13 +79,13 @@ describe('Validation', () => {
     it('defaults invalid priority to B', () => {
       const result = validateBattleTask({ task: 'Task', priority: 'Z', time: 'morning' });
       expect(result.valid).toBe(true);
-      expect(result.data.priority).toBe('B');
+      expect(result.data!.priority).toBe('B');
     });
 
     it('defaults invalid time to morning', () => {
       const result = validateBattleTask({ task: 'Task', priority: 'A', time: 'night' });
       expect(result.valid).toBe(true);
-      expect(result.data.time).toBe('morning');
+      expect(result.data!.time).toBe('morning');
     });
   });
 
@@ -96,7 +93,7 @@ describe('Validation', () => {
     it('validates correct name', () => {
       const result = validateProfileName('Warrior');
       expect(result.valid).toBe(true);
-      expect(result.data).toBe('Warrior');
+      expect(result.data!).toBe('Warrior');
     });
 
     it('rejects empty name', () => {
@@ -113,7 +110,7 @@ describe('Validation', () => {
 
     it('trims whitespace', () => {
       const result = validateProfileName('  Warrior  ');
-      expect(result.data).toBe('Warrior');
+      expect(result.data!).toBe('Warrior');
     });
   });
 
@@ -140,60 +137,6 @@ describe('Validation', () => {
 
     it('rejects empty name', () => {
       expect(validateBuddyName('').valid).toBe(false);
-    });
-  });
-
-  describe('validateFirebaseConfig', () => {
-    it('validates correct config', () => {
-      const config =
-        '{"apiKey":"abc123","projectId":"myproject","authDomain":"myproject.firebaseapp.com"}';
-      const result = validateFirebaseConfig(config);
-      expect(result.valid).toBe(true);
-      expect(result.data.apiKey).toBe('abc123');
-    });
-
-    it('rejects empty string', () => {
-      expect(validateFirebaseConfig('').valid).toBe(false);
-    });
-
-    it('rejects invalid JSON', () => {
-      expect(validateFirebaseConfig('{invalid}').valid).toBe(false);
-    });
-
-    it('rejects missing apiKey', () => {
-      const config = '{"projectId":"myproject"}';
-      expect(validateFirebaseConfig(config).valid).toBe(false);
-    });
-
-    it('rejects missing projectId', () => {
-      const config = '{"apiKey":"abc"}';
-      expect(validateFirebaseConfig(config).valid).toBe(false);
-    });
-  });
-
-  describe('isValidEmail', () => {
-    it('validates correct emails', () => {
-      expect(isValidEmail('test@example.com')).toBe(true);
-      expect(isValidEmail('user.name@domain.co')).toBe(true);
-    });
-
-    it('rejects invalid emails', () => {
-      expect(isValidEmail('notanemail')).toBe(false);
-      expect(isValidEmail('missing@domain')).toBe(false);
-      expect(isValidEmail('@nodomain.com')).toBe(false);
-      expect(isValidEmail('')).toBe(false);
-    });
-  });
-
-  describe('validatePassword', () => {
-    it('accepts 6+ character passwords', () => {
-      expect(validatePassword('123456').valid).toBe(true);
-      expect(validatePassword('longpassword').valid).toBe(true);
-    });
-
-    it('rejects short passwords', () => {
-      expect(validatePassword('12345').valid).toBe(false);
-      expect(validatePassword('').valid).toBe(false);
     });
   });
 });

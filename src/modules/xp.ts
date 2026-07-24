@@ -71,7 +71,7 @@ export function getMultiplier(): number {
   const hour = currentHour();
 
   // Morning ritual: 2x until noon
-  if (data.morningRitual.completed && data.morningRitual.date === today && hour < 12) {
+  if (data.morningRitual.completed && data.morningRitual.date === today && hour <= 12) {
     return 2;
   }
 

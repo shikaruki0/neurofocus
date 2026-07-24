@@ -53,6 +53,16 @@ import { setTheme, loadTheme, setAutoTheme, getCurrentTheme } from './modules/th
 import { getDailyQuote } from './modules/quotes.ts';
 import { showCelebrate, hideCelebrate, hideRankUp } from './modules/celebration.ts';
 import { endLocalSession, isSessionStarted, startLocalSession } from './modules/session.ts';
+import {
+  currentUser,
+  isEmailAuthConfigured,
+  onAuthChange,
+  restoreAuthSession,
+  sendMagicLink,
+  logout,
+} from './modules/auth.ts';
+import { createLocalBackup, syncOnLogin, syncNow } from './modules/cloudSync.ts';
+import { exportAll, importAll } from './modules/storage.ts';
 import { escapeHTML } from './utils/sanitize.ts';
 import { qs, qsa } from './utils/dom.ts';
 import { todayStr, currentDOW, DAY_LABELS } from './utils/date.ts';
@@ -619,22 +629,56 @@ function renderQuote() {
 function renderSession() {
   const overlay = qs<HTMLElement>('#login-overlay');
   if (!overlay) return;
-
-  if (isSessionStarted()) {
+  if (isSessionStarted() || currentUser()) {
     overlay.classList.add('hidden');
     overlay.classList.remove('show');
     return;
   }
-
-  const nameInput = qs<HTMLInputElement>('#login-name');
-  const missionInput = qs<HTMLTextAreaElement>('#login-mission');
-  if (nameInput)
-    nameInput.value = data.profileName && data.profileName !== 'Warrior' ? data.profileName : '';
-  if (missionInput) missionInput.value = data.mission || '';
-
+  qs<HTMLElement>('#login-choice')?.classList.remove('hidden');
+  qs<HTMLElement>('#email-login-form')?.classList.add('hidden');
+  qs<HTMLElement>('#local-login-form')?.classList.add('hidden');
   overlay.classList.remove('hidden');
   overlay.classList.add('show');
-  setTimeout(() => nameInput?.focus(), 50);
+}
+
+function renderAccountSettings() {
+  const user = currentUser();
+  const status = qs<HTMLElement>('#account-status');
+  const email = qs<HTMLElement>('#account-email');
+  const login = qs<HTMLElement>('#settings-login-btn');
+  const sync = qs<HTMLElement>('#sync-now-btn');
+  const out = qs<HTMLElement>('#logout-btn');
+  if (user) {
+    if (status) status.textContent = 'Synced status · progress is protected across devices.';
+    if (email) email.textContent = user.email || '';
+    login?.classList.add('hidden');
+    sync?.classList.remove('hidden');
+    out?.classList.remove('hidden');
+  } else {
+    if (status) status.textContent = 'Local only — login recommended to protect progress.';
+    if (email) email.textContent = '';
+    login?.classList.toggle('hidden', !isEmailAuthConfigured);
+    sync?.classList.add('hidden');
+    out?.classList.add('hidden');
+  }
+}
+
+function downloadBackup() {
+  createLocalBackup();
+  const blob = new Blob([JSON.stringify(exportAll(), null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `neurofocus-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function askSyncChoice(): 'local' | 'cloud' | 'merge' {
+  const answer = window.prompt(
+    'Progress exists both here and in the cloud. Choose: 1 = Use this device data, 2 = Use cloud data, 3 = Merge safely (recommended).',
+    '3',
+  );
+  return answer === '1' ? 'local' : answer === '2' ? 'cloud' : 'merge';
 }
 
 // ===================================================================
@@ -709,7 +753,28 @@ function setupEventListeners() {
   qs<HTMLElement>('#settings-btn')?.addEventListener('click', () => {
     qs<HTMLElement>('#settings-overlay')?.classList.add('show');
     renderProfile();
+    renderAccountSettings();
   });
+  qs<HTMLElement>('#settings-login-btn')?.addEventListener('click', () => {
+    qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
+    renderSession();
+    qs<HTMLElement>('#email-login-btn')?.click();
+  });
+  qs<HTMLElement>('#sync-now-btn')?.addEventListener('click', async () => {
+    try {
+      await syncNow();
+      renderAccountSettings();
+      showCelebrate('Synced', 'Your progress is protected.', '☁️');
+    } catch {
+      showCelebrate('Sync unavailable', 'Your local progress is still safe.', '⚠️', true);
+    }
+  });
+  qs<HTMLElement>('#logout-btn')?.addEventListener('click', async () => {
+    await logout();
+    renderAccountSettings();
+    renderSession();
+  });
+  qs<HTMLElement>('#export-backup-btn')?.addEventListener('click', downloadBackup);
 
   // Close settings
   qs<HTMLElement>('#settings-close-btn')?.addEventListener('click', () => {
@@ -720,20 +785,39 @@ function setupEventListeners() {
       qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
   });
 
-  // Simple local login
+  // Account start screen. All handlers are attached here (no inline JS).
+  qs<HTMLElement>('#email-login-btn')?.addEventListener('click', () => {
+    qs<HTMLElement>('#login-choice')?.classList.add('hidden');
+    qs<HTMLElement>('#email-login-form')?.classList.remove('hidden');
+    if (!isEmailAuthConfigured) {
+      const msg = qs<HTMLElement>('#login-message');
+      if (msg)
+        msg.textContent = 'Email login is not available right now. You can continue locally.';
+      qs<HTMLElement>('#send-login-btn')?.setAttribute('disabled', 'true');
+    }
+    qs<HTMLInputElement>('#login-email')?.focus();
+  });
+  qs<HTMLElement>('#back-login-btn')?.addEventListener('click', renderSession);
+  qs<HTMLElement>('#back-local-btn')?.addEventListener('click', renderSession);
+  qs<HTMLElement>('#skip-login-btn')?.addEventListener('click', () => {
+    qs<HTMLElement>('#login-choice')?.classList.add('hidden');
+    qs<HTMLElement>('#local-login-form')?.classList.remove('hidden');
+    qs<HTMLInputElement>('#login-name')?.focus();
+  });
+  qs<HTMLElement>('#send-login-btn')?.addEventListener('click', async () => {
+    const result = await sendMagicLink(qs<HTMLInputElement>('#login-email')?.value || '');
+    const msg = qs<HTMLElement>('#login-message');
+    if (msg) msg.textContent = result.message;
+  });
   qs<HTMLElement>('#login-continue-btn')?.addEventListener('click', () => {
-    const name = qs<HTMLInputElement>('#login-name')?.value || '';
-    const mission = qs<HTMLTextAreaElement>('#login-mission')?.value || '';
-    const result = startLocalSession({ name, mission });
-
+    const result = startLocalSession({ name: qs<HTMLInputElement>('#login-name')?.value || '' });
     if (!result.success) {
       showCelebrate('Check Details', result.error || 'Enter your name to continue', '⚠️', true);
       return;
     }
-
     renderSession();
     renderProfile();
-    showCelebrate('Welcome Back', `Ready when you are, ${data.profileName}.`, '🧠');
+    showCelebrate('Welcome', `Ready when you are, ${data.profileName}.`, '🧠');
   });
 
   qs<HTMLElement>('#switch-profile-btn')?.addEventListener('click', () => {
@@ -1252,6 +1336,40 @@ function init() {
   } catch (e) {
     console.error('Failed to setup listeners', e);
   }
+  renderAccountSettings();
+  // Restore a returning account without blocking offline startup.
+  void restoreAuthSession().then(async (user) => {
+    if (!user) {
+      renderSession();
+      return;
+    }
+    try {
+      const result = await syncOnLogin();
+      if (result.kind === 'conflict') {
+        await syncOnLogin(askSyncChoice());
+      }
+      renderAccountSettings();
+      updateDashboard();
+    } catch {
+      renderAccountSettings();
+    }
+  });
+  onAuthChange((user) => {
+    renderAccountSettings();
+    if (!user) return;
+    renderSession();
+    void syncOnLogin()
+      .then(async (result) => {
+        if (result.kind === 'conflict') {
+          await syncOnLogin(askSyncChoice());
+        }
+        updateDashboard();
+        renderAccountSettings();
+      })
+      .catch(() => {
+        showCelebrate('Sync unavailable', 'Your local progress is still safe.', '⚠️', true);
+      });
+  });
 
   // Header scroll effect
   let ticking = false;

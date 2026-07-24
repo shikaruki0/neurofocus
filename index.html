@@ -1,479 +1,1003 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="midnight">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <!-- Strict CSP: no third-party account scripts required -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
-  <meta name="theme-color" content="#050810">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="NeuroFocus — Gamified productivity & study app with XP, streaks, habits, and focus timer.">
-  <meta property="og:title" content="NeuroFocus">
-  <meta property="og:description" content="Level up your brain. Build unbreakable discipline.">
-  <meta property="og:type" content="website">
-  <!-- Vite will prepend base (/neurofocus/) to absolute URLs -->
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="apple-touch-icon" href="/icon-192.png">
-  <title>NeuroFocus</title>
-  <!-- Styles are imported via src/main.ts for proper bundling. No direct CSS links needed. -->
-</head>
-<body>
-  <div class="ambient"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <!-- Strict CSP: no third-party account scripts required -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
+    />
+    <meta name="theme-color" content="#050810" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="description"
+      content="NeuroFocus — Gamified productivity & study app with XP, streaks, habits, and focus timer."
+    />
+    <meta property="og:title" content="NeuroFocus" />
+    <meta property="og:description" content="Level up your brain. Build unbreakable discipline." />
+    <meta property="og:type" content="website" />
+    <!-- Vite will prepend base (/neurofocus/) to absolute URLs -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <title>NeuroFocus</title>
+    <!-- Styles are imported via src/main.ts for proper bundling. No direct CSS links needed. -->
+  </head>
+  <body>
+    <div class="ambient"></div>
 
-
-  <!-- Frictionless Local Login -->
-  <div class="overlay center hidden" id="login-overlay" role="dialog" aria-modal="true" aria-labelledby="login-title">
-    <div class="modal" style="max-width:420px">
-      <div style="text-align:center;margin-bottom:var(--space-4)">
-        <div class="rank-icon" style="margin-bottom:var(--space-3)">🧠</div>
-        <div class="modal-title" id="login-title" style="margin-bottom:var(--space-2)">Welcome to NeuroFocus</div>
-        <p style="font-size:var(--font-sm);color:var(--text-secondary);line-height:var(--line-relaxed)">
-          Enter your name once. Your progress auto-saves on this device — no technical setup, no email verification, no friction.
-        </p>
-      </div>
-      <div class="card" style="margin-bottom:0">
-        <label class="text-xs font-bold text-tertiary" for="login-name">Display Name</label>
-        <input type="text" class="input mt-2" id="login-name" placeholder="e.g., Aarav" maxlength="30" autocomplete="name">
-        <label class="text-xs font-bold text-tertiary" for="login-mission" style="display:block;margin-top:var(--space-3)">Mission (optional)</label>
-        <textarea class="input mt-2" id="login-mission" rows="3" placeholder="What are you working toward?" maxlength="300"></textarea>
-        <button class="btn btn-block mt-3" id="login-continue-btn">Continue</button>
-        <div class="tip">
-          <strong>Private by default.</strong> This is a simple local profile login. Your data stays in this browser until you delete it.
+    <!-- Account start screen: no onboarding here, only safe login choices -->
+    <div
+      class="overlay center hidden"
+      id="login-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="login-title"
+    >
+      <div class="modal" style="max-width: 420px">
+        <div style="text-align: center; margin-bottom: var(--space-4)">
+          <div class="rank-icon" style="margin-bottom: var(--space-3)">🧠</div>
+          <div class="modal-title" id="login-title">Welcome to NeuroFocus</div>
+          <p
+            style="
+              font-size: var(--font-sm);
+              color: var(--text-secondary);
+              line-height: var(--line-relaxed);
+            "
+          >
+            Login to keep progress safe across devices, or continue locally.
+          </p>
+        </div>
+        <div id="login-choice">
+          <button class="btn btn-block" id="email-login-btn">Continue with Email</button>
+          <button class="btn btn-ghost btn-block mt-2" id="skip-login-btn">Skip for now</button>
+          <div class="tip mt-3">Local only — login recommended to protect progress.</div>
+        </div>
+        <div id="email-login-form" class="hidden">
+          <label class="text-xs font-bold text-tertiary" for="login-email">Email address</label>
+          <input
+            type="email"
+            class="input mt-2"
+            id="login-email"
+            placeholder="you@example.com"
+            autocomplete="email"
+          />
+          <button class="btn btn-block mt-3" id="send-login-btn">Send secure login link</button>
+          <button class="btn btn-ghost btn-block mt-2" id="back-login-btn">Back</button>
+          <p id="login-message" class="tip mt-3" aria-live="polite"></p>
+        </div>
+        <div id="local-login-form" class="hidden">
+          <label class="text-xs font-bold text-tertiary" for="login-name">Display name</label>
+          <input
+            type="text"
+            class="input mt-2"
+            id="login-name"
+            placeholder="e.g., Aarav"
+            maxlength="30"
+            autocomplete="name"
+          />
+          <button class="btn btn-block mt-3" id="login-continue-btn">Continue locally</button>
+          <button class="btn btn-ghost btn-block mt-2" id="back-local-btn">Back</button>
+          <div class="tip mt-3">Local only — login recommended to protect progress.</div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Header -->
-  <header class="header" id="app-header">
-    <div class="brand">
-      <div class="brand-icon">🧠</div>
-      <div class="brand-text">Neuro<span>Focus</span></div>
-    </div>
-    <div class="header-actions">
-      <button class="icon-btn" id="settings-btn" title="Settings">≡</button>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main class="container">
-    <!-- HOME TAB -->
-    <section id="tab-home" class="tab-content">
-      <div class="hero-card" id="hero-card">
-        <div class="hero-icon" id="hero-icon">🌱</div>
-        <div class="hero-title" id="hero-title">Initiate</div>
-        <div class="hero-sub" id="hero-sub">Level 1 · Begin your ascent</div>
-        <div class="hero-badge" id="hero-badge">⚡ 0 / 100 XP</div>
+    <!-- Header -->
+    <header class="header" id="app-header">
+      <div class="brand">
+        <div class="brand-icon">🧠</div>
+        <div class="brand-text">Neuro<span>Focus</span></div>
       </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="settings-btn" title="Settings">≡</button>
+      </div>
+    </header>
 
-      <div class="card xp-card">
-        <div class="xp-header">
-          <div class="xp-title">🪙 Neurocoins</div>
-          <div class="xp-count" id="xp-count">0 XP</div>
+    <!-- Main Content -->
+    <main class="container">
+      <!-- HOME TAB -->
+      <section id="tab-home" class="tab-content">
+        <div class="hero-card" id="hero-card">
+          <div class="hero-icon" id="hero-icon">🌱</div>
+          <div class="hero-title" id="hero-title">Initiate</div>
+          <div class="hero-sub" id="hero-sub">Level 1 · Begin your ascent</div>
+          <div class="hero-badge" id="hero-badge">⚡ 0 / 100 XP</div>
         </div>
-        <div class="xp-track">
-          <div class="xp-fill" id="xp-bar" style="width:0%"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:6px;align-items:center">
-          <div class="xp-badge" id="xp-badge">Level 1</div>
-          <div class="xp-next" id="xp-next">0 / 100 to next</div>
-        </div>
-      </div>
 
-      <div class="card" style="text-align:center;padding:var(--space-3);border-left:3px solid var(--accent-start)">
-        <div style="font-size:var(--font-xs);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:6px">Daily Fuel</div>
-        <div id="daily-quote" style="font-size:var(--font-base);font-weight:600;color:var(--text);font-style:italic;line-height:var(--line-relaxed)">"Loading your daily fuel..."</div>
-      </div>
-
-      <div class="flow-banner hidden" id="flow-banner">
-        <div class="flow-banner-icon">🌊</div>
-        <div>
-          <div class="flow-banner-text">FLOW STATE ACTIVE</div>
-          <div class="flow-banner-sub">1.5x XP on all actions</div>
-        </div>
-      </div>
-
-      <div class="section-label"><span>🎯 Daily Quests</span><div class="line"></div></div>
-      <div id="daily-quests"></div>
-
-      <div class="section-label"><span>🌅 Morning Ritual</span><div class="line"></div></div>
-      <div class="card" id="ritual-card">
-        <div style="font-size:var(--font-sm);font-weight:700;margin-bottom:4px">Prime Your Brain</div>
-        <div style="font-size:var(--font-sm);color:var(--text-secondary);margin-bottom:var(--space-3)">Complete before 12 PM for 2x XP all day</div>
-        <div class="ritual-grid" id="ritual-grid"></div>
-        <div class="ritual-boost hidden" id="ritual-boost">
-          <span style="font-size:1.1rem">⚡</span>
-          <div class="ritual-boost-text">2x XP Boost Active</div>
-        </div>
-      </div>
-
-      <div class="section-label"><span>📊 Stats</span><div class="line"></div></div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-num" id="d-streak">0</div><div class="stat-label">Streak Days</div></div>
-        <div class="stat-card"><div class="stat-num" id="d-backlogs">0</div><div class="stat-label">Backlogs Left</div></div>
-        <div class="stat-card"><div class="stat-num" id="d-focus">0</div><div class="stat-label">Focus Hours</div></div>
-        <div class="stat-card"><div class="stat-num" id="d-habits">0</div><div class="stat-label">Habits Done</div></div>
-      </div>
-
-      <div class="section-label"><span>🔥 Streak</span><div class="line"></div></div>
-      <div class="card streak-card">
-        <div class="streak-flame">🔥</div>
-        <div class="streak-info">
-          <div class="streak-num" id="consecutive-streak">0</div>
-          <div class="streak-label">Consecutive Days</div>
-          <div class="freeze-badge" id="freeze-badge">❄️ 0 Freezes</div>
-        </div>
-        <button class="btn btn-ghost btn-sm" id="freeze-btn" style="display:none;width:auto;flex-shrink:0">Use Freeze</button>
-      </div>
-
-      <div class="section-label"><span>📚 Subject Mastery</span><div class="line"></div></div>
-      <div class="card">
-        <div class="subject-grid" id="subject-grid"></div>
-      </div>
-
-      <div class="section-label"><span>🏆 Trophy Room</span><div class="line"></div></div>
-      <div class="trophy-preview" id="trophy-preview">
-        <div class="trophy-preview-icon" id="trophy-preview-icon">🌱</div>
-        <div class="trophy-preview-info">
-          <div class="trophy-preview-title" id="trophy-preview-title">Initiate</div>
-          <div class="trophy-preview-sub" id="trophy-preview-sub">0 of 35 badges unlocked</div>
-        </div>
-        <div class="trophy-preview-arrow">›</div>
-      </div>
-
-      <div class="section-label"><span>✅ Daily Verification</span><div class="line"></div></div>
-      <div class="card card-glow" id="checkin-card">
-        <div style="font-size:var(--font-sm);font-weight:700;margin-bottom:4px;color:var(--text)">Focus Protocol</div>
-        <div style="font-size:var(--font-sm);color:var(--text-secondary);margin-bottom:var(--space-3)">Complete all checks to claim your streak</div>
-        <div id="daily-checks"></div>
-        <div id="checkin-status" class="mt-3 text-center font-bold text-sm" style="color:var(--danger)">0 / 7 checks</div>
-        <button class="btn btn-gold btn-block mt-3" id="claim-btn" disabled>🔥 Claim Streak</button>
-      </div>
-
-      <div class="section-label"><span>⚡ Priority</span><div class="line"></div></div>
-      <div class="card" id="dash-priority"><div class="empty"><div class="empty-icon">🎯</div>Loading your priorities...</div></div>
-
-      <div class="section-label"><span>📈 Weekly Report</span><div class="line"></div></div>
-      <div class="card" id="weekly-card">
-        <div class="week-summary" id="week-summary">
-          <div class="week-metric"><div class="week-metric-num" id="wk-focus">0</div><div class="week-metric-label">Focus Hrs</div></div>
-          <div class="week-metric"><div class="week-metric-num" id="wk-backlogs">0</div><div class="week-metric-label">Backlogs</div></div>
-          <div class="week-metric"><div class="week-metric-num" id="wk-habits">0</div><div class="week-metric-label">Habits</div></div>
-          <div class="week-metric"><div class="week-metric-num" id="wk-streaks">0</div><div class="week-metric-label">Streaks</div></div>
-        </div>
-        <div class="week-bar-wrap" id="week-bar-wrap"></div>
-        <div class="week-total">
-          <div class="week-total-text">This Week's Activity Score</div>
-          <div class="week-total-num" id="week-total-num">0</div>
-        </div>
-        <div class="tip" style="margin-top:10px"><strong>Consistency beats intensity.</strong> A little every day rewires your brain.</div>
-      </div>
-    </section>
-
-    <!-- DETOX TAB -->
-    <section id="tab-detox" class="tab-content hidden">
-      <div class="section-label"><span>🧘 Protocol</span><div class="line"></div></div>
-      <div style="font-size:var(--font-lg);font-weight:700;margin-bottom:4px">Neural Reset Protocol</div>
-      <div style="font-size:var(--font-sm);color:var(--text-secondary);line-height:var(--line-relaxed);margin-bottom:var(--space-3)">Abstinence resets your reward pathways.</div>
-
-      <div class="card">
-        <div class="flex justify-between items-center mb-2">
-          <div style="font-weight:700;font-size:var(--font-base)">Urge Surfing</div>
-          <span class="tag tag-blue">20 min</span>
-        </div>
-        <div style="font-size:var(--font-sm);color:var(--text-secondary);margin-bottom:var(--space-3);line-height:var(--line-relaxed)">Urges peak at 20–30 min then fade. Observe without acting.</div>
-        <div class="timer-wrap">
-          <div class="timer-ring-wrap">
-            <svg viewBox="0 0 240 240">
-              <defs><linearGradient id="gradRingUrge" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent-start)"/><stop offset="100%" stop-color="var(--accent-end)"/></linearGradient></defs>
-              <circle class="timer-ring-bg" cx="120" cy="120" r="110"/>
-              <circle class="timer-ring-fill" id="urge-ring" cx="120" cy="120" r="110" stroke="url(#gradRingUrge)"/>
-            </svg>
-            <div class="timer-text"><div class="timer-digits" id="urge-timer">20:00</div><div class="timer-label">Urge Timer</div></div>
+        <div class="card xp-card">
+          <div class="xp-header">
+            <div class="xp-title">🪙 Neurocoins</div>
+            <div class="xp-count" id="xp-count">0 XP</div>
+          </div>
+          <div class="xp-track">
+            <div class="xp-fill" id="xp-bar" style="width: 0%"></div>
+          </div>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              margin-top: 6px;
+              align-items: center;
+            "
+          >
+            <div class="xp-badge" id="xp-badge">Level 1</div>
+            <div class="xp-next" id="xp-next">0 / 100 to next</div>
           </div>
         </div>
-        <div class="btn-group">
-          <button class="btn btn-block" id="urge-start-btn">Start Surf</button>
-          <button class="btn btn-ghost btn-block" id="urge-reset-btn">Reset</button>
+
+        <div
+          class="card"
+          style="
+            text-align: center;
+            padding: var(--space-3);
+            border-left: 3px solid var(--accent-start);
+          "
+        >
+          <div
+            style="
+              font-size: var(--font-xs);
+              font-weight: 700;
+              letter-spacing: 0.1em;
+              text-transform: uppercase;
+              color: var(--text-tertiary);
+              margin-bottom: 6px;
+            "
+          >
+            Daily Fuel
+          </div>
+          <div
+            id="daily-quote"
+            style="
+              font-size: var(--font-base);
+              font-weight: 600;
+              color: var(--text);
+              font-style: italic;
+              line-height: var(--line-relaxed);
+            "
+          >
+            "Loading your daily fuel..."
+          </div>
         </div>
-      </div>
 
-      <div class="card">
-        <div style="font-weight:700;font-size:var(--font-base);margin-bottom:var(--space-3)">Replacement Activities</div>
-        <div class="check-row" style="cursor:default"><span style="font-size:1.1rem">🚶</span><span style="font-size:var(--font-sm);font-weight:500">Walk without phone</span></div>
-        <div class="check-row" style="cursor:default"><span style="font-size:1.1rem">🚿</span><span style="font-size:var(--font-sm);font-weight:500">Cold shower</span></div>
-        <div class="check-row" style="cursor:default"><span style="font-size:1.1rem">📝</span><span style="font-size:var(--font-sm);font-weight:500">Journal your "Why"</span></div>
-        <div class="check-row" style="cursor:default"><span style="font-size:1.1rem">📖</span><span style="font-size:var(--font-sm);font-weight:500">Read physical books</span></div>
-        <div class="check-row" style="cursor:default"><span style="font-size:1.1rem">🧘</span><span style="font-size:var(--font-sm);font-weight:500">Meditate 10 min</span></div>
-      </div>
-    </section>
-
-    <!-- BACKLOG TAB -->
-    <section id="tab-backlog" class="tab-content hidden">
-      <div class="section-label"><span>📚 Work</span><div class="line"></div></div>
-      <div style="font-size:var(--font-lg);font-weight:700;margin-bottom:4px">Backlog Blaster</div>
-      <div style="font-size:var(--font-sm);color:var(--text-secondary);line-height:var(--line-relaxed);margin-bottom:var(--space-3)">Micro-modules. Small wins. Big dopamine.</div>
-
-      <div class="card">
-        <div class="input-row mb-3">
-          <input type="text" class="input flex-1" id="bl-name" placeholder="Topic (e.g., Rotational Motion)" maxlength="100">
-          <input type="number" class="input short" id="bl-count" placeholder="Lectures" min="1" max="9999">
+        <div class="flow-banner hidden" id="flow-banner">
+          <div class="flow-banner-icon">🌊</div>
+          <div>
+            <div class="flow-banner-text">FLOW STATE ACTIVE</div>
+            <div class="flow-banner-sub">1.5x XP on all actions</div>
+          </div>
         </div>
-        <div style="font-size:var(--font-xs);font-weight:700;color:var(--text-secondary);margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em">Select Subject</div>
-        <div class="chip-row" id="bl-chip-row">
-          <span class="tag tag-blue chip active" data-sub="Physics">Physics</span>
-          <span class="tag tag-red chip" data-sub="Chemistry">Chemistry</span>
-          <span class="tag tag-gold chip" data-sub="Math">Math</span>
-          <span class="tag tag-green chip" data-sub="Biology">Biology</span>
-          <span class="tag tag-hindi chip" data-sub="Hindi">Hindi</span>
-          <span class="tag tag-english chip" data-sub="English">English</span>
-          <span class="tag tag-it chip" data-sub="IT">IT</span>
-          <span class="tag chip" data-sub="Other">Other</span>
-        </div>
-        <input type="hidden" id="bl-subject" value="Physics">
-        <button class="btn btn-block" id="bl-add-btn">Add Backlog (+10 XP)</button>
-        <div id="backlog-list" class="mt-4"></div>
-      </div>
-    </section>
 
-    <!-- FOCUS TAB -->
-    <section id="tab-focus" class="tab-content hidden">
-      <div class="section-label"><span>⏱️ Focus</span><div class="line"></div></div>
-      <div style="font-size:var(--font-lg);font-weight:700;margin-bottom:4px">Deep Work</div>
-      <div style="font-size:var(--font-sm);color:var(--text-secondary);line-height:var(--line-relaxed);margin-bottom:var(--space-3)">Ultradian rhythm aligned. Single-task only.</div>
-
-      <div class="card" style="text-align:center">
-        <div class="timer-modes">
-          <button class="timer-chip active" data-mode="0" id="mode-25">25 min</button>
-          <button class="timer-chip" data-mode="1" id="mode-52">52 min</button>
-          <button class="timer-chip" data-mode="2" id="mode-90">90 min</button>
+        <div class="section-label">
+          <span>🎯 Daily Quests</span>
+          <div class="line"></div>
         </div>
-        <div class="timer-wrap">
-          <div class="timer-ring-wrap">
-            <svg viewBox="0 0 240 240">
-              <defs><linearGradient id="gradRingFocus" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent-start)"/><stop offset="100%" stop-color="var(--accent-end)"/></linearGradient></defs>
-              <circle class="timer-ring-bg" cx="120" cy="120" r="110"/>
-              <circle class="timer-ring-fill" id="focus-ring" cx="120" cy="120" r="110" stroke="url(#gradRingFocus)"/>
-            </svg>
-            <div class="timer-text">
-              <div class="timer-digits" id="focus-timer">25:00</div>
-              <div class="timer-label" id="focus-mode-label">Pomodoro</div>
+        <div id="daily-quests"></div>
+
+        <div class="section-label">
+          <span>🌅 Morning Ritual</span>
+          <div class="line"></div>
+        </div>
+        <div class="card" id="ritual-card">
+          <div style="font-size: var(--font-sm); font-weight: 700; margin-bottom: 4px">
+            Prime Your Brain
+          </div>
+          <div
+            style="
+              font-size: var(--font-sm);
+              color: var(--text-secondary);
+              margin-bottom: var(--space-3);
+            "
+          >
+            Complete before 12 PM for 2x XP all day
+          </div>
+          <div class="ritual-grid" id="ritual-grid"></div>
+          <div class="ritual-boost hidden" id="ritual-boost">
+            <span style="font-size: 1.1rem">⚡</span>
+            <div class="ritual-boost-text">2x XP Boost Active</div>
+          </div>
+        </div>
+
+        <div class="section-label">
+          <span>📊 Stats</span>
+          <div class="line"></div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-num" id="d-streak">0</div>
+            <div class="stat-label">Streak Days</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="d-backlogs">0</div>
+            <div class="stat-label">Backlogs Left</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="d-focus">0</div>
+            <div class="stat-label">Focus Hours</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="d-habits">0</div>
+            <div class="stat-label">Habits Done</div>
+          </div>
+        </div>
+
+        <div class="section-label">
+          <span>🔥 Streak</span>
+          <div class="line"></div>
+        </div>
+        <div class="card streak-card">
+          <div class="streak-flame">🔥</div>
+          <div class="streak-info">
+            <div class="streak-num" id="consecutive-streak">0</div>
+            <div class="streak-label">Consecutive Days</div>
+            <div class="freeze-badge" id="freeze-badge">❄️ 0 Freezes</div>
+          </div>
+          <button
+            class="btn btn-ghost btn-sm"
+            id="freeze-btn"
+            style="display: none; width: auto; flex-shrink: 0"
+          >
+            Use Freeze
+          </button>
+        </div>
+
+        <div class="section-label">
+          <span>📚 Subject Mastery</span>
+          <div class="line"></div>
+        </div>
+        <div class="card">
+          <div class="subject-grid" id="subject-grid"></div>
+        </div>
+
+        <div class="section-label">
+          <span>🏆 Trophy Room</span>
+          <div class="line"></div>
+        </div>
+        <div class="trophy-preview" id="trophy-preview">
+          <div class="trophy-preview-icon" id="trophy-preview-icon">🌱</div>
+          <div class="trophy-preview-info">
+            <div class="trophy-preview-title" id="trophy-preview-title">Initiate</div>
+            <div class="trophy-preview-sub" id="trophy-preview-sub">0 of 35 badges unlocked</div>
+          </div>
+          <div class="trophy-preview-arrow">›</div>
+        </div>
+
+        <div class="section-label">
+          <span>✅ Daily Verification</span>
+          <div class="line"></div>
+        </div>
+        <div class="card card-glow" id="checkin-card">
+          <div
+            style="
+              font-size: var(--font-sm);
+              font-weight: 700;
+              margin-bottom: 4px;
+              color: var(--text);
+            "
+          >
+            Focus Protocol
+          </div>
+          <div
+            style="
+              font-size: var(--font-sm);
+              color: var(--text-secondary);
+              margin-bottom: var(--space-3);
+            "
+          >
+            Complete all checks to claim your streak
+          </div>
+          <div id="daily-checks"></div>
+          <div
+            id="checkin-status"
+            class="mt-3 text-center font-bold text-sm"
+            style="color: var(--danger)"
+          >
+            0 / 7 checks
+          </div>
+          <button class="btn btn-gold btn-block mt-3" id="claim-btn" disabled>
+            🔥 Claim Streak
+          </button>
+        </div>
+
+        <div class="section-label">
+          <span>⚡ Priority</span>
+          <div class="line"></div>
+        </div>
+        <div class="card" id="dash-priority">
+          <div class="empty">
+            <div class="empty-icon">🎯</div>
+            Loading your priorities...
+          </div>
+        </div>
+
+        <div class="section-label">
+          <span>📈 Weekly Report</span>
+          <div class="line"></div>
+        </div>
+        <div class="card" id="weekly-card">
+          <div class="week-summary" id="week-summary">
+            <div class="week-metric">
+              <div class="week-metric-num" id="wk-focus">0</div>
+              <div class="week-metric-label">Focus Hrs</div>
+            </div>
+            <div class="week-metric">
+              <div class="week-metric-num" id="wk-backlogs">0</div>
+              <div class="week-metric-label">Backlogs</div>
+            </div>
+            <div class="week-metric">
+              <div class="week-metric-num" id="wk-habits">0</div>
+              <div class="week-metric-label">Habits</div>
+            </div>
+            <div class="week-metric">
+              <div class="week-metric-num" id="wk-streaks">0</div>
+              <div class="week-metric-label">Streaks</div>
+            </div>
+          </div>
+          <div class="week-bar-wrap" id="week-bar-wrap"></div>
+          <div class="week-total">
+            <div class="week-total-text">This Week's Activity Score</div>
+            <div class="week-total-num" id="week-total-num">0</div>
+          </div>
+          <div class="tip" style="margin-top: 10px">
+            <strong>Consistency beats intensity.</strong> A little every day rewires your brain.
+          </div>
+        </div>
+      </section>
+
+      <!-- DETOX TAB -->
+      <section id="tab-detox" class="tab-content hidden">
+        <div class="section-label">
+          <span>🧘 Protocol</span>
+          <div class="line"></div>
+        </div>
+        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px">
+          Neural Reset Protocol
+        </div>
+        <div
+          style="
+            font-size: var(--font-sm);
+            color: var(--text-secondary);
+            line-height: var(--line-relaxed);
+            margin-bottom: var(--space-3);
+          "
+        >
+          Abstinence resets your reward pathways.
+        </div>
+
+        <div class="card">
+          <div class="flex justify-between items-center mb-2">
+            <div style="font-weight: 700; font-size: var(--font-base)">Urge Surfing</div>
+            <span class="tag tag-blue">20 min</span>
+          </div>
+          <div
+            style="
+              font-size: var(--font-sm);
+              color: var(--text-secondary);
+              margin-bottom: var(--space-3);
+              line-height: var(--line-relaxed);
+            "
+          >
+            Urges peak at 20–30 min then fade. Observe without acting.
+          </div>
+          <div class="timer-wrap">
+            <div class="timer-ring-wrap">
+              <svg viewBox="0 0 240 240">
+                <defs>
+                  <linearGradient id="gradRingUrge" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="var(--accent-start)" />
+                    <stop offset="100%" stop-color="var(--accent-end)" />
+                  </linearGradient>
+                </defs>
+                <circle class="timer-ring-bg" cx="120" cy="120" r="110" />
+                <circle
+                  class="timer-ring-fill"
+                  id="urge-ring"
+                  cx="120"
+                  cy="120"
+                  r="110"
+                  stroke="url(#gradRingUrge)"
+                />
+              </svg>
+              <div class="timer-text">
+                <div class="timer-digits" id="urge-timer">20:00</div>
+                <div class="timer-label">Urge Timer</div>
+              </div>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-block" id="urge-start-btn">Start Surf</button>
+            <button class="btn btn-ghost btn-block" id="urge-reset-btn">Reset</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)">
+            Replacement Activities
+          </div>
+          <div class="check-row" style="cursor: default">
+            <span style="font-size: 1.1rem">🚶</span
+            ><span style="font-size: var(--font-sm); font-weight: 500">Walk without phone</span>
+          </div>
+          <div class="check-row" style="cursor: default">
+            <span style="font-size: 1.1rem">🚿</span
+            ><span style="font-size: var(--font-sm); font-weight: 500">Cold shower</span>
+          </div>
+          <div class="check-row" style="cursor: default">
+            <span style="font-size: 1.1rem">📝</span
+            ><span style="font-size: var(--font-sm); font-weight: 500">Journal your "Why"</span>
+          </div>
+          <div class="check-row" style="cursor: default">
+            <span style="font-size: 1.1rem">📖</span
+            ><span style="font-size: var(--font-sm); font-weight: 500">Read physical books</span>
+          </div>
+          <div class="check-row" style="cursor: default">
+            <span style="font-size: 1.1rem">🧘</span
+            ><span style="font-size: var(--font-sm); font-weight: 500">Meditate 10 min</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- BACKLOG TAB -->
+      <section id="tab-backlog" class="tab-content hidden">
+        <div class="section-label">
+          <span>📚 Work</span>
+          <div class="line"></div>
+        </div>
+        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px">
+          Backlog Blaster
+        </div>
+        <div
+          style="
+            font-size: var(--font-sm);
+            color: var(--text-secondary);
+            line-height: var(--line-relaxed);
+            margin-bottom: var(--space-3);
+          "
+        >
+          Micro-modules. Small wins. Big dopamine.
+        </div>
+
+        <div class="card">
+          <div class="input-row mb-3">
+            <input
+              type="text"
+              class="input flex-1"
+              id="bl-name"
+              placeholder="Topic (e.g., Rotational Motion)"
+              maxlength="100"
+            />
+            <input
+              type="number"
+              class="input short"
+              id="bl-count"
+              placeholder="Lectures"
+              min="1"
+              max="9999"
+            />
+          </div>
+          <div
+            style="
+              font-size: var(--font-xs);
+              font-weight: 700;
+              color: var(--text-secondary);
+              margin-bottom: var(--space-2);
+              text-transform: uppercase;
+              letter-spacing: 0.06em;
+            "
+          >
+            Select Subject
+          </div>
+          <div class="chip-row" id="bl-chip-row">
+            <span class="tag tag-blue chip active" data-sub="Physics">Physics</span>
+            <span class="tag tag-red chip" data-sub="Chemistry">Chemistry</span>
+            <span class="tag tag-gold chip" data-sub="Math">Math</span>
+            <span class="tag tag-green chip" data-sub="Biology">Biology</span>
+            <span class="tag tag-hindi chip" data-sub="Hindi">Hindi</span>
+            <span class="tag tag-english chip" data-sub="English">English</span>
+            <span class="tag tag-it chip" data-sub="IT">IT</span>
+            <span class="tag chip" data-sub="Other">Other</span>
+          </div>
+          <input type="hidden" id="bl-subject" value="Physics" />
+          <button class="btn btn-block" id="bl-add-btn">Add Backlog (+10 XP)</button>
+          <div id="backlog-list" class="mt-4"></div>
+        </div>
+      </section>
+
+      <!-- FOCUS TAB -->
+      <section id="tab-focus" class="tab-content hidden">
+        <div class="section-label">
+          <span>⏱️ Focus</span>
+          <div class="line"></div>
+        </div>
+        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px">Deep Work</div>
+        <div
+          style="
+            font-size: var(--font-sm);
+            color: var(--text-secondary);
+            line-height: var(--line-relaxed);
+            margin-bottom: var(--space-3);
+          "
+        >
+          Ultradian rhythm aligned. Single-task only.
+        </div>
+
+        <div class="card" style="text-align: center">
+          <div class="timer-modes">
+            <button class="timer-chip active" data-mode="0" id="mode-25">25 min</button>
+            <button class="timer-chip" data-mode="1" id="mode-52">52 min</button>
+            <button class="timer-chip" data-mode="2" id="mode-90">90 min</button>
+          </div>
+          <div class="timer-wrap">
+            <div class="timer-ring-wrap">
+              <svg viewBox="0 0 240 240">
+                <defs>
+                  <linearGradient id="gradRingFocus" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="var(--accent-start)" />
+                    <stop offset="100%" stop-color="var(--accent-end)" />
+                  </linearGradient>
+                </defs>
+                <circle class="timer-ring-bg" cx="120" cy="120" r="110" />
+                <circle
+                  class="timer-ring-fill"
+                  id="focus-ring"
+                  cx="120"
+                  cy="120"
+                  r="110"
+                  stroke="url(#gradRingFocus)"
+                />
+              </svg>
+              <div class="timer-text">
+                <div class="timer-digits" id="focus-timer">25:00</div>
+                <div class="timer-label" id="focus-mode-label">Pomodoro</div>
+              </div>
+            </div>
+          </div>
+          <div class="btn-group" style="max-width: 320px; margin: 0 auto">
+            <button class="btn" id="focus-btn">Start</button>
+            <button class="btn btn-ghost" id="focus-reset-btn">Reset</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)">
+            Focus Checklist
+          </div>
+          <div class="check-row">
+            <input type="checkbox" id="f1" /><label>Phone in another room</label>
+          </div>
+          <div class="check-row">
+            <input type="checkbox" id="f2" /><label>Only 1 browser tab</label>
+          </div>
+          <div class="check-row">
+            <input type="checkbox" id="f3" /><label>Notifications OFF</label>
+          </div>
+          <div class="check-row">
+            <input type="checkbox" id="f4" /><label>Water + notebook ready</label>
+          </div>
+          <div class="check-row">
+            <input type="checkbox" id="f5" /><label>Specific task written</label>
+          </div>
+          <div class="tip">
+            <strong>Specificity beats motivation.</strong> Vague tasks trigger procrastination.
+            Write exactly what you will do.
+          </div>
+        </div>
+
+        <div class="card" id="focus-history-card">
+          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)">
+            Recent Sessions
+          </div>
+          <div id="focus-history">
+            <div class="empty" style="padding: var(--space-3)">
+              No sessions yet. Complete a focus timer to see history.
             </div>
           </div>
         </div>
-        <div class="btn-group" style="max-width:320px;margin:0 auto">
-          <button class="btn" id="focus-btn">Start</button>
-          <button class="btn btn-ghost" id="focus-reset-btn">Reset</button>
+      </section>
+
+      <!-- PLAN TAB -->
+      <section id="tab-plan" class="tab-content hidden">
+        <div class="section-label">
+          <span>🎯 Plan</span>
+          <div class="line"></div>
         </div>
-      </div>
-
-      <div class="card">
-        <div style="font-weight:700;font-size:var(--font-base);margin-bottom:var(--space-3)">Focus Checklist</div>
-        <div class="check-row"><input type="checkbox" id="f1"><label>Phone in another room</label></div>
-        <div class="check-row"><input type="checkbox" id="f2"><label>Only 1 browser tab</label></div>
-        <div class="check-row"><input type="checkbox" id="f3"><label>Notifications OFF</label></div>
-        <div class="check-row"><input type="checkbox" id="f4"><label>Water + notebook ready</label></div>
-        <div class="check-row"><input type="checkbox" id="f5"><label>Specific task written</label></div>
-        <div class="tip"><strong>Specificity beats motivation.</strong> Vague tasks trigger procrastination. Write exactly what you will do.</div>
-      </div>
-
-      <div class="card" id="focus-history-card">
-        <div style="font-weight:700;font-size:var(--font-base);margin-bottom:var(--space-3)">Recent Sessions</div>
-        <div id="focus-history"><div class="empty" style="padding:var(--space-3)">No sessions yet. Complete a focus timer to see history.</div></div>
-      </div>
-    </section>
-
-    <!-- PLAN TAB -->
-    <section id="tab-plan" class="tab-content hidden">
-      <div class="section-label"><span>🎯 Plan</span><div class="line"></div></div>
-      <div style="font-size:var(--font-lg);font-weight:700;margin-bottom:4px">Growth Plan</div>
-      <div style="font-size:var(--font-sm);color:var(--text-secondary);line-height:var(--line-relaxed);margin-bottom:var(--space-3)">Stack habits. Plan battles. Earn XP.</div>
-
-      <div class="card">
-        <div style="font-weight:700;font-size:var(--font-base);margin-bottom:var(--space-3)">Habit Forge (+15 XP)</div>
-        <div class="input-row mb-3">
-          <input type="text" class="input flex-1" id="h-name" placeholder="Habit (e.g., 10 Pushups)" maxlength="80">
-          <input type="text" class="input flex-1" id="h-anchor" placeholder="After I... (brush teeth)" maxlength="80">
+        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px">
+          Growth Plan
         </div>
-        <button class="btn btn-block" id="h-add-btn">Add Habit</button>
-        <div id="habit-list" class="mt-4"></div>
-      </div>
-
-      <div class="card">
-        <div style="font-weight:700;font-size:var(--font-base);margin-bottom:var(--space-3)">Battle Plan</div>
-        <div class="input-row mb-3">
-          <input type="text" class="input flex-1" id="bp-task" placeholder="Task" maxlength="200">
-          <select class="input short" id="bp-priority"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>
-          <select class="input short" id="bp-time"><option value="morning">Morning</option><option value="afternoon">Afternoon</option><option value="evening">Evening</option></select>
+        <div
+          style="
+            font-size: var(--font-sm);
+            color: var(--text-secondary);
+            line-height: var(--line-relaxed);
+            margin-bottom: var(--space-3);
+          "
+        >
+          Stack habits. Plan battles. Earn XP.
         </div>
-        <button class="btn btn-block" id="bp-add-btn">Add Task</button>
-        <div id="battle-list" class="mt-4"></div>
-      </div>
 
-      <div class="card">
-        <div style="font-weight:700;font-size:var(--font-base);margin-bottom:var(--space-3)">Evening Review</div>
-        <div class="check-row"><input type="checkbox" id="e1"><label>3 wins from today</label></div>
-        <div class="check-row"><input type="checkbox" id="e2"><label>Biggest time-waster</label></div>
-        <div class="check-row"><input type="checkbox" id="e3"><label>Tomorrow's improvement</label></div>
-        <div class="check-row"><input type="checkbox" id="e4"><label>Detox rules followed</label></div>
-        <div class="check-row"><input type="checkbox" id="e5"><label>Proud of today's effort</label></div>
-      </div>
-    </section>
-  </main>
-
-  <!-- Bottom Navigation -->
-  <nav class="bottom-nav">
-    <button class="nav-item active" data-tab="home"><span class="icon">🏠</span><span>Home</span></button>
-    <button class="nav-item" data-tab="detox"><span class="icon">🧘</span><span>Detox</span></button>
-    <button class="nav-item" data-tab="backlog"><span class="icon">📚</span><span>Backlog</span></button>
-    <button class="nav-item" data-tab="focus"><span class="icon">⏱️</span><span>Focus</span></button>
-    <button class="nav-item" data-tab="plan"><span class="icon">🎯</span><span>Plan</span></button>
-  </nav>
-
-  <!-- Celebration Overlay -->
-  <div class="celebrate" id="celebrate">
-    <div class="celebrate-box">
-      <div class="celebrate-emoji" id="cel-emoji">🎉</div>
-      <div class="celebrate-title" id="cel-title">Dopamine Rush</div>
-      <div class="celebrate-sub" id="cel-sub">You crushed it.</div>
-      <div class="celebrate-xp" id="cel-xp">+50 XP</div>
-    </div>
-  </div>
-
-  <!-- Rank Up Modal -->
-  <div class="overlay center" id="rank-overlay">
-    <div class="modal" style="max-width:360px">
-      <div class="rank-up-modal">
-        <div class="rank-up-emoji" id="rank-up-emoji">🎓</div>
-        <div class="rank-up-title" id="rank-up-title">Rank Up!</div>
-        <div class="rank-up-new" id="rank-up-new">Scholar</div>
-        <div class="rank-up-sub" id="rank-up-sub">Your brain is evolving. Keep going.</div>
-        <button class="btn btn-block" id="rank-up-close-btn">Continue</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Trophy Room Modal -->
-  <div class="overlay" id="trophy-overlay">
-    <div class="modal">
-      <button class="modal-close" id="trophy-close-btn">×</button>
-      <div class="modal-title">🏆 Trophy Room</div>
-      <div class="trophy-count">
-        <div class="trophy-count-text">Badges Unlocked</div>
-        <div class="trophy-count-num" id="trophy-count">0 / 35</div>
-      </div>
-      <div class="rank-display" id="trophy-rank-display">
-        <div class="rank-icon" id="trophy-rank-icon">🌱</div>
-        <div class="rank-name" id="trophy-rank-name">Initiate</div>
-        <div class="rank-tier" id="trophy-rank-tier">Rank I · Common</div>
-        <div class="rank-next" id="trophy-rank-next">Next: Apprentice at Level 5</div>
-      </div>
-      <div id="trophy-badges"></div>
-    </div>
-  </div>
-
-  <!-- Settings Drawer -->
-  <div class="overlay right" id="settings-overlay">
-    <div class="modal" style="padding:20px 16px">
-      <div class="settings-header">
-        <div class="modal-title">≡ Settings</div>
-        <button class="modal-close" id="settings-close-btn">×</button>
-      </div>
-
-      <div class="settings-section">
-        <div class="section-label" style="margin-top:0"><span>👤 Profile</span><div class="line"></div></div>
         <div class="card">
-          <div class="profile-card">
-            <div class="profile-avatar" id="profile-avatar">🧠</div>
-            <div class="profile-info">
-              <div class="profile-name" id="profile-name">Warrior</div>
-              <div class="profile-rank" id="profile-rank">Initiate · Level 1</div>
-              <div class="sync-status online" id="sync-status">💾 Auto-saved locally</div>
+          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)">
+            Habit Forge (+15 XP)
+          </div>
+          <div class="input-row mb-3">
+            <input
+              type="text"
+              class="input flex-1"
+              id="h-name"
+              placeholder="Habit (e.g., 10 Pushups)"
+              maxlength="80"
+            />
+            <input
+              type="text"
+              class="input flex-1"
+              id="h-anchor"
+              placeholder="After I... (brush teeth)"
+              maxlength="80"
+            />
+          </div>
+          <button class="btn btn-block" id="h-add-btn">Add Habit</button>
+          <div id="habit-list" class="mt-4"></div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)">
+            Battle Plan
+          </div>
+          <div class="input-row mb-3">
+            <input
+              type="text"
+              class="input flex-1"
+              id="bp-task"
+              placeholder="Task"
+              maxlength="200"
+            />
+            <select class="input short" id="bp-priority">
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+            </select>
+            <select class="input short" id="bp-time">
+              <option value="morning">Morning</option>
+              <option value="afternoon">Afternoon</option>
+              <option value="evening">Evening</option>
+            </select>
+          </div>
+          <button class="btn btn-block" id="bp-add-btn">Add Task</button>
+          <div id="battle-list" class="mt-4"></div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)">
+            Evening Review
+          </div>
+          <div class="check-row">
+            <input type="checkbox" id="e1" /><label>3 wins from today</label>
+          </div>
+          <div class="check-row">
+            <input type="checkbox" id="e2" /><label>Biggest time-waster</label>
+          </div>
+          <div class="check-row">
+            <input type="checkbox" id="e3" /><label>Tomorrow's improvement</label>
+          </div>
+          <div class="check-row">
+            <input type="checkbox" id="e4" /><label>Detox rules followed</label>
+          </div>
+          <div class="check-row">
+            <input type="checkbox" id="e5" /><label>Proud of today's effort</label>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="home">
+        <span class="icon">🏠</span><span>Home</span>
+      </button>
+      <button class="nav-item" data-tab="detox">
+        <span class="icon">🧘</span><span>Detox</span>
+      </button>
+      <button class="nav-item" data-tab="backlog">
+        <span class="icon">📚</span><span>Backlog</span>
+      </button>
+      <button class="nav-item" data-tab="focus">
+        <span class="icon">⏱️</span><span>Focus</span>
+      </button>
+      <button class="nav-item" data-tab="plan">
+        <span class="icon">🎯</span><span>Plan</span>
+      </button>
+    </nav>
+
+    <!-- Celebration Overlay -->
+    <div class="celebrate" id="celebrate">
+      <div class="celebrate-box">
+        <div class="celebrate-emoji" id="cel-emoji">🎉</div>
+        <div class="celebrate-title" id="cel-title">Dopamine Rush</div>
+        <div class="celebrate-sub" id="cel-sub">You crushed it.</div>
+        <div class="celebrate-xp" id="cel-xp">+50 XP</div>
+      </div>
+    </div>
+
+    <!-- Rank Up Modal -->
+    <div class="overlay center" id="rank-overlay">
+      <div class="modal" style="max-width: 360px">
+        <div class="rank-up-modal">
+          <div class="rank-up-emoji" id="rank-up-emoji">🎓</div>
+          <div class="rank-up-title" id="rank-up-title">Rank Up!</div>
+          <div class="rank-up-new" id="rank-up-new">Scholar</div>
+          <div class="rank-up-sub" id="rank-up-sub">Your brain is evolving. Keep going.</div>
+          <button class="btn btn-block" id="rank-up-close-btn">Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trophy Room Modal -->
+    <div class="overlay" id="trophy-overlay">
+      <div class="modal">
+        <button class="modal-close" id="trophy-close-btn">×</button>
+        <div class="modal-title">🏆 Trophy Room</div>
+        <div class="trophy-count">
+          <div class="trophy-count-text">Badges Unlocked</div>
+          <div class="trophy-count-num" id="trophy-count">0 / 35</div>
+        </div>
+        <div class="rank-display" id="trophy-rank-display">
+          <div class="rank-icon" id="trophy-rank-icon">🌱</div>
+          <div class="rank-name" id="trophy-rank-name">Initiate</div>
+          <div class="rank-tier" id="trophy-rank-tier">Rank I · Common</div>
+          <div class="rank-next" id="trophy-rank-next">Next: Apprentice at Level 5</div>
+        </div>
+        <div id="trophy-badges"></div>
+      </div>
+    </div>
+
+    <!-- Settings Drawer -->
+    <div class="overlay right" id="settings-overlay">
+      <div class="modal" style="padding: 20px 16px">
+        <div class="settings-header">
+          <div class="modal-title">≡ Settings</div>
+          <button class="modal-close" id="settings-close-btn">×</button>
+        </div>
+
+        <div class="settings-section">
+          <div class="section-label" style="margin-top: 0">
+            <span>👤 Profile</span>
+            <div class="line"></div>
+          </div>
+          <div class="card">
+            <div class="profile-card">
+              <div class="profile-avatar" id="profile-avatar">🧠</div>
+              <div class="profile-info">
+                <div class="profile-name" id="profile-name">Warrior</div>
+                <div class="profile-rank" id="profile-rank">Initiate · Level 1</div>
+                <div class="sync-status online" id="sync-status">💾 Auto-saved locally</div>
+              </div>
+            </div>
+            <div class="profile-mission" id="profile-mission">
+              I am building discipline to score 100% and master my skills.
+            </div>
+            <div class="input-row mt-3">
+              <input
+                type="text"
+                class="input"
+                id="profile-name-input"
+                placeholder="Your display name"
+                maxlength="30"
+              />
+              <button class="btn btn-sm" id="save-name-btn" style="width: auto; flex-shrink: 0">
+                Save
+              </button>
+            </div>
+            <button class="btn btn-ghost btn-sm btn-block mt-2" id="switch-profile-btn">
+              ↪ Switch Profile
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="section-label">
+            <span>🔐 Data safety</span>
+            <div class="line"></div>
+          </div>
+          <div class="card">
+            <div id="account-status" class="sync-status online">
+              Local only — login recommended to protect progress.
+            </div>
+            <div id="account-email" class="text-xs text-secondary mt-2"></div>
+            <button class="btn btn-sm btn-block mt-3" id="settings-login-btn">
+              Login to protect progress
+            </button>
+            <button class="btn btn-ghost btn-sm btn-block mt-2 hidden" id="sync-now-btn">
+              Sync now
+            </button>
+            <button class="btn btn-ghost btn-sm btn-block mt-2" id="export-backup-btn">
+              Export backup
+            </button>
+            <button class="btn btn-ghost btn-sm btn-block mt-2 hidden" id="logout-btn">
+              Logout
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="section-label">
+            <span>🎨 Appearance</span>
+            <div class="line"></div>
+          </div>
+          <div class="card">
+            <div style="font-weight: 700; font-size: var(--font-sm); margin-bottom: var(--space-3)">
+              Theme
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2)">
+              <button
+                class="btn btn-ghost btn-sm"
+                data-theme="midnight"
+                id="theme-midnight"
+                style="flex-direction: column; gap: 4px; padding: 10px 6px"
+              >
+                <span style="font-size: 1.2rem">🌙</span
+                ><span style="font-size: 0.65rem">Midnight</span>
+              </button>
+              <button
+                class="btn btn-ghost btn-sm"
+                data-theme="light"
+                id="theme-light"
+                style="flex-direction: column; gap: 4px; padding: 10px 6px"
+              >
+                <span style="font-size: 1.2rem">☀️</span
+                ><span style="font-size: 0.65rem">Cream</span>
+              </button>
+              <button
+                class="btn btn-ghost btn-sm"
+                data-theme="dusk"
+                id="theme-dusk"
+                style="flex-direction: column; gap: 4px; padding: 10px 6px"
+              >
+                <span style="font-size: 1.2rem">🌅</span
+                ><span style="font-size: 0.65rem">Dusk</span>
+              </button>
+            </div>
+            <div
+              style="
+                margin-top: var(--space-4);
+                padding-top: var(--space-3);
+                border-top: 1px solid var(--border);
+              "
+            >
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: var(--space-3);
+                  cursor: pointer;
+                  font-size: var(--font-sm);
+                  font-weight: 500;
+                "
+              >
+                <input
+                  type="checkbox"
+                  id="auto-theme"
+                  style="width: 18px; height: 18px; accent-color: var(--accent-start)"
+                />
+                <span>Auto-switch by time (Light 6AM–6PM, Dark 6PM–6AM)</span>
+              </label>
             </div>
           </div>
-          <div class="profile-mission" id="profile-mission">I am building discipline to score 100% and master my skills.</div>
-          <div class="input-row mt-3">
-            <input type="text" class="input" id="profile-name-input" placeholder="Your display name" maxlength="30">
-            <button class="btn btn-sm" id="save-name-btn" style="width:auto;flex-shrink:0">Save</button>
-          </div>
-          <button class="btn btn-ghost btn-sm btn-block mt-2" id="switch-profile-btn">↪ Switch Profile</button>
         </div>
-      </div>
 
-      <div class="settings-section">
-        <div class="section-label"><span>🎨 Appearance</span><div class="line"></div></div>
-        <div class="card">
-          <div style="font-weight:700;font-size:var(--font-sm);margin-bottom:var(--space-3)">Theme</div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-2)">
-            <button class="btn btn-ghost btn-sm" data-theme="midnight" id="theme-midnight" style="flex-direction:column;gap:4px;padding:10px 6px">
-              <span style="font-size:1.2rem">🌙</span><span style="font-size:0.65rem">Midnight</span>
-            </button>
-            <button class="btn btn-ghost btn-sm" data-theme="light" id="theme-light" style="flex-direction:column;gap:4px;padding:10px 6px">
-              <span style="font-size:1.2rem">☀️</span><span style="font-size:0.65rem">Cream</span>
-            </button>
-            <button class="btn btn-ghost btn-sm" data-theme="dusk" id="theme-dusk" style="flex-direction:column;gap:4px;padding:10px 6px">
-              <span style="font-size:1.2rem">🌅</span><span style="font-size:0.65rem">Dusk</span>
-            </button>
+        <div class="settings-section">
+          <div class="section-label">
+            <span>📋 Mission</span>
+            <div class="line"></div>
           </div>
-          <div style="margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px solid var(--border)">
-            <label style="display:flex;align-items:center;gap:var(--space-3);cursor:pointer;font-size:var(--font-sm);font-weight:500">
-              <input type="checkbox" id="auto-theme" style="width:18px;height:18px;accent-color:var(--accent-start)">
-              <span>Auto-switch by time (Light 6AM–6PM, Dark 6PM–6AM)</span>
-            </label>
+          <div class="card">
+            <textarea
+              class="input"
+              id="mission-input"
+              rows="2"
+              placeholder="Your personal mission statement..."
+              maxlength="300"
+            ></textarea>
+            <button class="btn btn-sm btn-block mt-3" id="save-mission-btn">Update Mission</button>
           </div>
         </div>
-      </div>
 
-      <div class="settings-section">
-        <div class="section-label"><span>📋 Mission</span><div class="line"></div></div>
-        <div class="card">
-          <textarea class="input" id="mission-input" rows="2" placeholder="Your personal mission statement..." maxlength="300"></textarea>
-          <button class="btn btn-sm btn-block mt-3" id="save-mission-btn">Update Mission</button>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <div class="section-label"><span>👥 Accountability</span><div class="line"></div></div>
-        <div class="card" id="settings-buddy">
-          <div id="settings-buddy-form">
-            <input type="text" class="input mb-2" id="settings-buddy-name" placeholder="Partner's name" maxlength="50">
-            <button class="btn btn-sm btn-block" id="set-buddy-btn">Set Partner</button>
+        <div class="settings-section">
+          <div class="section-label">
+            <span>👥 Accountability</span>
+            <div class="line"></div>
           </div>
-          <div id="settings-buddy-active" class="hidden">
-            <div class="flex justify-between items-center mb-2">
-              <div style="font-size:var(--font-sm);font-weight:700">Accountability Partner</div>
-              <button class="btn btn-ghost btn-sm" id="remove-buddy-btn" style="width:auto;padding:6px 10px;font-size:0.75rem">Remove</button>
+          <div class="card" id="settings-buddy">
+            <div id="settings-buddy-form">
+              <input
+                type="text"
+                class="input mb-2"
+                id="settings-buddy-name"
+                placeholder="Partner's name"
+                maxlength="50"
+              />
+              <button class="btn btn-sm btn-block" id="set-buddy-btn">Set Partner</button>
             </div>
-            <div style="font-size:var(--font-sm);color:var(--text-secondary)" id="settings-buddy-display">None</div>
-            <button class="btn btn-ghost btn-block mt-3" id="share-progress-btn">📤 Share Progress</button>
+            <div id="settings-buddy-active" class="hidden">
+              <div class="flex justify-between items-center mb-2">
+                <div style="font-size: var(--font-sm); font-weight: 700">
+                  Accountability Partner
+                </div>
+                <button
+                  class="btn btn-ghost btn-sm"
+                  id="remove-buddy-btn"
+                  style="width: auto; padding: 6px 10px; font-size: 0.75rem"
+                >
+                  Remove
+                </button>
+              </div>
+              <div
+                style="font-size: var(--font-sm); color: var(--text-secondary)"
+                id="settings-buddy-display"
+              >
+                None
+              </div>
+              <button class="btn btn-ghost btn-block mt-3" id="share-progress-btn">
+                📤 Share Progress
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="settings-section">
-        <div class="section-label"><span>⚠️ Data</span><div class="line"></div></div>
-        <div class="card">
-          <button class="btn btn-ghost btn-block mb-2" id="reset-today-btn" style="color:var(--danger);font-size:var(--font-sm)">🔄 Reset Today's Progress</button>
-          <button class="btn btn-ghost btn-block" id="reset-all-btn" style="color:var(--danger);font-size:var(--font-sm)">⚠️ Delete All Data</button>
+        <div class="settings-section">
+          <div class="section-label">
+            <span>⚠️ Data</span>
+            <div class="line"></div>
+          </div>
+          <div class="card">
+            <button
+              class="btn btn-ghost btn-block mb-2"
+              id="reset-today-btn"
+              style="color: var(--danger); font-size: var(--font-sm)"
+            >
+              🔄 Reset Today's Progress
+            </button>
+            <button
+              class="btn btn-ghost btn-block"
+              id="reset-all-btn"
+              style="color: var(--danger); font-size: var(--font-sm)"
+            >
+              ⚠️ Delete All Data
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div class="settings-section" style="margin-bottom:40px">
-        <div class="card" style="background:transparent;border:none;padding:var(--space-2) 0">
-          <div style="text-align:center;font-size:var(--font-xs);color:var(--text-tertiary);line-height:var(--line-relaxed)">
-            NeuroFocus v14<br>
-            Built for dopamine-driven discipline.<br>
-            Data auto-saves locally on this device. No account setup required.
+        <div class="settings-section" style="margin-bottom: 40px">
+          <div
+            class="card"
+            style="background: transparent; border: none; padding: var(--space-2) 0"
+          >
+            <div
+              style="
+                text-align: center;
+                font-size: var(--font-xs);
+                color: var(--text-tertiary);
+                line-height: var(--line-relaxed);
+              "
+            >
+              NeuroFocus v14<br />
+              Built for dopamine-driven discipline.<br />
+              Data auto-saves locally on this device. No account setup required.
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Confetti Canvas -->
-  <canvas id="confetti-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:400"></canvas>
+    <!-- Confetti Canvas -->
+    <canvas
+      id="confetti-canvas"
+      style="position: fixed; inset: 0; pointer-events: none; z-index: 400"
+    ></canvas>
 
-  <script type="module" src="/src/main.ts"></script>
-</body>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>

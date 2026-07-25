@@ -58,11 +58,19 @@ import {
   isEmailAuthConfigured,
   onAuthChange,
   restoreAuthSession,
-  sendMagicLink,
+  signInWithEmailPassword,
+  signUpWithEmailPassword,
+  validatePassword,
   logout,
 } from './modules/auth.ts';
 import { createLocalBackup, syncOnLogin, syncNow } from './modules/cloudSync.ts';
-import { exportAll, importAll } from './modules/storage.ts';
+import { exportAll } from './modules/storage.ts';
+import {
+  validateImportData,
+  applyImport,
+  readImportFile,
+  MAX_IMPORT_FILE_BYTES,
+} from './modules/progressImport.ts';
 import { escapeHTML } from './utils/sanitize.ts';
 import { qs, qsa } from './utils/dom.ts';
 import { todayStr, currentDOW, DAY_LABELS } from './utils/date.ts';
@@ -740,6 +748,40 @@ function updateDashboard() {
 // EVENT HANDLERS
 // ===================================================================
 
+type AuthMode = 'signin' | 'signup';
+let authMode: AuthMode = 'signin';
+let authSubmitting = false;
+
+function setAuthMode(mode: AuthMode): void {
+  authMode = mode;
+  const signInTab = qs<HTMLElement>('#auth-tab-signin');
+  const signUpTab = qs<HTMLElement>('#auth-tab-signup');
+  const sendBtn = qs<HTMLButtonElement>('#send-login-btn');
+  const pwInput = qs<HTMLInputElement>('#login-password');
+  const msg = qs<HTMLElement>('#login-message');
+
+  if (msg) msg.textContent = '';
+
+  if (mode === 'signin') {
+    signInTab?.classList.remove('btn-ghost');
+    signInTab?.classList.add('btn');
+    signUpTab?.classList.remove('btn');
+    signUpTab?.classList.add('btn-ghost');
+    if (sendBtn) sendBtn.textContent = 'Sign In';
+    if (pwInput) pwInput.setAttribute('autocomplete', 'current-password');
+  } else {
+    signUpTab?.classList.remove('btn-ghost');
+    signUpTab?.classList.add('btn');
+    signInTab?.classList.remove('btn');
+    signInTab?.classList.add('btn-ghost');
+    if (sendBtn) sendBtn.textContent = 'Create Account';
+    if (pwInput) pwInput.setAttribute('autocomplete', 'new-password');
+  }
+
+  // Re-enable submit button if not currently submitting
+  if (sendBtn && !authSubmitting) sendBtn.removeAttribute('disabled');
+}
+
 function setupEventListeners() {
   // Tab navigation
   qsa<HTMLElement>('.nav-item').forEach((btn) => {
@@ -776,6 +818,73 @@ function setupEventListeners() {
   });
   qs<HTMLElement>('#export-backup-btn')?.addEventListener('click', downloadBackup);
 
+  // Import / restore from backup
+  qs<HTMLElement>('#import-backup-btn')?.addEventListener('click', () => {
+    const fileInput = qs<HTMLInputElement>('#import-file-input');
+    if (fileInput) {
+      // Reset value so re-selecting the same file triggers change
+      fileInput.value = '';
+      fileInput.click();
+    }
+  });
+  qs<HTMLInputElement>('#import-file-input')?.addEventListener('change', async (e) => {
+    const fileInput = e.target as HTMLInputElement;
+    const msg = qs<HTMLElement>('#import-message');
+    if (!fileInput.files || fileInput.files.length === 0) return;
+    const file = fileInput.files[0];
+
+    try {
+      // Validate file before touching current data
+      const validation = await readImportFile(file);
+      if (!validation.valid || !validation.sanitizedData) {
+        if (msg) msg.textContent = validation.error || 'Could not read this file.';
+        return;
+      }
+
+      // Show confirmation explaining replacement
+      const isSignedIn = Boolean(currentUser());
+      const confirmText = isSignedIn
+        ? `Restore ${validation.fieldCount} fields from backup?\n\nThis will replace your current local progress. A backup of your current data will be saved automatically.\n\nImporting is local first — cloud sync remains a separate step.`
+        : `Restore ${validation.fieldCount} fields from backup?\n\nThis will replace your current local progress. A backup of your current data will be saved automatically.`;
+
+      const confirmed = window.confirm(confirmText);
+      if (!confirmed) {
+        if (msg) msg.textContent = 'Import cancelled.';
+        return;
+      }
+
+      // Apply the validated import (backup is created inside applyImport)
+      const result = applyImport(validation.sanitizedData);
+      if (!result.ok) {
+        if (msg)
+          msg.textContent = result.error || 'Import failed. Your existing progress is unchanged.';
+        return;
+      }
+
+      if (msg) msg.textContent = 'Progress restored successfully.';
+      showCelebrate('Progress Restored', `${validation.fieldCount} fields imported.`, '📦');
+
+      // Refresh UI
+      updateDashboard();
+      renderAccountSettings();
+      renderProfile();
+      renderHabits();
+      renderBacklogs();
+      renderBattle();
+      renderStreak();
+      renderBuddy();
+      renderWeekly();
+      renderTrophyPreview();
+      renderRitual();
+      renderSubjects();
+    } catch {
+      if (msg) msg.textContent = 'Import failed. Your existing progress is unchanged.';
+    } finally {
+      // Always reset the input so the same file can be re-selected
+      fileInput.value = '';
+    }
+  });
+
   // Close settings
   qs<HTMLElement>('#settings-close-btn')?.addEventListener('click', () => {
     qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
@@ -789,25 +898,54 @@ function setupEventListeners() {
   qs<HTMLElement>('#email-login-btn')?.addEventListener('click', () => {
     qs<HTMLElement>('#login-choice')?.classList.add('hidden');
     qs<HTMLElement>('#email-login-form')?.classList.remove('hidden');
+    // Reset form state to sign-in mode
+    setAuthMode('signin');
     if (!isEmailAuthConfigured) {
       const msg = qs<HTMLElement>('#login-message');
       if (msg)
-        msg.textContent = 'Email login is not available right now. You can continue locally.';
+        msg.textContent = 'Online accounts are not available right now. You can continue locally.';
       qs<HTMLElement>('#send-login-btn')?.setAttribute('disabled', 'true');
     }
     qs<HTMLInputElement>('#login-email')?.focus();
   });
   qs<HTMLElement>('#back-login-btn')?.addEventListener('click', renderSession);
   qs<HTMLElement>('#back-local-btn')?.addEventListener('click', renderSession);
+  qs<HTMLElement>('#auth-tab-signin')?.addEventListener('click', () => setAuthMode('signin'));
+  qs<HTMLElement>('#auth-tab-signup')?.addEventListener('click', () => setAuthMode('signup'));
   qs<HTMLElement>('#skip-login-btn')?.addEventListener('click', () => {
     qs<HTMLElement>('#login-choice')?.classList.add('hidden');
     qs<HTMLElement>('#local-login-form')?.classList.remove('hidden');
     qs<HTMLInputElement>('#login-name')?.focus();
   });
   qs<HTMLElement>('#send-login-btn')?.addEventListener('click', async () => {
-    const result = await sendMagicLink(qs<HTMLInputElement>('#login-email')?.value || '');
+    const email = qs<HTMLInputElement>('#login-email')?.value || '';
+    const password = qs<HTMLInputElement>('#login-password')?.value || '';
     const msg = qs<HTMLElement>('#login-message');
-    if (msg) msg.textContent = result.message;
+    const sendBtn = qs<HTMLButtonElement>('#send-login-btn');
+
+    // Prevent duplicate submissions
+    if (authSubmitting) return;
+    authSubmitting = true;
+    if (sendBtn) sendBtn.setAttribute('disabled', 'true');
+
+    try {
+      const result =
+        authMode === 'signin'
+          ? await signInWithEmailPassword(email, password)
+          : await signUpWithEmailPassword(email, password);
+      if (msg) msg.textContent = result.message;
+      if (result.ok) {
+        // Clear password field immediately — never keep in memory longer than needed
+        const pwInput = qs<HTMLInputElement>('#login-password');
+        if (pwInput) pwInput.value = '';
+        renderAccountSettings();
+      }
+    } catch {
+      if (msg) msg.textContent = 'Something went wrong. Please try again.';
+    } finally {
+      authSubmitting = false;
+      if (sendBtn) sendBtn.removeAttribute('disabled');
+    }
   });
   qs<HTMLElement>('#login-continue-btn')?.addEventListener('click', () => {
     const result = startLocalSession({ name: qs<HTMLInputElement>('#login-name')?.value || '' });

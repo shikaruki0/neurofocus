@@ -41,10 +41,24 @@ export function localData(): Record<string, unknown> {
 export function dataHasProgress(value = appSnapshot()): boolean {
   return hasProgress(value);
 }
+// Maps storage keys (as written into cloud app_data) to the in-memory data field
+// names. This keeps restores correct even when a storage key differs from the
+// data object's property name (e.g. legacy 'badges' -> 'badgesUnlocked').
+const STORAGE_KEY_TO_DATA_FIELD: Record<string, keyof typeof data> = {
+  badges: 'badgesUnlocked',
+};
+
 function restoreApp(value: Record<string, unknown>): void {
   importAll(value);
+  // Sync every data field that the restored snapshot contains.
   for (const key of Object.keys(data) as Array<keyof typeof data>) {
     if (key in value) (data[key] as unknown) = value[key];
+  }
+  // Sync any aliased storage keys into their canonical data field.
+  for (const [storageKey, dataField] of Object.entries(STORAGE_KEY_TO_DATA_FIELD)) {
+    if (storageKey in value && dataField in data) {
+      (data[dataField] as unknown) = value[storageKey];
+    }
   }
 }
 

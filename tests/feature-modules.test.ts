@@ -218,6 +218,10 @@ describe('Battle plan module', () => {
 
 describe('Daily quests', () => {
   it('generates, returns, and completes eligible quests once', () => {
+    // Pin the clock to before noon so the morning-ritual 2x multiplier is active
+    // and the assertion on awarded XP is deterministic (not time-of-day dependent).
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-24T08:00:00'));
     vi.spyOn(Math, 'random').mockReturnValue(0.4);
     generateDailyQuests();
 

@@ -108,7 +108,7 @@ export const data = {
   totalFocusMinutes: get<number>('totalFocusMinutes', 0),
   focusDate: get<string>('focusDate', TODAY),
   flowState: get<FlowState>('flowState', { date: TODAY, sessions: 0 }),
-  badgesUnlocked: get<string[]>('badges', []),
+  badgesUnlocked: get<string[]>('badgesUnlocked', []),
   dailyQuests: get<DailyQuests | null>('dailyQuests', null),
   morningRitual: get<MorningRitual>('morningRitual', {
     date: '',

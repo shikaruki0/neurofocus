@@ -799,8 +799,22 @@ function setupEventListeners() {
   });
   qs<HTMLElement>('#settings-login-btn')?.addEventListener('click', () => {
     qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
-    renderSession();
-    qs<HTMLElement>('#email-login-btn')?.click();
+    const overlay = qs<HTMLElement>('#login-overlay');
+    if (overlay) {
+      overlay.classList.remove('hidden');
+      overlay.classList.add('show');
+      qs<HTMLElement>('#login-choice')?.classList.add('hidden');
+      qs<HTMLElement>('#email-login-form')?.classList.remove('hidden');
+      setAuthMode('signin');
+      if (!isEmailAuthConfigured) {
+        const msg = qs<HTMLElement>('#login-message');
+        if (msg)
+          msg.textContent =
+            'Online accounts are not available right now. You can continue locally.';
+        qs<HTMLElement>('#send-login-btn')?.setAttribute('disabled', 'true');
+      }
+      qs<HTMLInputElement>('#login-email')?.focus();
+    }
   });
   qs<HTMLElement>('#sync-now-btn')?.addEventListener('click', async () => {
     try {
@@ -938,6 +952,13 @@ function setupEventListeners() {
         // Clear password field immediately — never keep in memory longer than needed
         const pwInput = qs<HTMLInputElement>('#login-password');
         if (pwInput) pwInput.value = '';
+        // Close the login overlay deterministically on success (don't rely solely on
+        // the async auth-state-change callback to hide it).
+        const overlay = qs<HTMLElement>('#login-overlay');
+        if (overlay) {
+          overlay.classList.add('hidden');
+          overlay.classList.remove('show');
+        }
         renderAccountSettings();
       }
     } catch {

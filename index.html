@@ -53,11 +53,29 @@
           </p>
         </div>
         <div id="login-choice">
-          <button class="btn btn-block" id="email-login-btn">Continue with Email</button>
+          <button class="btn btn-block" id="email-login-btn">Sign In / Create Account</button>
           <button class="btn btn-ghost btn-block mt-2" id="skip-login-btn">Skip for now</button>
           <div class="tip mt-3">Local only — login recommended to protect progress.</div>
         </div>
         <div id="email-login-form" class="hidden">
+          <div style="display: flex; gap: var(--space-2); margin-bottom: var(--space-3)">
+            <button
+              class="btn btn-sm"
+              id="auth-tab-signin"
+              style="flex: 1; font-weight: 700"
+              type="button"
+            >
+              Sign In
+            </button>
+            <button
+              class="btn btn-ghost btn-sm"
+              id="auth-tab-signup"
+              style="flex: 1; font-weight: 700"
+              type="button"
+            >
+              Create Account
+            </button>
+          </div>
           <label class="text-xs font-bold text-tertiary" for="login-email">Email address</label>
           <input
             type="email"
@@ -66,8 +84,16 @@
             placeholder="you@example.com"
             autocomplete="email"
           />
-          <button class="btn btn-block mt-3" id="send-login-btn">Send secure login link</button>
-          <button class="btn btn-ghost btn-block mt-2" id="back-login-btn">Back</button>
+          <label class="text-xs font-bold text-tertiary mt-3" for="login-password" style="display:block;margin-top:var(--space-3)">Password</label>
+          <input
+            type="password"
+            class="input mt-2"
+            id="login-password"
+            placeholder="Your password"
+            autocomplete="current-password"
+          />
+          <button class="btn btn-block mt-3" id="send-login-btn" type="button">Sign In</button>
+          <button class="btn btn-ghost btn-block mt-2" id="back-login-btn" type="button">Back</button>
           <p id="login-message" class="tip mt-3" aria-live="polite"></p>
         </div>
         <div id="local-login-form" class="hidden">
@@ -816,6 +842,16 @@
             <button class="btn btn-ghost btn-sm btn-block mt-2" id="export-backup-btn">
               Export backup
             </button>
+            <button class="btn btn-ghost btn-sm btn-block mt-2" id="import-backup-btn">
+              Restore from backup
+            </button>
+            <input
+              type="file"
+              id="import-file-input"
+              accept=".json,application/json"
+              style="display: none"
+            />
+            <p id="import-message" class="tip mt-2" aria-live="polite"></p>
             <button class="btn btn-ghost btn-sm btn-block mt-2 hidden" id="logout-btn">
               Logout
             </button>

@@ -84,16 +84,42 @@
             placeholder="you@example.com"
             autocomplete="email"
           />
-          <label class="text-xs font-bold text-tertiary mt-3" for="login-password" style="display:block;margin-top:var(--space-3)">Password</label>
-          <input
-            type="password"
-            class="input mt-2"
-            id="login-password"
-            placeholder="Your password"
-            autocomplete="current-password"
-          />
+          <label
+            class="text-xs font-bold text-tertiary mt-3"
+            for="login-password"
+            style="display: block; margin-top: var(--space-3)"
+            >Password</label
+          >
+          <div class="password-field mt-2">
+            <input
+              type="password"
+              class="input"
+              id="login-password"
+              placeholder="Your password"
+              autocomplete="current-password"
+            />
+            <button
+              class="password-toggle"
+              id="toggle-login-password"
+              type="button"
+              aria-label="Show password"
+              aria-controls="login-password"
+              aria-pressed="false"
+            >
+              👁️
+            </button>
+          </div>
           <button class="btn btn-block mt-3" id="send-login-btn" type="button">Sign In</button>
-          <button class="btn btn-ghost btn-block mt-2" id="back-login-btn" type="button">Back</button>
+          <button
+            class="btn btn-ghost btn-block mt-2 hidden"
+            id="resend-confirmation-btn"
+            type="button"
+          >
+            Resend confirmation email
+          </button>
+          <button class="btn btn-ghost btn-block mt-2" id="back-login-btn" type="button">
+            Back
+          </button>
           <p id="login-message" class="tip mt-3" aria-live="polite"></p>
         </div>
         <div id="local-login-form" class="hidden">

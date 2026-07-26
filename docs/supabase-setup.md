@@ -1,6 +1,6 @@
 # Supabase cloud sync setup
 
-NeuroFocus uses Supabase Auth magic links and one `user_states` row per account. No Firebase is used. The app remains usable offline and with **Skip for now** when these variables are absent.
+NeuroFocusX uses Supabase Auth magic links and one `user_states` row per account. No Firebase is used. The app remains usable offline and with **Skip for now** when these variables are absent.
 
 ## 1. Create the table
 
@@ -43,4 +43,4 @@ Never put a service-role key in the frontend or commit `.env.local`. Restart Vit
 
 ## Data safety behavior
 
-On first login, an empty cloud row receives local data; an empty device restores cloud data. If both contain progress, NeuroFocus creates a local backup snapshot before offering local, cloud, or merge choices. Merge keeps local values for keys already present and restores cloud-only keys. Logout only ends the account session; it does not delete local progress.
+On first login, an empty cloud row receives local data; an empty device restores cloud data. If both contain progress, NeuroFocusX creates a local backup snapshot before offering local, cloud, or merge choices. Merge keeps local values for keys already present and restores cloud-only keys. Logout only ends the account session; it does not delete local progress.

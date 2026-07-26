@@ -54,7 +54,7 @@ export function generateShareText(): string {
   const remaining = data.backlogs.reduce((sum, b) => sum + ((b.total || 0) - (b.done || 0)), 0);
 
   return [
-    '🔥 NeuroFocus Progress',
+    '🔥 NeuroFocusX Progress',
     `Rank: ${rank.name} (Level ${info.level})`,
     `Streak: ${data.consecutiveStreak} days`,
     `Focus: ${Math.floor((data.totalFocusMinutes || 0) / 60)}h total`,
@@ -73,7 +73,7 @@ export async function shareProgress(): Promise<BuddyResult> {
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: 'NeuroFocus Progress', text });
+      await navigator.share({ title: 'NeuroFocusX Progress', text });
       return { success: true };
     } catch {
       // User cancelled or share failed — fall through to clipboard

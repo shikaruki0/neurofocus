@@ -1,7 +1,7 @@
 {
-  "name": "neurofocus",
+  "name": "neurofocusx",
   "version": "14.0.0",
-  "description": "NeuroFocus — A gamified productivity & study app with XP, streaks, habits, focus timer, and frictionless local login.",
+  "description": "NeuroFocusX — A gamified productivity & study app with XP, streaks, habits, focus timer, and frictionless local login.",
   "type": "module",
   "engines": {
     "node": ">=20.19.0",
@@ -32,7 +32,7 @@
     "xp",
     "streaks"
   ],
-  "author": "NeuroFocus Team",
+  "author": "NeuroFocusX Team",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^26.1.1",

@@ -225,7 +225,7 @@ describe('Safe JSON import/restore', () => {
 
   // ─── Valid import ────────────────────────────────────────────────
 
-  it('validates and accepts a valid NeuroFocus export', () => {
+  it('validates and accepts a valid NeuroFocusX export', () => {
     const exportData = {
       profileName: 'Scholar',
       xp: 500,
@@ -266,10 +266,10 @@ describe('Safe JSON import/restore', () => {
 
   // ─── Unrecognized JSON ───────────────────────────────────────────
 
-  it('rejects JSON that is not a NeuroFocus export', () => {
+  it('rejects JSON that is not a NeuroFocusX export', () => {
     const result = validateImportData(JSON.stringify({ foo: 1, bar: 2, baz: 3 }));
     expect(result.valid).toBe(false);
-    expect(result.error).toMatch(/not appear to be a NeuroFocus/i);
+    expect(result.error).toMatch(/not appear to be a NeuroFocusX/i);
   });
 
   it('rejects JSON arrays', () => {

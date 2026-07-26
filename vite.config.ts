@@ -22,7 +22,7 @@ function spaFallbackPlugin() {
 export default defineConfig(({ mode }) => ({
   // Base path
   // Netlify (recommended): use '/'
-  // GitHub Pages project site: change to '/neurofocus/' if needed
+  // GitHub Pages project site: change to '/neurofocusx/' if needed
   base: mode === 'production' ? '/' : '/',
   root: '.',
   publicDir: 'public',
@@ -45,8 +45,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'NeuroFocus',
-        short_name: 'NeuroFocus',
+        name: 'NeuroFocusX',
+        short_name: 'NeuroFocusX',
         description: 'Gamified productivity & study app with XP, streaks, habits, and focus timer.',
         theme_color: '#050810',
         background_color: '#050810',

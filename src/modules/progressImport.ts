@@ -1,8 +1,8 @@
 /**
- * Safe Progress Import — Validates and restores NeuroFocus JSON exports.
+ * Safe Progress Import — Validates and restores NeuroFocusX JSON exports.
  *
  * Security:
- *  - Rejects non-NeuroFocus JSON
+ *  - Rejects non-NeuroFocusX JSON
  *  - Blocks prototype pollution keys
  *  - Blocks auth tokens and credentials
  *  - Enforces file-size limit
@@ -37,7 +37,7 @@ const BLOCKED_KEYS = new Set([
 const PROTOTYPE_POLLUTION_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 /**
- * Known NeuroFocus data fields with expected types for validation.
+ * Known NeuroFocusX data fields with expected types for validation.
  * 'any' means we accept any value but still sanitize.
  */
 type FieldType = 'number' | 'string' | 'boolean' | 'array' | 'object' | 'any';
@@ -104,10 +104,10 @@ function isBlockedKey(key: string): boolean {
 }
 
 /**
- * Checks if the data looks like a NeuroFocus export.
+ * Checks if the data looks like a NeuroFocusX export.
  * At least 3 recognized fields must be present.
  */
-function looksLikeNeurofocusExport(data: Record<string, unknown>): boolean {
+function looksLikeNeuroFocusXExport(data: Record<string, unknown>): boolean {
   let recognizedCount = 0;
   for (const key of Object.keys(data)) {
     if (key in KNOWN_FIELDS) recognizedCount++;
@@ -166,7 +166,7 @@ export function validateImportData(rawContent: string): ImportValidationResult {
   } catch {
     return {
       valid: false,
-      error: 'This file is not valid JSON. Please use a NeuroFocus export file.',
+      error: 'This file is not valid JSON. Please use a NeuroFocusX export file.',
     };
   }
 
@@ -174,17 +174,17 @@ export function validateImportData(rawContent: string): ImportValidationResult {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     return {
       valid: false,
-      error: 'The file does not contain a valid NeuroFocus backup.',
+      error: 'The file does not contain a valid NeuroFocusX backup.',
     };
   }
 
   const obj = parsed as Record<string, unknown>;
 
-  // Must look like NeuroFocus data
-  if (!looksLikeNeurofocusExport(obj)) {
+  // Must look like NeuroFocusX data
+  if (!looksLikeNeuroFocusXExport(obj)) {
     return {
       valid: false,
-      error: 'This does not appear to be a NeuroFocus export file.',
+      error: 'This does not appear to be a NeuroFocusX export file.',
     };
   }
 
@@ -211,7 +211,7 @@ export function validateImportData(rawContent: string): ImportValidationResult {
   if (fieldCount === 0) {
     return {
       valid: false,
-      error: 'No valid NeuroFocus data found in this file.',
+      error: 'No valid NeuroFocusX data found in this file.',
     };
   }
 

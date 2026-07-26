@@ -70,7 +70,7 @@ export function remove(key: string): void {
 }
 
 /**
- * Clears ALL NeuroFocus data from storage.
+ * Clears ALL NeuroFocusX data from storage.
  * Used by "Delete All Data" — irreversible.
  */
 export function clearAll(): void {

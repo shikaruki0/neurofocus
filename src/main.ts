@@ -1,8 +1,8 @@
 /**
- * NeuroFocus v14 — Main Entry Point (Fixed)
+ * NeuroFocusX v14 — Main Entry Point (Fixed)
  * Wires modules to the DOM and initializes the app.
  * Fixes:
- *  - CSS imported via JS so Vite bundles correctly with base /neurofocus/
+ *  - CSS imported via JS so Vite bundles correctly with base /neurofocusx/
  *  - Base-aware SW registration (was absolute /sw.js causing 404 on GH Pages)
  *  - Typed DOM helpers to avoid runtime dataset/style/checked errors
  *  - Null guards for dailyQuests
@@ -10,7 +10,7 @@
  *  - Fixed dailyChecksBuilt stale flag across days
  */
 
-// Import styles directly so Vite bundles them correctly (fixes 404s when base is /neurofocus/)
+// Import styles directly so Vite bundles them correctly (fixes 404s when base is /neurofocusx/)
 import './styles/variables.css';
 import './styles/base.css';
 import './styles/components.css';
@@ -693,7 +693,7 @@ function downloadBackup() {
   const blob = new Blob([JSON.stringify(exportAll(), null, 2)], { type: 'application/json' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `neurofocus-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = `neurofocusx-backup-${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
   URL.revokeObjectURL(link.href);
 }
@@ -855,7 +855,7 @@ function setAuthMode(mode: AuthMode): void {
     setLoginHeader(
       'Get started',
       'Create your account',
-      'Back up your progress and use NeuroFocus across devices.',
+      'Back up your progress and use NeuroFocusX across devices.',
     );
   }
 
@@ -883,7 +883,7 @@ function showLoginView(view: LoginView, mode: AuthMode = 'signin'): void {
   if (view === 'choice') {
     setLoginHeader(
       'Focus. Build. Grow.',
-      'Welcome to NeuroFocus',
+      'Welcome to NeuroFocusX',
       'Choose how you want to save your progress.',
     );
     setFormMessage('login-message');
@@ -905,7 +905,7 @@ function showLoginView(view: LoginView, mode: AuthMode = 'signin'): void {
   setLoginHeader(
     'Device-only setup',
     'Make it yours',
-    'Add a name to personalize NeuroFocus on this device.',
+    'Add a name to personalize NeuroFocusX on this device.',
   );
   setFormMessage('local-login-message');
   qs<HTMLInputElement>('#login-name')?.removeAttribute('aria-invalid');
@@ -1639,7 +1639,7 @@ function init() {
   // Service Worker: vite-plugin-pwa handles registration via registerSW.js
   // Fallback base-aware registration only if not already controlled
   if ('serviceWorker' in navigator) {
-    const base = (import.meta.env.BASE_URL as string) || '/neurofocus/';
+    const base = (import.meta.env.BASE_URL as string) || '/neurofocusx/';
     setTimeout(() => {
       if (!navigator.serviceWorker.controller) {
         navigator.serviceWorker.register(`${base}sw.js`).catch((err) => {
@@ -1760,7 +1760,7 @@ function init() {
 try {
   init();
 } catch (e) {
-  console.error('NeuroFocus init crashed', e);
+  console.error('NeuroFocusX init crashed', e);
   const el = document.createElement('div');
   el.style.cssText =
     'position:fixed;inset:0;z-index:9999;background:#050810;color:#fff;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;font-family:sans-serif';

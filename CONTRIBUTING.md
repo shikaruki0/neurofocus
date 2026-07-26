@@ -1,6 +1,6 @@
-# Contributing to NeuroFocus
+# Contributing to NeuroFocusX
 
-Thank you for your interest in contributing! This document outlines the process for contributing to NeuroFocus.
+Thank you for your interest in contributing! This document outlines the process for contributing to NeuroFocusX.
 
 ## Code of Conduct
 

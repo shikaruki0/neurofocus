@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🧠 NeuroFocus
+# 🧠 NeuroFocusX
 
 **Gamified Productivity & Study App**
 
@@ -9,7 +9,7 @@ _Level up your brain. Build unbreakable discipline. Track everything that matter
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-[Live Demo](https://shikaruki0.github.io/neurofocus) · [Report Bug](../../issues) · [Request Feature](../../issues)
+[Live Demo](https://neurofocusx.vercel.app) · [Report Bug](../../issues) · [Request Feature](../../issues)
 
 </div>
 
@@ -70,7 +70,7 @@ npm run preview
 ## 🏗️ Architecture
 
 ```
-neurofocus/
+neurofocusx/
 ├── src/
 │   ├── main.js              # App entry point
 │   ├── styles/              # CSS modules
@@ -152,7 +152,7 @@ See [docs/supabase-setup.md](docs/supabase-setup.md) for the one-time database a
 | ------------------------ | -------------------------------------------------- |
 | `VITE_SUPABASE_URL`      | Supabase project URL (optional for local mode)     |
 | `VITE_SUPABASE_ANON_KEY` | Public Supabase anon key (optional for local mode) |
-| `VITE_APP_TITLE`         | App title (default: NeuroFocus)                    |
+| `VITE_APP_TITLE`         | App title (default: NeuroFocusX)                   |
 | `VITE_APP_VERSION`       | Version displayed in settings                      |
 
 Never commit `.env.local` or real credentials.

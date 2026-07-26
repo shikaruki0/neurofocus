@@ -1,7 +1,7 @@
 /**
  * Simple Local Session — frictionless profile login without external services.
  *
- * NeuroFocus is an offline-first PWA. This module gives the user a professional
+ * NeuroFocusX is an offline-first PWA. This module gives the user a professional
  * first-run "login" experience while keeping progress private and saved on the
  * current device. Real cross-device accounts can be added later with a backend.
  */

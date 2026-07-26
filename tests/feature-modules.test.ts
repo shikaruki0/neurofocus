@@ -363,7 +363,7 @@ describe('Accountability buddy', () => {
     Object.defineProperty(navigator, 'share', { value: undefined, configurable: true });
 
     await expect(shareProgress()).resolves.toEqual({ success: true, copied: true });
-    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('NeuroFocus Progress'));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('NeuroFocusX Progress'));
 
     removeBuddy();
     expect(getBuddy()).toBe('');

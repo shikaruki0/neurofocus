@@ -61,6 +61,7 @@ import {
   signInWithEmailPassword,
   signUpWithEmailPassword,
   validatePassword,
+  resendConfirmationEmail,
   logout,
 } from './modules/auth.ts';
 import { createLocalBackup, syncOnLogin, syncNow } from './modules/cloudSync.ts';
@@ -645,6 +646,7 @@ function renderSession() {
   qs<HTMLElement>('#login-choice')?.classList.remove('hidden');
   qs<HTMLElement>('#email-login-form')?.classList.add('hidden');
   qs<HTMLElement>('#local-login-form')?.classList.add('hidden');
+  qs<HTMLElement>('#resend-confirmation-btn')?.classList.add('hidden');
   overlay.classList.remove('hidden');
   overlay.classList.add('show');
 }
@@ -751,6 +753,7 @@ function updateDashboard() {
 type AuthMode = 'signin' | 'signup';
 let authMode: AuthMode = 'signin';
 let authSubmitting = false;
+let resendSubmitting = false;
 
 function setAuthMode(mode: AuthMode): void {
   authMode = mode;
@@ -759,8 +762,14 @@ function setAuthMode(mode: AuthMode): void {
   const sendBtn = qs<HTMLButtonElement>('#send-login-btn');
   const pwInput = qs<HTMLInputElement>('#login-password');
   const msg = qs<HTMLElement>('#login-message');
+  const resendBtn = qs<HTMLButtonElement>('#resend-confirmation-btn');
 
   if (msg) msg.textContent = '';
+  if (resendBtn) {
+    resendBtn.classList.add('hidden');
+    resendBtn.removeAttribute('disabled');
+    delete resendBtn.dataset.email;
+  }
 
   if (mode === 'signin') {
     signInTab?.classList.remove('btn-ghost');
@@ -780,6 +789,24 @@ function setAuthMode(mode: AuthMode): void {
 
   // Re-enable submit button if not currently submitting
   if (sendBtn && !authSubmitting) sendBtn.removeAttribute('disabled');
+}
+
+function updateResendConfirmationState(
+  result: { canResendConfirmation?: boolean; email?: string },
+  fallbackEmail: string,
+): void {
+  const resendBtn = qs<HTMLButtonElement>('#resend-confirmation-btn');
+  if (!resendBtn) return;
+  const email = (result.email || fallbackEmail || '').trim();
+  if (result.canResendConfirmation && email) {
+    resendBtn.dataset.email = email;
+    resendBtn.classList.remove('hidden');
+    resendBtn.removeAttribute('disabled');
+    return;
+  }
+  resendBtn.classList.add('hidden');
+  resendBtn.removeAttribute('disabled');
+  delete resendBtn.dataset.email;
 }
 
 function setupEventListeners() {
@@ -926,6 +953,16 @@ function setupEventListeners() {
   qs<HTMLElement>('#back-local-btn')?.addEventListener('click', renderSession);
   qs<HTMLElement>('#auth-tab-signin')?.addEventListener('click', () => setAuthMode('signin'));
   qs<HTMLElement>('#auth-tab-signup')?.addEventListener('click', () => setAuthMode('signup'));
+  qs<HTMLButtonElement>('#toggle-login-password')?.addEventListener('click', (event) => {
+    const toggle = event.currentTarget as HTMLButtonElement;
+    const passwordInput = qs<HTMLInputElement>('#login-password');
+    if (!passwordInput) return;
+    const shouldShow = passwordInput.type === 'password';
+    passwordInput.type = shouldShow ? 'text' : 'password';
+    toggle.setAttribute('aria-pressed', String(shouldShow));
+    toggle.setAttribute('aria-label', shouldShow ? 'Hide password' : 'Show password');
+    toggle.textContent = shouldShow ? '🙈' : '👁️';
+  });
   qs<HTMLElement>('#skip-login-btn')?.addEventListener('click', () => {
     qs<HTMLElement>('#login-choice')?.classList.add('hidden');
     qs<HTMLElement>('#local-login-form')?.classList.remove('hidden');
@@ -948,7 +985,9 @@ function setupEventListeners() {
           ? await signInWithEmailPassword(email, password)
           : await signUpWithEmailPassword(email, password);
       if (msg) msg.textContent = result.message;
+      updateResendConfirmationState(result, email);
       if (result.ok) {
+        updateResendConfirmationState({}, '');
         // Clear password field immediately — never keep in memory longer than needed
         const pwInput = qs<HTMLInputElement>('#login-password');
         if (pwInput) pwInput.value = '';
@@ -966,6 +1005,35 @@ function setupEventListeners() {
     } finally {
       authSubmitting = false;
       if (sendBtn) sendBtn.removeAttribute('disabled');
+    }
+  });
+  qs<HTMLButtonElement>('#resend-confirmation-btn')?.addEventListener('click', async (event) => {
+    const resendBtn = event.currentTarget as HTMLButtonElement;
+    const msg = qs<HTMLElement>('#login-message');
+    const email = resendBtn.dataset.email || qs<HTMLInputElement>('#login-email')?.value || '';
+
+    if (resendSubmitting) return;
+    resendSubmitting = true;
+    resendBtn.setAttribute('disabled', 'true');
+    const originalText = resendBtn.textContent || 'Resend confirmation email';
+    resendBtn.textContent = 'Sending...';
+
+    try {
+      const result = await resendConfirmationEmail(email);
+      if (msg) msg.textContent = result.message;
+      updateResendConfirmationState(
+        {
+          canResendConfirmation: result.canResendConfirmation,
+          email: result.email || email,
+        },
+        email,
+      );
+    } catch {
+      if (msg) msg.textContent = 'Something went wrong. Please try again.';
+    } finally {
+      resendSubmitting = false;
+      resendBtn.textContent = originalText;
+      resendBtn.removeAttribute('disabled');
     }
   });
   qs<HTMLElement>('#login-continue-btn')?.addEventListener('click', () => {

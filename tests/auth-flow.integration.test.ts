@@ -15,7 +15,7 @@ const hoisted = vi.hoisted(() => {
         return { data: { subscription: { unsubscribe: () => undefined } } };
       }),
       signInWithPassword: vi.fn(async (creds: { email: string; password: string }) => {
-        if (creds.password === 'wrong')
+        if (creds.password === 'wrong' || creds.password === 'unconfirmed')
           return { data: null, error: { message: 'Invalid login credentials', status: 400 } };
         fire('SIGNED_IN', fakeSession);
         return { data: { user: fakeUser, session: fakeSession }, error: null };
@@ -30,6 +30,7 @@ const hoisted = vi.hoisted(() => {
         return { data: { user: fakeUser, session: fakeSession }, error: null };
       }),
       getUser: vi.fn(async () => ({ data: { user: null }, error: null })),
+      resend: vi.fn(async () => ({ data: {}, error: null })),
       signOut: vi.fn(async () => {
         fire('SIGNED_OUT', null);
         return { error: null };
@@ -84,17 +85,67 @@ describe('Production auth/import flows', () => {
     window.confirm = () => true;
   });
 
-  it('Bug 1: settings-login-btn reveals the login overlay WITH the email form (returning local user)', async () => {
+  it('Bug 3: settings-login-btn reveals the login overlay WITH the email form (returning local user)', async () => {
     localStorage.setItem('nf_hasOnboarded', JSON.stringify(true));
     localStorage.setItem('nf_profileName', JSON.stringify('Aarav'));
     await loadApp();
     const emailForm = document.querySelector<HTMLElement>('#email-login-form')!;
+    const choice = document.querySelector<HTMLElement>('#login-choice')!;
+    const email = document.querySelector<HTMLInputElement>('#login-email')!;
 
     document.querySelector<HTMLElement>('#settings-btn')?.click();
     document.querySelector<HTMLElement>('#settings-login-btn')?.click();
 
     expect(overlayVisible()).toBe(true);
     expect(emailForm.classList.contains('hidden')).toBe(false);
+    expect(choice.classList.contains('hidden')).toBe(true);
+    expect(document.activeElement).toBe(email);
+  });
+
+  it('surfaces unconfirmed email sign-in failures and resends confirmation email', async () => {
+    await loadApp();
+    document.querySelector<HTMLElement>('#email-login-btn')?.click();
+    const email = document.querySelector<HTMLInputElement>('#login-email')!;
+    const pw = document.querySelector<HTMLInputElement>('#login-password')!;
+    const msg = document.querySelector<HTMLElement>('#login-message')!;
+    const resend = document.querySelector<HTMLButtonElement>('#resend-confirmation-btn')!;
+    email.value = 'person@example.com';
+    pw.value = 'unconfirmed';
+
+    document.querySelector<HTMLElement>('#send-login-btn')?.click();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(msg.textContent).toMatch(/email not confirmed/i);
+    expect(resend.classList.contains('hidden')).toBe(false);
+
+    resend.click();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(hoisted.fakeSupabase.auth.resend).toHaveBeenCalledWith({
+      type: 'signup',
+      email: 'person@example.com',
+    });
+    expect(msg.textContent).toMatch(/confirmation email sent/i);
+  });
+
+  it('toggles password visibility for the email/password form', async () => {
+    await loadApp();
+    document.querySelector<HTMLElement>('#email-login-btn')?.click();
+    const pw = document.querySelector<HTMLInputElement>('#login-password')!;
+    const toggle = document.querySelector<HTMLButtonElement>('#toggle-login-password')!;
+
+    expect(pw.type).toBe('password');
+    expect(toggle.getAttribute('aria-label')).toBe('Show password');
+
+    toggle.click();
+    expect(pw.type).toBe('text');
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    expect(toggle.getAttribute('aria-label')).toBe('Hide password');
+
+    toggle.click();
+    expect(pw.type).toBe('password');
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+    expect(toggle.getAttribute('aria-label')).toBe('Show password');
   });
 
   it('continue locally starts a session and hides the overlay', async () => {

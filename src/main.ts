@@ -635,20 +635,35 @@ function renderQuote() {
   if (el) el.textContent = `"${getDailyQuote()}"`;
 }
 
-function renderSession() {
+function setLoginOverlayOpen(open: boolean): void {
   const overlay = qs<HTMLElement>('#login-overlay');
   if (!overlay) return;
+
+  overlay.classList.toggle('hidden', !open);
+  overlay.classList.toggle('show', open);
+  document.body.classList.toggle('auth-open', open);
+
+  // Keep keyboard and screen-reader users inside the modal while it is open.
+  qsa<HTMLElement>('#app-header, main.container, .bottom-nav').forEach((element) => {
+    if (open) {
+      element.setAttribute('inert', '');
+      element.setAttribute('aria-hidden', 'true');
+    } else {
+      element.removeAttribute('inert');
+      element.removeAttribute('aria-hidden');
+    }
+  });
+}
+
+function renderSession(): void {
   if (isSessionStarted() || currentUser()) {
-    overlay.classList.add('hidden');
-    overlay.classList.remove('show');
+    setLoginOverlayOpen(false);
     return;
   }
-  qs<HTMLElement>('#login-choice')?.classList.remove('hidden');
-  qs<HTMLElement>('#email-login-form')?.classList.add('hidden');
-  qs<HTMLElement>('#local-login-form')?.classList.add('hidden');
-  qs<HTMLElement>('#resend-confirmation-btn')?.classList.add('hidden');
-  overlay.classList.remove('hidden');
-  overlay.classList.add('show');
+
+  showLoginView('choice');
+  setLoginOverlayOpen(true);
+  qs<HTMLButtonElement>('#email-login-btn')?.focus();
 }
 
 function renderAccountSettings() {
@@ -751,44 +766,169 @@ function updateDashboard() {
 // ===================================================================
 
 type AuthMode = 'signin' | 'signup';
+type LoginView = 'choice' | 'email' | 'local';
+type MessageTone = 'error' | 'success' | 'info';
+
 let authMode: AuthMode = 'signin';
 let authSubmitting = false;
 let resendSubmitting = false;
 
-function setAuthMode(mode: AuthMode): void {
-  authMode = mode;
-  const signInTab = qs<HTMLElement>('#auth-tab-signin');
-  const signUpTab = qs<HTMLElement>('#auth-tab-signup');
-  const sendBtn = qs<HTMLButtonElement>('#send-login-btn');
-  const pwInput = qs<HTMLInputElement>('#login-password');
-  const msg = qs<HTMLElement>('#login-message');
-  const resendBtn = qs<HTMLButtonElement>('#resend-confirmation-btn');
+function setLoginHeader(kicker: string, title: string, subtitle: string): void {
+  const kickerElement = qs<HTMLElement>('#login-kicker');
+  const titleElement = qs<HTMLElement>('#login-title');
+  const subtitleElement = qs<HTMLElement>('#login-subtitle');
+  if (kickerElement) kickerElement.textContent = kicker;
+  if (titleElement) titleElement.textContent = title;
+  if (subtitleElement) subtitleElement.textContent = subtitle;
+}
 
-  if (msg) msg.textContent = '';
-  if (resendBtn) {
-    resendBtn.classList.add('hidden');
-    resendBtn.removeAttribute('disabled');
-    delete resendBtn.dataset.email;
+function setFormMessage(id: string, message = '', tone: MessageTone = 'error'): void {
+  const element = qs<HTMLElement>(`#${id}`);
+  if (!element) return;
+  element.textContent = message;
+  if (message) element.dataset.tone = tone;
+  else delete element.dataset.tone;
+}
+
+function clearAuthFieldErrors(): void {
+  qs<HTMLInputElement>('#login-email')?.removeAttribute('aria-invalid');
+  qs<HTMLInputElement>('#login-password')?.removeAttribute('aria-invalid');
+}
+
+function resetPasswordVisibility(): void {
+  const passwordInput = qs<HTMLInputElement>('#login-password');
+  const toggle = qs<HTMLButtonElement>('#toggle-login-password');
+  if (passwordInput) passwordInput.type = 'password';
+  if (toggle) {
+    toggle.setAttribute('aria-pressed', 'false');
+    toggle.setAttribute('aria-label', 'Show password');
+    toggle.textContent = 'Show';
+  }
+}
+
+function updateAuthControls(): void {
+  const sendBtn = qs<HTMLButtonElement>('#send-login-btn');
+  const signInButton = qs<HTMLButtonElement>('#auth-tab-signin');
+  const signUpButton = qs<HTMLButtonElement>('#auth-tab-signup');
+  const action = authMode === 'signin' ? 'Sign in' : 'Create account';
+  const pendingAction = authMode === 'signin' ? 'Signing in…' : 'Creating account…';
+
+  if (sendBtn) {
+    sendBtn.textContent = authSubmitting ? pendingAction : action;
+    sendBtn.disabled = authSubmitting || !isEmailAuthConfigured;
+    sendBtn.setAttribute('aria-busy', String(authSubmitting));
+  }
+  if (signInButton) signInButton.disabled = authSubmitting;
+  if (signUpButton) signUpButton.disabled = authSubmitting;
+}
+
+function setAuthMode(mode: AuthMode): void {
+  const modeChanged = authMode !== mode;
+  authMode = mode;
+
+  const signInButton = qs<HTMLButtonElement>('#auth-tab-signin');
+  const signUpButton = qs<HTMLButtonElement>('#auth-tab-signup');
+  const passwordInput = qs<HTMLInputElement>('#login-password');
+  const passwordHint = qs<HTMLElement>('#password-hint');
+  const resendButton = qs<HTMLButtonElement>('#resend-confirmation-btn');
+
+  if (modeChanged && passwordInput) passwordInput.value = '';
+  resetPasswordVisibility();
+  clearAuthFieldErrors();
+  setFormMessage('login-message');
+
+  signInButton?.setAttribute('aria-pressed', String(mode === 'signin'));
+  signUpButton?.setAttribute('aria-pressed', String(mode === 'signup'));
+  passwordHint?.classList.toggle('hidden', mode !== 'signup');
+
+  if (passwordInput) {
+    passwordInput.setAttribute(
+      'autocomplete',
+      mode === 'signin' ? 'current-password' : 'new-password',
+    );
+    passwordInput.placeholder = mode === 'signin' ? 'Enter your password' : 'Create a password';
   }
 
   if (mode === 'signin') {
-    signInTab?.classList.remove('btn-ghost');
-    signInTab?.classList.add('btn');
-    signUpTab?.classList.remove('btn');
-    signUpTab?.classList.add('btn-ghost');
-    if (sendBtn) sendBtn.textContent = 'Sign In';
-    if (pwInput) pwInput.setAttribute('autocomplete', 'current-password');
+    setLoginHeader('Your account', 'Welcome back', 'Sign in to continue with your saved progress.');
   } else {
-    signUpTab?.classList.remove('btn-ghost');
-    signUpTab?.classList.add('btn');
-    signInTab?.classList.remove('btn');
-    signInTab?.classList.add('btn-ghost');
-    if (sendBtn) sendBtn.textContent = 'Create Account';
-    if (pwInput) pwInput.setAttribute('autocomplete', 'new-password');
+    setLoginHeader(
+      'Get started',
+      'Create your account',
+      'Back up your progress and use NeuroFocus across devices.',
+    );
   }
 
-  // Re-enable submit button if not currently submitting
-  if (sendBtn && !authSubmitting) sendBtn.removeAttribute('disabled');
+  if (resendButton) {
+    resendButton.classList.add('hidden');
+    resendButton.disabled = false;
+    delete resendButton.dataset.email;
+  }
+
+  if (!isEmailAuthConfigured) {
+    setFormMessage(
+      'login-message',
+      'Online accounts are not available right now. Choose All options to continue without an account.',
+      'info',
+    );
+  }
+  updateAuthControls();
+}
+
+function showLoginView(view: LoginView, mode: AuthMode = 'signin'): void {
+  qs<HTMLElement>('#login-choice')?.classList.toggle('hidden', view !== 'choice');
+  qs<HTMLElement>('#email-login-form')?.classList.toggle('hidden', view !== 'email');
+  qs<HTMLElement>('#local-login-form')?.classList.toggle('hidden', view !== 'local');
+
+  if (view === 'choice') {
+    setLoginHeader(
+      'Focus. Build. Grow.',
+      'Welcome to NeuroFocus',
+      'Choose how you want to save your progress.',
+    );
+    setFormMessage('login-message');
+    setFormMessage('local-login-message');
+    clearAuthFieldErrors();
+    qs<HTMLInputElement>('#login-name')?.removeAttribute('aria-invalid');
+    const passwordInput = qs<HTMLInputElement>('#login-password');
+    if (passwordInput) passwordInput.value = '';
+    resetPasswordVisibility();
+    updateResendConfirmationState({}, '');
+    return;
+  }
+
+  if (view === 'email') {
+    setAuthMode(mode);
+    return;
+  }
+
+  setLoginHeader(
+    'Device-only setup',
+    'Make it yours',
+    'Add a name to personalize NeuroFocus on this device.',
+  );
+  setFormMessage('local-login-message');
+  qs<HTMLInputElement>('#login-name')?.removeAttribute('aria-invalid');
+}
+
+function openEmailAuth(mode: AuthMode): void {
+  showLoginView('email', mode);
+  setLoginOverlayOpen(true);
+  qs<HTMLInputElement>('#login-email')?.focus();
+}
+
+function markAuthFieldErrors(message: string): void {
+  clearAuthFieldErrors();
+  const normalized = message.toLowerCase();
+  const emailInput = qs<HTMLInputElement>('#login-email');
+  const passwordInput = qs<HTMLInputElement>('#login-password');
+
+  if (normalized.includes('email') || normalized.includes('account')) {
+    emailInput?.setAttribute('aria-invalid', 'true');
+  }
+  if (normalized.includes('password') || normalized.includes('credentials')) {
+    passwordInput?.setAttribute('aria-invalid', 'true');
+  }
 }
 
 function updateResendConfirmationState(
@@ -826,22 +966,7 @@ function setupEventListeners() {
   });
   qs<HTMLElement>('#settings-login-btn')?.addEventListener('click', () => {
     qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
-    const overlay = qs<HTMLElement>('#login-overlay');
-    if (overlay) {
-      overlay.classList.remove('hidden');
-      overlay.classList.add('show');
-      qs<HTMLElement>('#login-choice')?.classList.add('hidden');
-      qs<HTMLElement>('#email-login-form')?.classList.remove('hidden');
-      setAuthMode('signin');
-      if (!isEmailAuthConfigured) {
-        const msg = qs<HTMLElement>('#login-message');
-        if (msg)
-          msg.textContent =
-            'Online accounts are not available right now. You can continue locally.';
-        qs<HTMLElement>('#send-login-btn')?.setAttribute('disabled', 'true');
-      }
-      qs<HTMLInputElement>('#login-email')?.focus();
-    }
+    openEmailAuth('signin');
   });
   qs<HTMLElement>('#sync-now-btn')?.addEventListener('click', async () => {
     try {
@@ -936,23 +1061,13 @@ function setupEventListeners() {
   });
 
   // Account start screen. All handlers are attached here (no inline JS).
-  qs<HTMLElement>('#email-login-btn')?.addEventListener('click', () => {
-    qs<HTMLElement>('#login-choice')?.classList.add('hidden');
-    qs<HTMLElement>('#email-login-form')?.classList.remove('hidden');
-    // Reset form state to sign-in mode
-    setAuthMode('signin');
-    if (!isEmailAuthConfigured) {
-      const msg = qs<HTMLElement>('#login-message');
-      if (msg)
-        msg.textContent = 'Online accounts are not available right now. You can continue locally.';
-      qs<HTMLElement>('#send-login-btn')?.setAttribute('disabled', 'true');
-    }
-    qs<HTMLInputElement>('#login-email')?.focus();
-  });
+  qs<HTMLElement>('#email-login-btn')?.addEventListener('click', () => openEmailAuth('signin'));
+  qs<HTMLElement>('#create-account-btn')?.addEventListener('click', () => openEmailAuth('signup'));
   qs<HTMLElement>('#back-login-btn')?.addEventListener('click', renderSession);
   qs<HTMLElement>('#back-local-btn')?.addEventListener('click', renderSession);
   qs<HTMLElement>('#auth-tab-signin')?.addEventListener('click', () => setAuthMode('signin'));
   qs<HTMLElement>('#auth-tab-signup')?.addEventListener('click', () => setAuthMode('signup'));
+
   qs<HTMLButtonElement>('#toggle-login-password')?.addEventListener('click', (event) => {
     const toggle = event.currentTarget as HTMLButtonElement;
     const passwordInput = qs<HTMLInputElement>('#login-password');
@@ -961,66 +1076,81 @@ function setupEventListeners() {
     passwordInput.type = shouldShow ? 'text' : 'password';
     toggle.setAttribute('aria-pressed', String(shouldShow));
     toggle.setAttribute('aria-label', shouldShow ? 'Hide password' : 'Show password');
-    toggle.textContent = shouldShow ? '🙈' : '👁️';
+    toggle.textContent = shouldShow ? 'Hide' : 'Show';
   });
+
   qs<HTMLElement>('#skip-login-btn')?.addEventListener('click', () => {
-    qs<HTMLElement>('#login-choice')?.classList.add('hidden');
-    qs<HTMLElement>('#local-login-form')?.classList.remove('hidden');
+    showLoginView('local');
     qs<HTMLInputElement>('#login-name')?.focus();
   });
-  qs<HTMLElement>('#send-login-btn')?.addEventListener('click', async () => {
+
+  qsa<HTMLInputElement>('#login-email, #login-password').forEach((input) => {
+    input.addEventListener('input', () => {
+      input.removeAttribute('aria-invalid');
+      const message = qs<HTMLElement>('#login-message');
+      if (message?.dataset.tone === 'error') setFormMessage('login-message');
+    });
+  });
+
+  qs<HTMLFormElement>('#email-login-form')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
     const email = qs<HTMLInputElement>('#login-email')?.value || '';
     const password = qs<HTMLInputElement>('#login-password')?.value || '';
-    const msg = qs<HTMLElement>('#login-message');
-    const sendBtn = qs<HTMLButtonElement>('#send-login-btn');
 
-    // Prevent duplicate submissions
-    if (authSubmitting) return;
+    // Prevent duplicate submissions from rapid clicks or repeated Enter presses.
+    if (authSubmitting || !isEmailAuthConfigured) return;
     authSubmitting = true;
-    if (sendBtn) sendBtn.setAttribute('disabled', 'true');
+    clearAuthFieldErrors();
+    setFormMessage('login-message');
+    updateAuthControls();
 
     try {
       const result =
         authMode === 'signin'
           ? await signInWithEmailPassword(email, password)
           : await signUpWithEmailPassword(email, password);
-      if (msg) msg.textContent = result.message;
+      const tone: MessageTone = result.ok
+        ? 'success'
+        : result.needsEmailConfirmation
+          ? 'info'
+          : 'error';
+      setFormMessage('login-message', result.message, tone);
+      if (tone === 'error') markAuthFieldErrors(result.message);
       updateResendConfirmationState(result, email);
+
       if (result.ok) {
         updateResendConfirmationState({}, '');
-        // Clear password field immediately — never keep in memory longer than needed
-        const pwInput = qs<HTMLInputElement>('#login-password');
-        if (pwInput) pwInput.value = '';
-        // Close the login overlay deterministically on success (don't rely solely on
-        // the async auth-state-change callback to hide it).
-        const overlay = qs<HTMLElement>('#login-overlay');
-        if (overlay) {
-          overlay.classList.add('hidden');
-          overlay.classList.remove('show');
-        }
+        // Clear the password immediately — never retain it longer than needed.
+        const passwordInput = qs<HTMLInputElement>('#login-password');
+        if (passwordInput) passwordInput.value = '';
+        setLoginOverlayOpen(false);
         renderAccountSettings();
       }
     } catch {
-      if (msg) msg.textContent = 'Something went wrong. Please try again.';
+      const message = 'Something went wrong. Please try again.';
+      setFormMessage('login-message', message, 'error');
     } finally {
       authSubmitting = false;
-      if (sendBtn) sendBtn.removeAttribute('disabled');
+      updateAuthControls();
     }
   });
   qs<HTMLButtonElement>('#resend-confirmation-btn')?.addEventListener('click', async (event) => {
     const resendBtn = event.currentTarget as HTMLButtonElement;
-    const msg = qs<HTMLElement>('#login-message');
     const email = resendBtn.dataset.email || qs<HTMLInputElement>('#login-email')?.value || '';
 
     if (resendSubmitting) return;
     resendSubmitting = true;
-    resendBtn.setAttribute('disabled', 'true');
+    resendBtn.disabled = true;
     const originalText = resendBtn.textContent || 'Resend confirmation email';
-    resendBtn.textContent = 'Sending...';
+    resendBtn.textContent = 'Sending…';
 
     try {
       const result = await resendConfirmationEmail(email);
-      if (msg) msg.textContent = result.message;
+      setFormMessage(
+        'login-message',
+        result.message,
+        result.ok ? 'success' : result.canResendConfirmation ? 'info' : 'error',
+      );
       updateResendConfirmationState(
         {
           canResendConfirmation: result.canResendConfirmation,
@@ -1029,17 +1159,31 @@ function setupEventListeners() {
         email,
       );
     } catch {
-      if (msg) msg.textContent = 'Something went wrong. Please try again.';
+      setFormMessage('login-message', 'Something went wrong. Please try again.', 'error');
     } finally {
       resendSubmitting = false;
       resendBtn.textContent = originalText;
-      resendBtn.removeAttribute('disabled');
+      resendBtn.disabled = false;
     }
   });
-  qs<HTMLElement>('#login-continue-btn')?.addEventListener('click', () => {
-    const result = startLocalSession({ name: qs<HTMLInputElement>('#login-name')?.value || '' });
+
+  qs<HTMLInputElement>('#login-name')?.addEventListener('input', (event) => {
+    (event.currentTarget as HTMLInputElement).removeAttribute('aria-invalid');
+    setFormMessage('local-login-message');
+  });
+
+  qs<HTMLFormElement>('#local-login-form')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const nameInput = qs<HTMLInputElement>('#login-name');
+    const result = startLocalSession({ name: nameInput?.value || '' });
     if (!result.success) {
-      showCelebrate('Check Details', result.error || 'Enter your name to continue', '⚠️', true);
+      nameInput?.setAttribute('aria-invalid', 'true');
+      setFormMessage(
+        'local-login-message',
+        result.error || 'Enter your name to continue.',
+        'error',
+      );
+      nameInput?.focus();
       return;
     }
     renderSession();

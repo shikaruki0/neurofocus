@@ -85,6 +85,81 @@ describe('Production auth/import flows', () => {
     window.confirm = () => true;
   });
 
+  it('presents sign-in, account creation, and device-only use as distinct choices', async () => {
+    await loadApp();
+
+    const signIn = document.querySelector<HTMLButtonElement>('#email-login-btn')!;
+    const createAccount = document.querySelector<HTMLButtonElement>('#create-account-btn')!;
+    const deviceOnly = document.querySelector<HTMLButtonElement>('#skip-login-btn')!;
+    const choice = document.querySelector<HTMLElement>('#login-choice')!;
+
+    expect(signIn.textContent?.trim()).toBe('Sign in');
+    expect(createAccount.textContent?.trim()).toBe('Create free account');
+    expect(deviceOnly.textContent).toContain('Continue without an account');
+    expect(choice.textContent).toContain('will not sync to other devices');
+    expect(document.querySelector('#app-header')?.hasAttribute('inert')).toBe(true);
+  });
+
+  it('opens account creation with matching guidance and lets users switch modes', async () => {
+    await loadApp();
+    document.querySelector<HTMLButtonElement>('#create-account-btn')?.click();
+
+    const title = document.querySelector<HTMLElement>('#login-title')!;
+    const password = document.querySelector<HTMLInputElement>('#login-password')!;
+    const passwordHint = document.querySelector<HTMLElement>('#password-hint')!;
+    const signInMode = document.querySelector<HTMLButtonElement>('#auth-tab-signin')!;
+    const signUpMode = document.querySelector<HTMLButtonElement>('#auth-tab-signup')!;
+    const submit = document.querySelector<HTMLButtonElement>('#send-login-btn')!;
+
+    expect(title.textContent).toBe('Create your account');
+    expect(signUpMode.getAttribute('aria-pressed')).toBe('true');
+    expect(signInMode.getAttribute('aria-pressed')).toBe('false');
+    expect(password.autocomplete).toBe('new-password');
+    expect(passwordHint.classList.contains('hidden')).toBe(false);
+    expect(submit.textContent?.trim()).toBe('Create account');
+
+    signInMode.click();
+    expect(title.textContent).toBe('Welcome back');
+    expect(signInMode.getAttribute('aria-pressed')).toBe('true');
+    expect(password.autocomplete).toBe('current-password');
+    expect(passwordHint.classList.contains('hidden')).toBe(true);
+    expect(submit.textContent?.trim()).toBe('Sign in');
+  });
+
+  it('shows validation next to the form and clears it when the user edits the field', async () => {
+    await loadApp();
+    document.querySelector<HTMLButtonElement>('#email-login-btn')?.click();
+
+    const email = document.querySelector<HTMLInputElement>('#login-email')!;
+    const message = document.querySelector<HTMLElement>('#login-message')!;
+    document.querySelector<HTMLButtonElement>('#send-login-btn')?.click();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(message.textContent).toMatch(/valid email/i);
+    expect(message.dataset.tone).toBe('error');
+    expect(email.getAttribute('aria-invalid')).toBe('true');
+
+    email.value = 'person@example.com';
+    email.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(message.textContent).toBe('');
+    expect(email.hasAttribute('aria-invalid')).toBe(false);
+  });
+
+  it('keeps local-name errors in context instead of opening a separate alert', async () => {
+    await loadApp();
+    document.querySelector<HTMLButtonElement>('#skip-login-btn')?.click();
+
+    const form = document.querySelector<HTMLFormElement>('#local-login-form')!;
+    const name = document.querySelector<HTMLInputElement>('#login-name')!;
+    const message = document.querySelector<HTMLElement>('#local-login-message')!;
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(overlayVisible()).toBe(true);
+    expect(message.textContent).toMatch(/name cannot be empty/i);
+    expect(message.dataset.tone).toBe('error');
+    expect(name.getAttribute('aria-invalid')).toBe('true');
+  });
+
   it('Bug 3: settings-login-btn reveals the login overlay WITH the email form (returning local user)', async () => {
     localStorage.setItem('nf_hasOnboarded', JSON.stringify(true));
     localStorage.setItem('nf_profileName', JSON.stringify('Aarav'));

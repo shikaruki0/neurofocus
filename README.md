@@ -142,7 +142,7 @@ npm run test:coverage
 
 ### Login & Data Storage
 
-The first screen offers **Continue with Email** (a Supabase magic link for cross-device sync) and **Skip for now** (a display-name profile saved locally). Missing cloud configuration never blocks local use. Existing local data is not deleted when logging out. When both local and cloud data exist, the app backs up locally and requires an explicit local, cloud, or safe merge choice before replacing anything.
+The first screen offers separate **Sign in**, **Create free account**, and **Continue without an account** paths. Accounts use Supabase email and password authentication for cross-device sync; the account-free path creates a display-name profile saved only in the current browser. Missing cloud configuration never blocks account-free use. Existing local data is not deleted when logging out. When both local and cloud data exist, the app backs up locally and requires an explicit local, cloud, or safe merge choice before replacing anything.
 
 See [docs/supabase-setup.md](docs/supabase-setup.md) for the one-time database and Auth setup.
 

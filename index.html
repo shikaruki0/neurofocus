@@ -30,112 +30,156 @@
   <body>
     <div class="ambient"></div>
 
-    <!-- Account start screen: no onboarding here, only safe login choices -->
+    <!-- Account start screen: clear account and device-only paths -->
     <div
       class="overlay center hidden"
       id="login-overlay"
       role="dialog"
       aria-modal="true"
       aria-labelledby="login-title"
+      aria-describedby="login-subtitle"
     >
-      <div class="modal" style="max-width: 420px">
-        <div style="text-align: center; margin-bottom: var(--space-4)">
-          <div class="rank-icon" style="margin-bottom: var(--space-3)">🧠</div>
-          <div class="modal-title" id="login-title">Welcome to NeuroFocus</div>
-          <p
-            style="
-              font-size: var(--font-sm);
-              color: var(--text-secondary);
-              line-height: var(--line-relaxed);
-            "
-          >
-            Login to keep progress safe across devices, or continue locally.
+      <div class="modal auth-modal">
+        <header class="auth-header">
+          <div class="auth-logo" aria-hidden="true">🧠</div>
+          <p class="auth-kicker" id="login-kicker">Focus. Build. Grow.</p>
+          <h1 class="auth-title" id="login-title">Welcome to NeuroFocus</h1>
+          <p class="auth-subtitle" id="login-subtitle">
+            Choose how you want to save your progress.
+          </p>
+        </header>
+
+        <div id="login-choice">
+          <div class="auth-benefit">
+            <span class="auth-benefit-icon" aria-hidden="true">☁</span>
+            <div>
+              <strong>Protect your progress</strong>
+              <span>An account backs up your XP and keeps it available across devices.</span>
+            </div>
+          </div>
+
+          <div class="auth-choice-actions" aria-label="Account options">
+            <button class="btn btn-block" id="email-login-btn" type="button">Sign in</button>
+            <button class="btn btn-ghost btn-block" id="create-account-btn" type="button">
+              Create free account
+            </button>
+          </div>
+
+          <div class="auth-divider" aria-hidden="true"><span>or</span></div>
+
+          <button class="auth-device-button" id="skip-login-btn" type="button">
+            <span>Continue without an account</span>
+            <span aria-hidden="true">→</span>
+          </button>
+          <p class="auth-device-note">
+            No account needed. Progress stays in this browser and will not sync to other devices.
           </p>
         </div>
-        <div id="login-choice">
-          <button class="btn btn-block" id="email-login-btn">Sign In / Create Account</button>
-          <button class="btn btn-ghost btn-block mt-2" id="skip-login-btn">Skip for now</button>
-          <div class="tip mt-3">Local only — login recommended to protect progress.</div>
-        </div>
-        <div id="email-login-form" class="hidden">
-          <div style="display: flex; gap: var(--space-2); margin-bottom: var(--space-3)">
-            <button
-              class="btn btn-sm"
-              id="auth-tab-signin"
-              style="flex: 1; font-weight: 700"
-              type="button"
-            >
-              Sign In
+
+        <form id="email-login-form" class="hidden" novalidate>
+          <button class="auth-back" id="back-login-btn" type="button">
+            <span aria-hidden="true">←</span> All options
+          </button>
+
+          <div class="auth-mode-switch" role="group" aria-label="Account action">
+            <button class="auth-mode-button" id="auth-tab-signin" type="button" aria-pressed="true">
+              Sign in
             </button>
             <button
-              class="btn btn-ghost btn-sm"
+              class="auth-mode-button"
               id="auth-tab-signup"
-              style="flex: 1; font-weight: 700"
               type="button"
-            >
-              Create Account
-            </button>
-          </div>
-          <label class="text-xs font-bold text-tertiary" for="login-email">Email address</label>
-          <input
-            type="email"
-            class="input mt-2"
-            id="login-email"
-            placeholder="you@example.com"
-            autocomplete="email"
-          />
-          <label
-            class="text-xs font-bold text-tertiary mt-3"
-            for="login-password"
-            style="display: block; margin-top: var(--space-3)"
-            >Password</label
-          >
-          <div class="password-field mt-2">
-            <input
-              type="password"
-              class="input"
-              id="login-password"
-              placeholder="Your password"
-              autocomplete="current-password"
-            />
-            <button
-              class="password-toggle"
-              id="toggle-login-password"
-              type="button"
-              aria-label="Show password"
-              aria-controls="login-password"
               aria-pressed="false"
             >
-              👁️
+              Create account
             </button>
           </div>
-          <button class="btn btn-block mt-3" id="send-login-btn" type="button">Sign In</button>
-          <button
-            class="btn btn-ghost btn-block mt-2 hidden"
-            id="resend-confirmation-btn"
-            type="button"
-          >
+
+          <div class="auth-field">
+            <label class="auth-label" for="login-email">Email address</label>
+            <input
+              type="email"
+              class="input"
+              id="login-email"
+              placeholder="you@example.com"
+              autocomplete="email"
+              inputmode="email"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="254"
+              aria-describedby="login-message"
+              required
+            />
+          </div>
+
+          <div class="auth-field">
+            <label class="auth-label" for="login-password">Password</label>
+            <div class="password-field">
+              <input
+                type="password"
+                class="input"
+                id="login-password"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                maxlength="200"
+                aria-describedby="password-hint login-message"
+                required
+              />
+              <button
+                class="password-toggle"
+                id="toggle-login-password"
+                type="button"
+                aria-label="Show password"
+                aria-controls="login-password"
+                aria-pressed="false"
+              >
+                Show
+              </button>
+            </div>
+            <p class="auth-hint hidden" id="password-hint">Use at least 6 characters.</p>
+          </div>
+
+          <button class="btn btn-block auth-submit" id="send-login-btn" type="submit">
+            Sign in
+          </button>
+          <button class="btn btn-ghost btn-block hidden" id="resend-confirmation-btn" type="button">
             Resend confirmation email
           </button>
-          <button class="btn btn-ghost btn-block mt-2" id="back-login-btn" type="button">
-            Back
+          <p id="login-message" class="auth-message" role="status" aria-live="polite"></p>
+        </form>
+
+        <form id="local-login-form" class="hidden" novalidate>
+          <button class="auth-back" id="back-local-btn" type="button">
+            <span aria-hidden="true">←</span> All options
           </button>
-          <p id="login-message" class="tip mt-3" aria-live="polite"></p>
-        </div>
-        <div id="local-login-form" class="hidden">
-          <label class="text-xs font-bold text-tertiary" for="login-name">Display name</label>
-          <input
-            type="text"
-            class="input mt-2"
-            id="login-name"
-            placeholder="e.g., Aarav"
-            maxlength="30"
-            autocomplete="name"
-          />
-          <button class="btn btn-block mt-3" id="login-continue-btn">Continue locally</button>
-          <button class="btn btn-ghost btn-block mt-2" id="back-local-btn">Back</button>
-          <div class="tip mt-3">Local only — login recommended to protect progress.</div>
-        </div>
+
+          <div class="auth-field">
+            <label class="auth-label" for="login-name">What should we call you?</label>
+            <input
+              type="text"
+              class="input"
+              id="login-name"
+              placeholder="Your name"
+              maxlength="30"
+              autocomplete="name"
+              aria-describedby="local-name-hint local-login-message"
+              required
+            />
+            <p class="auth-hint" id="local-name-hint">
+              Used to personalize NeuroFocus on this device.
+            </p>
+          </div>
+
+          <div class="auth-local-warning">
+            <span aria-hidden="true">ⓘ</span>
+            <p>Your progress is saved only in this browser. Clearing browser data can remove it.</p>
+          </div>
+
+          <button class="btn btn-block auth-submit" id="login-continue-btn" type="submit">
+            Start using NeuroFocus
+          </button>
+          <p id="local-login-message" class="auth-message" role="status" aria-live="polite"></p>
+        </form>
       </div>
     </div>
 

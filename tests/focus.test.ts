@@ -12,6 +12,7 @@ import {
   onComplete,
 } from '../src/modules/focus.ts';
 import { data } from '../src/modules/data.ts';
+import { get } from '../src/modules/storage.ts';
 
 describe('Focus Timer', () => {
   beforeEach(() => {
@@ -105,6 +106,28 @@ describe('Focus Timer', () => {
     vi.advanceTimersByTime(1000);
     expect(getTimerState()).toMatchObject({ minutes: 24, seconds: 58, running: true });
     expect(tick).toHaveBeenCalled();
+  });
+
+  it('persists an absolute deadline and paused progress for reload recovery', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-24T08:00:00'));
+
+    startTimer();
+    expect(get('focusTimer')).toMatchObject({
+      version: 1,
+      mode: 0,
+      running: true,
+      endTimestamp: new Date('2026-07-24T08:25:00').getTime(),
+    });
+
+    vi.advanceTimersByTime(61_000);
+    pauseTimer();
+    expect(get('focusTimer')).toMatchObject({
+      mode: 0,
+      remainingSeconds: 1439,
+      running: false,
+      endTimestamp: null,
+    });
   });
 
   it('completes a session, records progress, awards XP, and resets the timer', () => {

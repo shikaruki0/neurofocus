@@ -1478,6 +1478,13 @@ function updateFocusUI() {
   const elTimer = qs<HTMLElement>('#focus-timer');
   const elLabel = qs<HTMLElement>('#focus-mode-label');
   const elRing = qs<HTMLElement>('#focus-ring');
+  const button = qs<HTMLElement>('#focus-btn');
+
+  // A restored session must also restore its controls, not only the digits.
+  if (button) button.textContent = state.running ? 'Pause' : 'Start';
+  qsa<HTMLElement>('.timer-chip').forEach((chip) => {
+    chip.classList.toggle('active', Number(chip.dataset.mode) === state.mode);
+  });
 
   if (elTimer) {
     const m = state.minutes.toString().padStart(2, '0');
@@ -1687,6 +1694,7 @@ function init() {
   safe(() => renderSession(), 'session');
   safe(() => renderQuote(), 'quote');
   safe(() => renderFocusHistory(), 'focusHistory');
+  safe(() => updateFocusUI(), 'focusTimer');
   safe(() => renderHero(), 'hero');
 
   // Setup auto-theme checkbox

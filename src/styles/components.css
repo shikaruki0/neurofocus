@@ -2168,6 +2168,13 @@ option {
   overflow: hidden;
 }
 
+/* Hide a tip container when it has no content so it doesn't render as a
+   blank/empty box (e.g. #import-message under Data Safety, or other
+   status alert wrappers left empty by the UI). */
+.tip:empty {
+  display: none !important;
+}
+
 .tip strong {
   color: var(--accent-start);
   font-weight: 700;

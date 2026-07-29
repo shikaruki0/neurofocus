@@ -699,11 +699,7 @@ function downloadBackup() {
 }
 
 function askSyncChoice(): 'local' | 'cloud' | 'merge' {
-  const answer = window.prompt(
-    'Progress exists both here and in the cloud. Choose: 1 = Use this device data, 2 = Use cloud data, 3 = Merge safely (recommended).',
-    '3',
-  );
-  return answer === '1' ? 'local' : answer === '2' ? 'cloud' : 'merge';
+  return 'merge';
 }
 
 // ===================================================================

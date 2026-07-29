@@ -379,14 +379,19 @@ export async function restoreAuthSession(): Promise<User | null> {
   try {
     const { data, error } = await supabase.auth.getUser();
     if (error) {
-      rememberUser(null);
-      return null;
+      const status = error.status;
+      const isAuthError = status === 400 || status === 401 || status === 403;
+      if (isAuthError) {
+        rememberUser(null);
+        return null;
+      }
+      return currentUser();
     }
     rememberUser(data.user);
     return data.user;
-  } catch {
-    rememberUser(null);
-    return null;
+  } catch (err) {
+    console.debug('Session restoration offline fallback:', err);
+    return currentUser();
   }
 }
 

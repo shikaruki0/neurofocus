@@ -581,6 +581,12 @@ select.input {
   padding-right: 32px;
 }
 
+select.input option,
+option {
+  background-color: var(--surface-2);
+  color: var(--text);
+}
+
 /* Progress Bars */
 .progress-track {
   height: 6px;

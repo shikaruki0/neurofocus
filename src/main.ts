@@ -55,7 +55,13 @@ import {
   getBacklogsGroupedBySubject,
   getPendingChapterCount,
 } from './modules/backlogs.ts';
-import type { BacklogInput } from './modules/backlogs.ts';
+import type { BacklogInput, Backlog } from './modules/backlogs.ts';
+import {
+  recommendMission,
+  calculateBlocks,
+  buildMissionSetup,
+} from './modules/missionPlanner.ts';
+import type { MissionSetup } from './modules/missionPlanner.ts';
 import {
   completeDailyClassCheck,
   completeInitialBacklogSetup,
@@ -120,7 +126,7 @@ import {
 import { escapeHTML } from './utils/sanitize.ts';
 import { qs, qsa } from './utils/dom.ts';
 import { todayStr, currentDOW, DAY_LABELS } from './utils/date.ts';
-import { validateProfileName, validateMission } from './utils/validation.ts';
+import { validateProfileName, validateMission, validateMissionSetup } from './utils/validation.ts';
 
 // ===================================================================
 // STATE
@@ -134,6 +140,11 @@ let lastDailyCheckDate = '';
 let dailyMissTarget = 0;
 let dailyMissAssigned = 0;
 let dailyAttendanceDraft = { totalHeld: 0, attended: 0, missed: 0 };
+
+// Mission planner state (planning layer only — does not touch timer/XP/backlog)
+let missionSelectedSubject = '';
+let missionDraftBacklogId: number | null = null;
+let activeMission: MissionSetup | null = null;
 
 // ===================================================================
 // TAB NAVIGATION
@@ -855,6 +866,294 @@ function renderBattle() {
   });
 }
 
+// ===================================================================
+// MISSION PLANNER (planning layer only — no timer/XP/backlog mutations)
+// ===================================================================
+
+function getMissionSubjectOptions(): { key: string; label: string }[] {
+  const profile = getStudentProfile();
+  const options = getActiveSubjectOptions(profile);
+  if (options.length) return options.map((o) => ({ key: o.key, label: o.label }));
+  return FALLBACK_BACKLOG_SUBJECTS;
+}
+
+function populateMissionSubjectSelect(selectEl: HTMLSelectElement, selected: string): void {
+  const options = getMissionSubjectOptions();
+  selectEl.textContent = '';
+  options.forEach((opt) => {
+    const option = document.createElement('option');
+    option.value = opt.key;
+    option.textContent = opt.label;
+    selectEl.append(option);
+  });
+  if (options.some((o) => o.key === selected)) {
+    selectEl.value = selected;
+  } else if (options.length) {
+    selectEl.value = options[0].key;
+  }
+}
+
+function renderMissionPlanner(): void {
+  const body = qs<HTMLElement>('#mission-planner-body');
+  if (!body) return;
+
+  // If a mission is already confirmed, hide recommendation — show confirmed card instead
+  if (activeMission) {
+    body.innerHTML = `<div class="mission-empty" style="padding:8px 0">Mission locked in. Start your timer below when ready.</div>`;
+    renderMissionConfirmed();
+    return;
+  }
+
+  // Hide confirmed card
+  qs<HTMLElement>('#mission-confirmed-card')?.classList.add('hidden');
+
+  const backlogs = getBacklogs() as Backlog[];
+  const rec = recommendMission(backlogs, missionSelectedSubject || undefined);
+
+  if (rec.reason === 'empty' || !rec.backlog) {
+    body.innerHTML = `
+      <div class="mission-empty">
+        <div style="font-size:1.5rem;margin-bottom:8px">📭</div>
+        <div>Your backlog is clear. Create a manual mission to stay sharp.</div>
+        <button class="btn" id="mission-manual-btn" type="button">Create manual mission</button>
+      </div>`;
+    qs<HTMLElement>('#mission-manual-btn')?.addEventListener('click', () => {
+      missionDraftBacklogId = null;
+      openMissionSetup(null);
+    });
+    return;
+  }
+
+  const bl = rec.backlog;
+  const remainingLectures = Math.max(0, (bl.total || 0) - (bl.done || 0));
+  const topic = bl.chapterName || bl.name;
+  const subject = bl.subjectLabel || bl.subject || 'Other';
+
+  let quickWinHTML = '';
+  if (rec.quickWin) {
+    const qw = rec.quickWin;
+    const qwRemaining = Math.max(0, (qw.total || 0) - (qw.done || 0));
+    const qwTopic = qw.chapterName || qw.name;
+    const qwSubject = qw.subjectLabel || qw.subject || 'Other';
+    quickWinHTML = `
+      <div class="mission-quick-win">
+        <div class="mission-quick-win-label">⚡ Quick-win alternative</div>
+        <div class="mission-quick-win-topic">${escapeHTML(qwTopic)}</div>
+        <div class="mission-quick-win-meta">${escapeHTML(qwSubject)} · ${qwRemaining} lecture${qwRemaining === 1 ? '' : 's'} left</div>
+        <button class="btn btn-ghost btn-sm" id="mission-quick-win-btn" type="button" style="width:auto;font-size:.78rem">Use this instead</button>
+      </div>`;
+  }
+
+  body.innerHTML = `
+    <div class="mission-rec">
+      <div class="mission-rec-card">
+        <div class="mission-rec-subject">${escapeHTML(subject)}</div>
+        <div class="mission-rec-topic">${escapeHTML(topic)}</div>
+        <div class="mission-rec-meta">
+          <span class="tag tag-red">${remainingLectures} lecture${remainingLectures === 1 ? '' : 's'} left</span>
+          ${bl.total ? `<span class="tag tag-blue">${bl.done || 0}/${bl.total} done</span>` : ''}
+        </div>
+        <div class="mission-rec-reason">${escapeHTML(rec.reasonLabel)}</div>
+        <div class="mission-rec-actions">
+          <button class="btn" id="mission-use-btn" type="button">Use this mission</button>
+          <button class="btn btn-ghost" id="mission-another-btn" type="button">Choose another</button>
+          <button class="btn btn-ghost" id="mission-create-btn" type="button">Create manual</button>
+        </div>
+      </div>
+      ${quickWinHTML}
+    </div>`;
+
+  // "Use this mission"
+  qs<HTMLElement>('#mission-use-btn')?.addEventListener('click', () => {
+    missionDraftBacklogId = bl.id;
+    openMissionSetup(bl);
+  });
+
+  // "Choose another" — cycle to next recommendation (by subject)
+  qs<HTMLElement>('#mission-another-btn')?.addEventListener('click', () => {
+    const pending = backlogs
+      .filter((b) => Math.max(0, (b.total || 0) - (b.done || 0)) > 0)
+      .slice()
+      .sort((a, b) => {
+        const ra = Math.max(0, (a.total || 0) - (a.done || 0));
+        const rb = Math.max(0, (b.total || 0) - (b.done || 0));
+        return rb - ra || (a.id || 0) - (b.id || 0);
+      });
+    // Pick the next one after current recommendation
+    const currentIdx = pending.findIndex((b) => b.id === bl.id);
+    const nextIdx = (currentIdx + 1) % pending.length;
+    if (pending[nextIdx]) {
+      missionDraftBacklogId = pending[nextIdx].id;
+      openMissionSetup(pending[nextIdx]);
+    }
+  });
+
+  // "Create manual"
+  qs<HTMLElement>('#mission-create-btn')?.addEventListener('click', () => {
+    missionDraftBacklogId = null;
+    openMissionSetup(null);
+  });
+
+  // Quick-win button
+  qs<HTMLElement>('#mission-quick-win-btn')?.addEventListener('click', () => {
+    if (rec.quickWin) {
+      missionDraftBacklogId = rec.quickWin.id;
+      openMissionSetup(rec.quickWin);
+    }
+  });
+}
+
+function openMissionSetup(backlog: Backlog | null): void {
+  const card = qs<HTMLElement>('#mission-setup-card');
+  if (!card) return;
+  card.classList.remove('hidden');
+
+  const titleInput = qs<HTMLInputElement>('#mission-title');
+  const subjectSelect = qs<HTMLSelectElement>('#mission-subject');
+  const totalInput = qs<HTMLInputElement>('#mission-total');
+  const blockInput = qs<HTMLInputElement>('#mission-block');
+  const message = qs<HTMLElement>('#mission-setup-message');
+  const preview = qs<HTMLElement>('#mission-blocks-preview');
+
+  if (titleInput) titleInput.value = backlog ? (backlog.chapterName || backlog.name) : '';
+  if (subjectSelect) {
+    populateMissionSubjectSelect(subjectSelect, backlog?.subject || missionSelectedSubject || 'Physics');
+  }
+  if (totalInput) totalInput.value = '';
+  if (blockInput) blockInput.value = '25';
+  if (message) message.textContent = '';
+  if (preview) preview.innerHTML = '';
+
+  // Auto-focus title
+  titleInput?.focus();
+
+  // Live block preview on input change
+  const updatePreview = () => {
+    if (!preview || !totalInput || !blockInput) return;
+    const total = parseInt(totalInput.value, 10);
+    const block = parseInt(blockInput.value, 10);
+    if (!total || total <= 0 || !block || block <= 0) {
+      preview.innerHTML = '';
+      return;
+    }
+    const blocks = calculateBlocks(total, block);
+    if (!blocks.length) {
+      preview.innerHTML = '';
+      return;
+    }
+    preview.innerHTML = `
+      <div class="mission-blocks-preview-title">Blocks preview (${blocks.length} block${blocks.length === 1 ? '' : 's'})</div>
+      <div class="mission-blocks-list">
+        ${blocks
+          .map(
+            (b) => `<div class="mission-block-item">
+              <span class="mission-block-item-label">Block ${b.index}</span>
+              <span class="mission-block-item-time">${b.minutes} min</span>
+            </div>`,
+          )
+          .join('')}
+      </div>`;
+  };
+
+  totalInput?.addEventListener('input', updatePreview);
+  blockInput?.addEventListener('input', updatePreview);
+  updatePreview();
+}
+
+function closeMissionSetup(): void {
+  const card = qs<HTMLElement>('#mission-setup-card');
+  if (card) card.classList.add('hidden');
+  const message = qs<HTMLElement>('#mission-setup-message');
+  if (message) message.textContent = '';
+}
+
+function confirmMission(): void {
+  const titleInput = qs<HTMLInputElement>('#mission-title');
+  const subjectSelect = qs<HTMLSelectElement>('#mission-subject');
+  const totalInput = qs<HTMLInputElement>('#mission-total');
+  const blockInput = qs<HTMLInputElement>('#mission-block');
+  const message = qs<HTMLElement>('#mission-setup-message');
+
+  const title = titleInput?.value || '';
+  const total = totalInput?.value;
+  const block = blockInput?.value;
+
+  const validation = validateMissionSetup({ title, totalMinutes: total, blockMinutes: block });
+  if (!validation.valid) {
+    if (message) {
+      message.textContent = validation.error;
+      message.dataset.tone = 'error';
+    }
+    return;
+  }
+
+  const d = validation.data;
+  const mission = buildMissionSetup({
+    title: d.title,
+    subject: subjectSelect?.value || d.subject,
+    backlogId: missionDraftBacklogId,
+    totalMinutes: d.totalMinutes,
+    blockMinutes: d.blockMinutes,
+  });
+
+  if (!mission) {
+    if (message) {
+      message.textContent = 'Could not build mission. Check your inputs.';
+      message.dataset.tone = 'error';
+    }
+    return;
+  }
+
+  activeMission = mission;
+  closeMissionSetup();
+  renderMissionPlanner();
+}
+
+function renderMissionConfirmed(): void {
+  const card = qs<HTMLElement>('#mission-confirmed-card');
+  const titleEl = qs<HTMLElement>('#mission-confirmed-title');
+  const metaEl = qs<HTMLElement>('#mission-confirmed-meta');
+  const blocksEl = qs<HTMLElement>('#mission-confirmed-blocks');
+  if (!card || !activeMission) return;
+
+  card.classList.remove('hidden');
+  if (titleEl) titleEl.textContent = activeMission.title;
+
+  const linkedBacklog = activeMission.backlogId
+    ? (getBacklogs() as Backlog[]).find((b) => b.id === activeMission!.backlogId)
+    : null;
+
+  if (metaEl) {
+    metaEl.innerHTML = `
+      <span class="tag tag-blue">${escapeHTML(activeMission.subject)}</span>
+      <span class="tag tag-green">${activeMission.totalMinutes} min total</span>
+      <span class="tag">${activeMission.blockMinutes} min blocks</span>
+      ${linkedBacklog ? `<span class="tag tag-red">Linked: ${escapeHTML(linkedBacklog.chapterName || linkedBacklog.name)}</span>` : ''}
+    `;
+  }
+
+  if (blocksEl) {
+    blocksEl.innerHTML = `
+      <div class="mission-blocks-preview-title">Focus blocks (${activeMission.blocks.length})</div>
+      <div class="mission-blocks-list">
+        ${activeMission.blocks
+          .map(
+            (b) => `<div class="mission-block-item">
+              <span class="mission-block-item-label">Block ${b.index}</span>
+              <span class="mission-block-item-time">${b.minutes} min</span>
+            </div>`,
+          )
+          .join('')}
+      </div>`;
+  }
+}
+
+function clearActiveMission(): void {
+  activeMission = null;
+  qs<HTMLElement>('#mission-confirmed-card')?.classList.add('hidden');
+  renderMissionPlanner();
+}
+
 function renderFocusHistory() {
   const el = qs<HTMLElement>('#focus-history');
   if (!el) return;
@@ -1345,6 +1644,7 @@ function updateDashboard() {
   renderProfile();
   renderQuote();
   renderFocusHistory();
+  renderMissionPlanner();
 }
 
 // ===================================================================
@@ -2176,6 +2476,17 @@ function setupEventListeners() {
     updateDashboard();
   });
 
+  // Mission planner controls
+  qs<HTMLElement>('#mission-setup-cancel-btn')?.addEventListener('click', () => {
+    closeMissionSetup();
+  });
+  qs<HTMLElement>('#mission-confirm-btn')?.addEventListener('click', () => {
+    confirmMission();
+  });
+  qs<HTMLElement>('#mission-clear-btn')?.addEventListener('click', () => {
+    clearActiveMission();
+  });
+
   // Focus timer modes
   qsa<HTMLElement>('.timer-chip').forEach((chip) => {
     chip.addEventListener('click', () => {
@@ -2646,6 +2957,7 @@ function init() {
     renderProfile();
     renderQuote();
     renderFocusHistory();
+    renderMissionPlanner();
     updateFocusUI();
     updateUrgeUI();
     renderAccountSettings();
@@ -2682,6 +2994,7 @@ function init() {
   safe(() => renderSession(), 'session');
   safe(() => renderQuote(), 'quote');
   safe(() => renderFocusHistory(), 'focusHistory');
+  safe(() => renderMissionPlanner(), 'missionPlanner');
   safe(() => updateFocusUI(), 'focusTimer');
   safe(() => renderHero(), 'hero');
 

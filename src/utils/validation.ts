@@ -103,6 +103,51 @@ export function validateMission(mission: string): ValidationResult<string> {
 }
 
 /**
+ * Validates a mission planner setup (title, subject, durations).
+ * Pure planning — does NOT touch timer, XP, or backlog state.
+ */
+export function validateMissionSetup(input: {
+  title: string;
+  totalMinutes: unknown;
+  blockMinutes: unknown;
+}): ValidationResult<{
+  title: string;
+  subject: string;
+  totalMinutes: number;
+  blockMinutes: number;
+}> {
+  const cleanTitle = String(input.title || '').trim();
+  if (!cleanTitle) return { valid: false, error: 'Enter a mission title' };
+  if (cleanTitle.length > 100)
+    return { valid: false, error: 'Mission title too long (max 100 chars)' };
+
+  const total = Number(input.totalMinutes);
+  if (!Number.isFinite(total)) return { valid: false, error: 'Enter a valid total duration' };
+  if (!Number.isInteger(total))
+    return { valid: false, error: 'Use whole minutes for total duration' };
+  if (total <= 0) return { valid: false, error: 'Total duration must be greater than 0' };
+  if (total > 720)
+    return { valid: false, error: 'Total duration too high (max 720 minutes)' };
+
+  const block = Number(input.blockMinutes);
+  if (!Number.isFinite(block)) return { valid: false, error: 'Enter a valid block duration' };
+  if (!Number.isInteger(block))
+    return { valid: false, error: 'Use whole minutes for block duration' };
+  if (block <= 0) return { valid: false, error: 'Block duration must be greater than 0' };
+  if (block > 180) return { valid: false, error: 'Block duration too high (max 180 minutes)' };
+
+  return {
+    valid: true,
+    data: {
+      title: cleanTitle,
+      subject: 'Other',
+      totalMinutes: total,
+      blockMinutes: block,
+    },
+  };
+}
+
+/**
  * Validates a buddy name.
  * @param name - Buddy name
  * @returns Validation result

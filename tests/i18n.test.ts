@@ -177,3 +177,18 @@ describe('applyTranslations', () => {
     expect(button?.getAttribute('aria-label')).toBe('Password dikhao');
   });
 });
+
+describe('onLocaleChange', () => {
+  it('triggers registered listeners when locale changes', async () => {
+    const { setLocale, onLocaleChange } = await loadI18n();
+    const listener = vi.fn();
+    const unsubscribe = onLocaleChange(listener);
+
+    setLocale('hi');
+    expect(listener).toHaveBeenCalledWith('hi');
+
+    unsubscribe();
+    setLocale('fr');
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+});

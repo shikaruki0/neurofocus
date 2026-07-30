@@ -8,6 +8,7 @@
  *  - Null guards for dailyQuests
  *  - Fixed focus timer resume logic (done in focus.ts)
  *  - Fixed dailyChecksBuilt stale flag across days
+ *  - Full in-app internationalization re-rendering on language change
  */
 
 // Import styles directly so Vite bundles them correctly (fixes 404s when base is /neurofocusx/)
@@ -68,12 +69,14 @@ import {
 import { createLocalBackup, syncOnLogin, syncNow } from './modules/cloudSync.ts';
 import { exportAll } from './modules/storage.ts';
 import {
+  applyTranslations,
   detectInitialLocale,
   getLocale,
   getSupportedLocales,
   hasChosenLanguage,
   initI18n,
   markLanguageChosen,
+  onLocaleChange,
   previewIn,
   setLocale,
   t,
@@ -137,8 +140,8 @@ function renderXP() {
 
   if (elCount) elCount.textContent = `${data.xp} XP`;
   if (elBar) elBar.style.width = `${info.pct}%`;
-  if (elBadge) elBadge.textContent = `Level ${info.level}`;
-  if (elNext) elNext.textContent = `${info.current} / ${info.need} to next`;
+  if (elBadge) elBadge.textContent = t('common.level', { level: info.level });
+  if (elNext) elNext.textContent = t('common.xp_to_next', { current: info.current, need: info.need });
 }
 
 function renderHero() {
@@ -153,11 +156,16 @@ function renderHero() {
 
   if (elIcon) elIcon.textContent = rank.icon;
   if (elTitle) elTitle.textContent = rank.name;
-  if (elSub) elSub.textContent = `Level ${info.level} · ${info.current}/${info.need} XP`;
+  if (elSub)
+    elSub.textContent = t('common.level_progress', {
+      level: info.level,
+      current: info.current,
+      need: info.need,
+    });
   if (elBadge) {
     elBadge.textContent = next
-      ? `Next: ${next.name} at Level ${next.level}`
-      : 'The Enlightened · Max Rank';
+      ? t('rank.next_at', { name: next.name, level: next.level })
+      : t('rank.max_rank');
   }
 }
 
@@ -172,17 +180,19 @@ function renderQuests() {
   const icons = ['🎯', '⚡', '🔥'];
 
   el.innerHTML = quests
-    .map(
-      (q, i) => `
+    .map((q, i) => {
+      const labelText = t(`quest.${q.id}` as TranslationKey) || q.label;
+      const btnText = q.completed ? t('quest.done') : t('quest.pending');
+      return `
       <div class="quest-item ${q.completed ? 'done' : ''}">
         <div class="quest-icon">${icons[i]}</div>
         <div class="quest-info">
-          <div class="quest-title">${escapeHTML(q.label)}</div>
+          <div class="quest-title">${escapeHTML(labelText)}</div>
           <div class="quest-reward">+${q.reward} XP</div>
         </div>
-        <div class="quest-btn ${q.completed ? 'done' : ''}">${q.completed ? '✓ Done' : 'Pending'}</div>
-      </div>`,
-    )
+        <div class="quest-btn ${q.completed ? 'done' : ''}">${escapeHTML(btnText)}</div>
+      </div>`;
+    })
     .join('');
 }
 
@@ -191,13 +201,14 @@ function renderRitual() {
   if (!el) return;
 
   const r = getRitual();
-  el.innerHTML = RITUAL_STEPS.map(
-    (s, i) => `
+  el.innerHTML = RITUAL_STEPS.map((s, i) => {
+    const stepLabel = t(`ritual.step${i + 1}` as TranslationKey) || s;
+    return `
     <div class="ritual-step ${r.steps[i] ? 'done' : ''}" data-idx="${i}">
       <div class="ritual-circle">${RITUAL_ICONS[i]}</div>
-      <div class="ritual-label">${s}</div>
-    </div>`,
-  ).join('');
+      <div class="ritual-label">${escapeHTML(stepLabel)}</div>
+    </div>`;
+  }).join('');
 
   // Add click handlers
   qsa<HTMLElement>('.ritual-step', el).forEach((step) => {
@@ -226,16 +237,22 @@ function renderSubjects() {
 
   const subjects = getSubjectsWithInfo();
   el.innerHTML = subjects
-    .map(
-      (s) => `
+    .map((s) => {
+      const subjectName = t(`subject.${s.key}` as TranslationKey) || s.name;
+      const levelText = t('common.level_progress', {
+        level: s.level,
+        current: s.current,
+        need: s.need,
+      });
+      return `
       <div class="subject-card ${s.cls}">
-        <div class="subject-name" style="color:${s.color}">${s.name}</div>
-        <div class="subject-level">Level ${s.level} · ${s.current}/${s.need} XP</div>
+        <div class="subject-name" style="color:${s.color}">${escapeHTML(subjectName)}</div>
+        <div class="subject-level">${escapeHTML(levelText)}</div>
         <div class="subject-bar">
           <div class="subject-fill" style="width:${s.pct}%;background:${s.color}"></div>
         </div>
-      </div>`,
-    )
+      </div>`;
+    })
     .join('');
 }
 
@@ -252,7 +269,7 @@ function renderStreak() {
   const btn = qs<HTMLElement>('#freeze-btn');
 
   if (elNum) elNum.textContent = String(info.consecutive);
-  if (elFreeze) elFreeze.textContent = `❄️ ${info.freezes} Freezes`;
+  if (elFreeze) elFreeze.textContent = t('home.freezes_count', { count: info.freezes });
 
   if (btn) {
     const canFreeze = canUseFreeze();
@@ -298,19 +315,28 @@ function renderWeekly() {
 
   const maxScore = Math.max(...stats.map((s) => s.score || 0), 1);
   const todayIdx = 6;
+  const dayKeys: TranslationKey[] = [
+    'day.sun',
+    'day.mon',
+    'day.tue',
+    'day.wed',
+    'day.thu',
+    'day.fri',
+    'day.sat',
+  ];
 
   elWrap.innerHTML = stats
     .map((s, i) => {
       const pct = Math.min(100, ((s.score || 0) / maxScore) * 100);
       const isToday = i === todayIdx;
       const d = new Date(s.date);
-      const label = isToday ? 'Today' : DAY_LABELS[d.getDay()];
+      const label = isToday ? t('day.today') : t(dayKeys[d.getDay()]);
       return `
         <div class="week-bar-item ${isToday ? 'week-bar-today' : ''}">
           <div class="week-bar-track">
             <div class="week-bar-fill" style="height:${pct}%"></div>
           </div>
-          <div class="week-bar-label">${label}</div>
+          <div class="week-bar-label">${escapeHTML(label)}</div>
         </div>`;
     })
     .join('');
@@ -321,20 +347,19 @@ function renderDailyChecks() {
   if (!el) return;
 
   const CHECK_ITEMS = [
-    { id: 'dc1', label: 'Maintained clean digital environment' },
-    { id: 'dc2', label: 'Zero passive consumption today' },
-    { id: 'dc3', label: 'Social boundaries honored during work' },
-    { id: 'dc4', label: 'Deep work sanctuary active' },
-    { id: 'dc5', label: 'Entertainment fasting completed' },
-    { id: 'dc6', label: 'Neural training session done' },
-    { id: 'dc7', label: 'Learning milestone achieved' },
+    { id: 'dc1' },
+    { id: 'dc2' },
+    { id: 'dc3' },
+    { id: 'dc4' },
+    { id: 'dc5' },
+    { id: 'dc6' },
+    { id: 'dc7' },
   ];
 
   const claimed = data.detoxLastDate === todayStr();
 
   if (claimed) {
-    el.innerHTML =
-      '<div class="text-center" style="padding:14px;color:var(--success);font-weight:700;font-size:0.9rem">🔥 Verification claimed for today. Come back tomorrow.</div>';
+    el.innerHTML = `<div class="text-center" style="padding:14px;color:var(--success);font-weight:700;font-size:0.9rem">${escapeHTML(t('home.verification_claimed'))}</div>`;
     const status = qs<HTMLElement>('#checkin-status');
     const btn = qs<HTMLElement>('#claim-btn');
     if (status) (status as HTMLElement).style.display = 'none';
@@ -350,13 +375,14 @@ function renderDailyChecks() {
   lastDailyCheckDate = today;
 
   if (!dailyChecksBuilt) {
-    el.innerHTML = CHECK_ITEMS.map(
-      (item) => `
+    el.innerHTML = CHECK_ITEMS.map((item) => {
+      const itemLabel = t(`check.${item.id}` as TranslationKey);
+      return `
       <div class="check-row" id="row-${item.id}">
         <input type="checkbox" id="chk-${item.id}">
-        <label>${escapeHTML(item.label)}</label>
-      </div>`,
-    ).join('');
+        <label>${escapeHTML(itemLabel)}</label>
+      </div>`;
+    }).join('');
 
     // Add click handlers
     CHECK_ITEMS.forEach((item) => {
@@ -401,10 +427,10 @@ function renderDailyChecks() {
   if (status) {
     (status as HTMLElement).style.display = 'block';
     if (allChecked) {
-      status.textContent = 'All 7 checks complete. Claim your streak.';
+      status.textContent = t('home.checks_status_all');
       (status as HTMLElement).style.color = 'var(--success)';
     } else {
-      status.textContent = `${doneCount} / 7 checks — complete all to claim`;
+      status.textContent = t('home.checks_status_progress', { done: doneCount });
       (status as HTMLElement).style.color = 'var(--danger)';
     }
   }
@@ -422,8 +448,7 @@ function renderBacklogs() {
 
   const backlogs = getBacklogs();
   if (!backlogs.length) {
-    el.innerHTML =
-      '<div class="empty"><div class="empty-icon">📚</div>No backlogs yet. Add your first lecture.</div>';
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📚</div>${escapeHTML(t('backlog.empty'))}</div>`;
     return;
   }
 
@@ -445,18 +470,20 @@ function renderBacklogs() {
       const pct = Math.min(100, (done / total) * 100);
       const left = total - done;
       const cls = `tag-sub-${SUBJECT_MAP[b.subject] || 'other'}`;
+      const subjectName = t(`subject.${b.subject}` as TranslationKey) || b.subject || 'Other';
+      const leftText = t('backlog.left', { count: left });
       return `
         <div class="list-item">
           <div class="info">
             <div class="title">${escapeHTML(b.name)}</div>
             <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-              <span class="tag-sub ${cls}">${escapeHTML(b.subject || 'Other')}</span>
+              <span class="tag-sub ${cls}">${escapeHTML(subjectName)}</span>
               <span style="font-size:0.75rem;color:var(--text-secondary)">${done} / ${total}</span>
             </div>
             <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
           </div>
           <div class="flex items-center gap-2" style="flex-shrink:0">
-            <span class="tag ${left > 5 ? 'tag-red' : 'tag-green'}">${left} left</span>
+            <span class="tag ${left > 5 ? 'tag-red' : 'tag-green'}">${escapeHTML(leftText)}</span>
             <button class="btn btn-success btn-sm" data-action="inc-backlog" data-id="${b.id}">+1</button>
             <button class="btn btn-danger btn-sm" data-action="del-backlog" data-id="${b.id}">×</button>
           </div>
@@ -488,35 +515,44 @@ function renderHabits() {
   if (!el) return;
 
   const habits = getHabits();
-  const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const dayKeys: TranslationKey[] = [
+    'day.sun',
+    'day.mon',
+    'day.tue',
+    'day.wed',
+    'day.thu',
+    'day.fri',
+    'day.sat',
+  ];
   const today = currentDOW();
 
   if (!habits.length) {
-    el.innerHTML =
-      '<div class="empty"><div class="empty-icon">🔥</div>No habits yet. Stack one tiny habit.</div>';
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🔥</div>${escapeHTML(t('plan.empty_habits'))}</div>`;
     return;
   }
 
   el.innerHTML = habits
-    .map(
-      (h) => `
+    .map((h) => {
+      const anchorText = t('plan.after_anchor', { anchor: escapeHTML(h.anchor || 'waking up') });
+      const btnText = h.today ? t('common.done') : t('common.mark');
+      return `
       <div class="card">
         <div class="flex justify-between items-center" style="gap:8px;margin-bottom:10px">
           <div class="flex-1" style="min-width:0">
             <div style="font-weight:700;font-size:0.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(h.name)}</div>
-            <div style="color:var(--text-secondary);font-size:0.75rem;margin-top:2px">After ${escapeHTML(h.anchor || 'waking up')}</div>
+            <div style="color:var(--text-secondary);font-size:0.75rem;margin-top:2px">${anchorText}</div>
           </div>
           <div class="flex items-center gap-2">
             <span style="font-weight:800;font-size:0.85rem;color:var(--accent-start)">🔥 ${h.streak || 0}</span>
-            <button class="btn btn-success btn-sm" data-action="toggle-habit" data-id="${h.id}">${h.today ? 'Done' : 'Mark'}</button>
+            <button class="btn btn-success btn-sm" data-action="toggle-habit" data-id="${h.id}">${escapeHTML(btnText)}</button>
             <button class="btn btn-danger btn-sm" data-action="del-habit" data-id="${h.id}">×</button>
           </div>
         </div>
         <div class="habit-grid">
-          ${days.map((d, i) => `<div class="habit-day ${h.days && h.days[i] ? 'done' : ''} ${i === today ? 'today' : ''}">${d}</div>`).join('')}
+          ${dayKeys.map((k, i) => `<div class="habit-day ${h.days && h.days[i] ? 'done' : ''} ${i === today ? 'today' : ''}">${escapeHTML(t(k))}</div>`).join('')}
         </div>
-      </div>`,
-    )
+      </div>`;
+    })
     .join('');
 
   qsa<HTMLElement>('[data-action="toggle-habit"]', el).forEach((btn) => {
@@ -545,24 +581,24 @@ function renderBattle() {
   const colors: Record<string, string> = { A: 'var(--danger)', B: '#f59e0b', C: 'var(--success)' };
 
   if (!tasks.length) {
-    el.innerHTML =
-      '<div class="empty"><div class="empty-icon">⚔️</div>No battle tasks. Plan your 6 priorities.</div>';
+    el.innerHTML = `<div class="empty"><div class="empty-icon">⚔️</div>${escapeHTML(t('plan.empty_battle'))}</div>`;
     return;
   }
 
   el.innerHTML = tasks
-    .map(
-      (t) => `
-      <div class="list-item" style="border-left:3px solid ${colors[t.priority] || colors.C}">
+    .map((taskItem) => {
+      const timeLabel = t(`plan.time_${taskItem.time}` as TranslationKey) || taskItem.time;
+      return `
+      <div class="list-item" style="border-left:3px solid ${colors[taskItem.priority] || colors.C}">
         <div class="flex items-center gap-3 flex-1" style="min-width:0">
-          <input type="checkbox" ${t.done ? 'checked' : ''} data-action="toggle-battle" data-id="${t.id}" style="width:20px;height:20px;flex-shrink:0">
-          <span class="${t.done ? 'text-tertiary' : ''}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.9rem">
-            <strong style="color:var(--text-tertiary);margin-right:4px;font-size:0.75rem">[${t.priority}]</strong>${escapeHTML(t.task)} <span class="tag tag-blue">${t.time}</span>
+          <input type="checkbox" ${taskItem.done ? 'checked' : ''} data-action="toggle-battle" data-id="${taskItem.id}" style="width:20px;height:20px;flex-shrink:0">
+          <span class="${taskItem.done ? 'text-tertiary' : ''}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.9rem">
+            <strong style="color:var(--text-tertiary);margin-right:4px;font-size:0.75rem">[${taskItem.priority}]</strong>${escapeHTML(taskItem.task)} <span class="tag tag-blue">${escapeHTML(timeLabel)}</span>
           </span>
         </div>
-        <button class="btn btn-danger btn-sm" data-action="del-battle" data-id="${t.id}">×</button>
-      </div>`,
-    )
+        <button class="btn btn-danger btn-sm" data-action="del-battle" data-id="${taskItem.id}">×</button>
+      </div>`;
+    })
     .join('');
 
   qsa<HTMLInputElement>('[data-action="toggle-battle"]', el).forEach((chk) => {
@@ -589,8 +625,7 @@ function renderFocusHistory() {
 
   const sessions = getRecentSessions(10);
   if (!sessions.length) {
-    el.innerHTML =
-      '<div class="empty" style="padding:12px">No sessions yet. Complete a focus timer to see history.</div>';
+    el.innerHTML = `<div class="empty" style="padding:12px">${escapeHTML(t('focus.no_sessions'))}</div>`;
     return;
   }
 
@@ -598,10 +633,11 @@ function renderFocusHistory() {
     .map((s) => {
       const d = new Date(s.time);
       const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const sessionTitle = t('focus.deep_work_session', { min: s.duration });
       return `
         <div class="list-item">
           <div class="info">
-            <div class="title">${s.duration} min Deep Work</div>
+            <div class="title">${escapeHTML(sessionTitle)}</div>
             <div class="meta">${s.date} at ${timeStr}</div>
           </div>
           <span class="tag tag-green">${s.duration}m</span>
@@ -622,7 +658,7 @@ function renderProfile() {
   const elMissionInput = qs<HTMLTextAreaElement>('#mission-input');
 
   if (elName) elName.textContent = data.profileName || 'Warrior';
-  if (elRank) elRank.textContent = `${rank.name} · Level ${info.level}`;
+  if (elRank) elRank.textContent = `${rank.name} · ${t('common.level', { level: info.level })}`;
   if (elAvatar) elAvatar.textContent = rank.icon;
   if (elMission) elMission.textContent = data.mission;
   if (elInput) elInput.value = data.profileName || '';
@@ -640,7 +676,7 @@ function renderTrophyPreview() {
 
   if (elIcon) elIcon.textContent = rank.icon;
   if (elTitle) elTitle.textContent = rank.name;
-  if (elSub) elSub.textContent = `${unlocked} of ${TOTAL_BADGES} badges unlocked`;
+  if (elSub) elSub.textContent = t('home.badges_unlocked', { unlocked, total: TOTAL_BADGES });
   if (elCount) elCount.textContent = `${unlocked} / ${TOTAL_BADGES}`;
 }
 
@@ -817,13 +853,13 @@ function renderAccountSettings() {
   const sync = qs<HTMLElement>('#sync-now-btn');
   const out = qs<HTMLElement>('#logout-btn');
   if (user) {
-    if (status) status.textContent = 'Synced status · progress is protected across devices.';
+    if (status) status.textContent = t('settings.account_synced_msg');
     if (email) email.textContent = user.email || '';
     login?.classList.add('hidden');
     sync?.classList.remove('hidden');
     out?.classList.remove('hidden');
   } else {
-    if (status) status.textContent = 'Local only — login recommended to protect progress.';
+    if (status) status.textContent = t('settings.account_local_msg');
     if (email) email.textContent = '';
     login?.classList.toggle('hidden', !isEmailAuthConfigured);
     sync?.classList.add('hidden');
@@ -872,14 +908,19 @@ function updateDashboard() {
     let html = '';
 
     if (inc.length > 0 && inc[0]) {
-      html += `<div class="list-item"><div class="info"><div class="title">${escapeHTML(inc[0].name)}</div><div class="meta">${(inc[0].total || 0) - (inc[0].done || 0)} lectures remaining</div></div><span class="tag tag-red">URGENT</span></div>`;
+      const remaining = (inc[0].total || 0) - (inc[0].done || 0);
+      const remainingText = t('backlog.lectures_remaining', { count: remaining });
+      const urgentTag = t('backlog.urgent');
+      html += `<div class="list-item"><div class="info"><div class="title">${escapeHTML(inc[0].name)}</div><div class="meta">${escapeHTML(remainingText)}</div></div><span class="tag tag-red">${escapeHTML(urgentTag)}</span></div>`;
     }
     if (ht.length > 0 && ht[0]) {
-      html += `<div class="list-item"><div class="info"><div class="title">${escapeHTML(ht[0].name)}</div><div class="meta">After ${escapeHTML(ht[0].anchor || 'waking up')}</div></div><span class="tag tag-blue">NEXT</span></div>`;
+      const anchorText = t('plan.after_anchor', { anchor: escapeHTML(ht[0].anchor || 'waking up') });
+      const nextTag = t('plan.next_tag');
+      html += `<div class="list-item"><div class="info"><div class="title">${escapeHTML(ht[0].name)}</div><div class="meta">${anchorText}</div></div><span class="tag tag-blue">${escapeHTML(nextTag)}</span></div>`;
     }
     dp.innerHTML =
       html ||
-      '<div class="empty"><div class="empty-icon">🎉</div>All caught up. Add a new skill.</div>';
+      `<div class="empty"><div class="empty-icon">🎉</div>${escapeHTML(t('home.priority_empty'))}</div>`;
   }
 
   renderDailyChecks();
@@ -1603,10 +1644,10 @@ function setupEventListeners() {
     if (!btn) return;
     if (state.running) {
       pauseTimer();
-      btn.textContent = 'Resume';
+      btn.textContent = t('focus.pause');
     } else {
       startTimer();
-      btn.textContent = 'Pause';
+      btn.textContent = t('focus.start');
     }
   });
 
@@ -1614,7 +1655,7 @@ function setupEventListeners() {
   qs<HTMLElement>('#focus-reset-btn')?.addEventListener('click', () => {
     stopTimer();
     const btn = qs<HTMLElement>('#focus-btn');
-    if (btn) btn.textContent = 'Start';
+    if (btn) btn.textContent = t('focus.start');
     updateFocusUI();
   });
 
@@ -1622,13 +1663,13 @@ function setupEventListeners() {
   qs<HTMLElement>('#urge-start-btn')?.addEventListener('click', () => {
     startUrge();
     const btn = qs<HTMLElement>('#urge-start-btn');
-    if (btn) btn.textContent = 'Surfing...';
+    if (btn) btn.textContent = t('detox.surfing');
   });
 
   qs<HTMLElement>('#urge-reset-btn')?.addEventListener('click', () => {
     resetUrge();
     const btn = qs<HTMLElement>('#urge-start-btn');
-    if (btn) btn.textContent = 'Start Surf';
+    if (btn) btn.textContent = t('detox.start_surf');
     updateUrgeUI();
   });
 }
@@ -1645,7 +1686,7 @@ function updateFocusUI() {
   const button = qs<HTMLElement>('#focus-btn');
 
   // A restored session must also restore its controls, not only the digits.
-  if (button) button.textContent = state.running ? 'Pause' : 'Start';
+  if (button) button.textContent = state.running ? t('focus.pause') : t('focus.start');
   qsa<HTMLElement>('.timer-chip').forEach((chip) => {
     chip.classList.toggle('active', Number(chip.dataset.mode) === state.mode);
   });
@@ -1655,7 +1696,10 @@ function updateFocusUI() {
     const s = state.seconds.toString().padStart(2, '0');
     elTimer.textContent = `${m}:${s}`;
   }
-  if (elLabel) elLabel.textContent = state.modeLabel;
+  if (elLabel) {
+    const modeKeys: TranslationKey[] = ['focus.mode_25', 'focus.mode_52', 'focus.mode_90'];
+    elLabel.textContent = t(modeKeys[state.mode] || 'focus.mode_25');
+  }
   if (elRing) {
     const offset =
       691 * (1 - (state.minutes * 60 + state.seconds) / (TIMER_MODES[state.mode].minutes * 60));
@@ -1709,9 +1753,9 @@ function updateTrophyModal() {
   if (elNext) {
     if (next) {
       const needed = xpForLevel(next.level) - data.xp;
-      elNext.textContent = `Next: ${next.name} at Level ${next.level} (${needed} XP)`;
+      elNext.textContent = t('rank.next_info', { name: next.name, level: next.level, needed });
     } else {
-      elNext.textContent = 'Max rank achieved. You are a legend.';
+      elNext.textContent = t('rank.max_achieved');
     }
   }
 
@@ -1719,20 +1763,23 @@ function updateTrophyModal() {
   const elBadges = qs<HTMLElement>('#trophy-badges');
   if (!elBadges) return;
 
-  let html = '<div class="category-label">Rank Tiers</div><div class="badge-grid">';
-  html += RANK_TIERS.map((t) => {
-    const isUnlocked = unlocked.includes(`rank_${t.level}`);
-    const progress = info.level >= t.level ? 100 : Math.max(0, (info.level / t.level) * 100);
+  let html = `<div class="category-label">${escapeHTML(t('trophy.category_ranks'))}</div><div class="badge-grid">`;
+  html += RANK_TIERS.map((tTier) => {
+    const isUnlocked = unlocked.includes(`rank_${tTier.level}`);
+    const progress = info.level >= tTier.level ? 100 : Math.max(0, (info.level / tTier.level) * 100);
+    const descText = isUnlocked
+      ? t('rank.level_reached', { level: tTier.level })
+      : t('rank.level_to_unlock', { level: tTier.level });
     return `
       <div class="badge-item ${isUnlocked ? 'unlocked' : 'locked'}">
-        <div class="badge-icon">${t.icon}</div>
-        <div class="badge-name">${escapeHTML(t.name)}</div>
-        <div class="badge-rarity">${t.rarity}</div>
-        <div class="badge-desc">${isUnlocked ? `Level ${t.level} reached` : `Level ${t.level} to unlock`}</div>
+        <div class="badge-icon">${tTier.icon}</div>
+        <div class="badge-name">${escapeHTML(tTier.name)}</div>
+        <div class="badge-rarity">${tTier.rarity}</div>
+        <div class="badge-desc">${escapeHTML(descText)}</div>
         ${!isUnlocked ? `<div class="progress-track" style="height:4px;margin-top:4px"><div class="progress-fill" style="width:${progress}%"></div></div>` : ''}
       </div>`;
   }).join('');
-  html += '</div><div class="category-label">Special Achievements</div><div class="badge-grid">';
+  html += `</div><div class="category-label">${escapeHTML(t('trophy.category_special'))}</div><div class="badge-grid">`;
   html += SPECIAL_BADGES.map((b) => {
     const isUnlocked = unlocked.includes(b.id);
     return `
@@ -1740,7 +1787,7 @@ function updateTrophyModal() {
         <div class="badge-icon">${b.icon}</div>
         <div class="badge-name">${escapeHTML(b.name)}</div>
         <div class="badge-rarity">${b.rarity}</div>
-        <div class="badge-desc">${isUnlocked ? escapeHTML(b.desc) : 'Locked'}</div>
+        <div class="badge-desc">${isUnlocked ? escapeHTML(b.desc) : escapeHTML(t('trophy.locked'))}</div>
       </div>`;
   }).join('');
   html += '</div>';
@@ -1770,7 +1817,7 @@ onTick((state) => {
 onComplete((mode) => {
   showCelebrate('Focus Complete', 'Take a real break. No phone.', '⏱️', false, mode.xp);
   const btn = qs<HTMLElement>('#focus-btn');
-  if (btn) btn.textContent = 'Start';
+  if (btn) btn.textContent = t('focus.start');
   updateDashboard();
   checkQuests();
   renderFlowBanner();
@@ -1795,7 +1842,7 @@ onUrgeTick((state) => {
 onUrgeComplete(() => {
   showCelebrate('Urge Surfed', 'You are stronger than your impulses.', '🌊');
   const btn = qs<HTMLElement>('#urge-start-btn');
-  if (btn) btn.textContent = 'Start Surf';
+  if (btn) btn.textContent = t('detox.start_surf');
 });
 
 // ===================================================================
@@ -1833,6 +1880,34 @@ function init() {
   try {
     generateDailyQuests();
   } catch {}
+
+  // Subscribe to locale changes for real-time translation updates across all tabs
+  onLocaleChange(() => {
+    applyTranslations();
+    dailyChecksBuilt = false; // force re-render of daily checks with new translations
+    updateDashboard();
+    renderHabits();
+    renderBacklogs();
+    renderBattle();
+    renderDailyChecks();
+    renderXP();
+    renderHero();
+    renderQuests();
+    renderRitual();
+    renderSubjects();
+    renderFlowBanner();
+    renderStreak();
+    renderBuddy();
+    renderWeekly();
+    renderTrophyPreview();
+    renderProfile();
+    renderQuote();
+    renderFocusHistory();
+    updateFocusUI();
+    updateUrgeUI();
+    renderAccountSettings();
+    renderSettingsLanguageList();
+  });
 
   // Initial renders - each wrapped to prevent one failure breaking entire app
   const safe = (fn: () => void, label: string) => {

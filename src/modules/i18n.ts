@@ -55,6 +55,9 @@ export const LOCALES: LocaleInfo[] = [
 const LOCALE_KEY = 'locale';
 const LANGUAGE_CHOSEN_KEY = 'languageChosen';
 
+type LocaleChangeListener = (locale: LocaleCode) => void;
+const listeners = new Set<LocaleChangeListener>();
+
 const supportedCodes = new Set<string>(LOCALES.map((locale) => locale.code));
 
 let currentLocale: LocaleCode = FALLBACK_LOCALE;
@@ -72,6 +75,14 @@ export function getSupportedLocales(): LocaleInfo[] {
 /** Currently active locale. */
 export function getLocale(): LocaleCode {
   return currentLocale;
+}
+
+/** Registers a listener callback invoked whenever the active locale changes. */
+export function onLocaleChange(listener: LocaleChangeListener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 /**
@@ -155,6 +166,13 @@ export function setLocale(locale: LocaleCode | string): LocaleCode {
     // document unavailable (tests, SSR) — ignore
   }
   applyTranslations();
+  listeners.forEach((listener) => {
+    try {
+      listener(currentLocale);
+    } catch (e) {
+      console.error('Error in locale change listener:', e);
+    }
+  });
   return currentLocale;
 }
 

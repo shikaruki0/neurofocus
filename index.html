@@ -216,10 +216,10 @@
           <div class="auth-benefit">
             <span class="auth-benefit-icon" aria-hidden="true">☁</span>
             <div>
-            <strong data-i18n="auth.benefit_title">Protect your progress</strong>
-            <span data-i18n="auth.benefit_sub"
-              >An account backs up your XP and keeps it available across devices.</span
-            >
+              <strong data-i18n="auth.benefit_title">Protect your progress</strong>
+              <span data-i18n="auth.benefit_sub"
+                >An account backs up your XP and keeps it available across devices.</span
+              >
             </div>
           </div>
 
@@ -398,7 +398,7 @@
         <div class="brand-text">Neuro<span>Focus</span></div>
       </div>
       <div class="header-actions">
-        <button class="icon-btn" id="settings-btn" title="Settings">≡</button>
+        <button class="icon-btn" id="settings-btn" title="Settings" data-i18n-aria-label="settings.title">≡</button>
       </div>
     </header>
 
@@ -415,7 +415,7 @@
 
         <div class="card xp-card">
           <div class="xp-header">
-            <div class="xp-title">🪙 Neurocoins</div>
+            <div class="xp-title" data-i18n="home.daily_fuel">🪙 Neurocoins</div>
             <div class="xp-count" id="xp-count">0 XP</div>
           </div>
           <div class="xp-track">
@@ -451,6 +451,7 @@
               color: var(--text-tertiary);
               margin-bottom: 6px;
             "
+            data-i18n="home.daily_fuel"
           >
             Daily Fuel
           </div>
@@ -463,6 +464,7 @@
               font-style: italic;
               line-height: var(--line-relaxed);
             "
+            data-i18n="home.daily_fuel_loading"
           >
             "Loading your daily fuel..."
           </div>
@@ -471,23 +473,23 @@
         <div class="flow-banner hidden" id="flow-banner">
           <div class="flow-banner-icon">🌊</div>
           <div>
-            <div class="flow-banner-text">FLOW STATE ACTIVE</div>
-            <div class="flow-banner-sub">1.5x XP on all actions</div>
+            <div class="flow-banner-text" data-i18n="home.flow_active">FLOW STATE ACTIVE</div>
+            <div class="flow-banner-sub" data-i18n="home.flow_sub">1.5x XP on all actions</div>
           </div>
         </div>
 
         <div class="section-label">
-          <span>🎯 Daily Quests</span>
+          <span data-i18n="home.daily_quests">🎯 Daily Quests</span>
           <div class="line"></div>
         </div>
         <div id="daily-quests"></div>
 
         <div class="section-label">
-          <span>🌅 Morning Ritual</span>
+          <span data-i18n="home.morning_ritual">🌅 Morning Ritual</span>
           <div class="line"></div>
         </div>
         <div class="card" id="ritual-card">
-          <div style="font-size: var(--font-sm); font-weight: 700; margin-bottom: 4px">
+          <div style="font-size: var(--font-sm); font-weight: 700; margin-bottom: 4px" data-i18n="home.ritual_prime_title">
             Prime Your Brain
           </div>
           <div
@@ -496,61 +498,63 @@
               color: var(--text-secondary);
               margin-bottom: var(--space-3);
             "
+            data-i18n="home.ritual_prime_sub"
           >
             Complete before 12 PM for 2x XP all day
           </div>
           <div class="ritual-grid" id="ritual-grid"></div>
           <div class="ritual-boost hidden" id="ritual-boost">
             <span style="font-size: 1.1rem">⚡</span>
-            <div class="ritual-boost-text">2x XP Boost Active</div>
+            <div class="ritual-boost-text" data-i18n="home.ritual_boost_active">2x XP Boost Active</div>
           </div>
         </div>
 
         <div class="section-label">
-          <span>📊 Stats</span>
+          <span data-i18n="home.stats">📊 Stats</span>
           <div class="line"></div>
         </div>
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-num" id="d-streak">0</div>
-            <div class="stat-label">Streak Days</div>
+            <div class="stat-label" data-i18n="home.stat_streak">Streak Days</div>
           </div>
           <div class="stat-card">
             <div class="stat-num" id="d-backlogs">0</div>
-            <div class="stat-label">Backlogs Left</div>
+            <div class="stat-label" data-i18n="home.stat_backlogs">Backlogs Left</div>
           </div>
           <div class="stat-card">
             <div class="stat-num" id="d-focus">0</div>
-            <div class="stat-label">Focus Hours</div>
+            <div class="stat-label" data-i18n="home.stat_focus">Focus Hours</div>
           </div>
           <div class="stat-card">
             <div class="stat-num" id="d-habits">0</div>
-            <div class="stat-label">Habits Done</div>
+            <div class="stat-label" data-i18n="home.stat_habits">Habits Done</div>
           </div>
         </div>
 
         <div class="section-label">
-          <span>🔥 Streak</span>
+          <span data-i18n="home.streak_title">🔥 Streak</span>
           <div class="line"></div>
         </div>
         <div class="card streak-card">
           <div class="streak-flame">🔥</div>
           <div class="streak-info">
             <div class="streak-num" id="consecutive-streak">0</div>
-            <div class="streak-label">Consecutive Days</div>
+            <div class="streak-label" data-i18n="home.consecutive_days">Consecutive Days</div>
             <div class="freeze-badge" id="freeze-badge">❄️ 0 Freezes</div>
           </div>
           <button
             class="btn btn-ghost btn-sm"
             id="freeze-btn"
             style="display: none; width: auto; flex-shrink: 0"
+            data-i18n="home.use_freeze"
           >
             Use Freeze
           </button>
         </div>
 
         <div class="section-label">
-          <span>📚 Subject Mastery</span>
+          <span data-i18n="home.subject_mastery">📚 Subject Mastery</span>
           <div class="line"></div>
         </div>
         <div class="card">
@@ -558,7 +562,7 @@
         </div>
 
         <div class="section-label">
-          <span>🏆 Trophy Room</span>
+          <span data-i18n="home.trophy_room">🏆 Trophy Room</span>
           <div class="line"></div>
         </div>
         <div class="trophy-preview" id="trophy-preview">
@@ -571,7 +575,7 @@
         </div>
 
         <div class="section-label">
-          <span>✅ Daily Verification</span>
+          <span data-i18n="home.daily_verification">✅ Daily Verification</span>
           <div class="line"></div>
         </div>
         <div class="card card-glow" id="checkin-card">
@@ -582,6 +586,7 @@
               margin-bottom: 4px;
               color: var(--text);
             "
+            data-i18n="home.focus_protocol"
           >
             Focus Protocol
           </div>
@@ -591,6 +596,7 @@
               color: var(--text-secondary);
               margin-bottom: var(--space-3);
             "
+            data-i18n="home.complete_checks_sub"
           >
             Complete all checks to claim your streak
           </div>
@@ -602,52 +608,52 @@
           >
             0 / 7 checks
           </div>
-          <button class="btn btn-gold btn-block mt-3" id="claim-btn" disabled>
+          <button class="btn btn-gold btn-block mt-3" id="claim-btn" data-i18n="home.claim_streak" disabled>
             🔥 Claim Streak
           </button>
         </div>
 
         <div class="section-label">
-          <span>⚡ Priority</span>
+          <span data-i18n="home.priority">⚡ Priority</span>
           <div class="line"></div>
         </div>
         <div class="card" id="dash-priority">
           <div class="empty">
             <div class="empty-icon">🎯</div>
-            Loading your priorities...
+            <span data-i18n="home.priority_loading">Loading your priorities...</span>
           </div>
         </div>
 
         <div class="section-label">
-          <span>📈 Weekly Report</span>
+          <span data-i18n="home.weekly_report">📈 Weekly Report</span>
           <div class="line"></div>
         </div>
         <div class="card" id="weekly-card">
           <div class="week-summary" id="week-summary">
             <div class="week-metric">
               <div class="week-metric-num" id="wk-focus">0</div>
-              <div class="week-metric-label">Focus Hrs</div>
+              <div class="week-metric-label" data-i18n="home.wk_focus">Focus Hrs</div>
             </div>
             <div class="week-metric">
               <div class="week-metric-num" id="wk-backlogs">0</div>
-              <div class="week-metric-label">Backlogs</div>
+              <div class="week-metric-label" data-i18n="home.wk_backlogs">Backlogs</div>
             </div>
             <div class="week-metric">
               <div class="week-metric-num" id="wk-habits">0</div>
-              <div class="week-metric-label">Habits</div>
+              <div class="week-metric-label" data-i18n="home.wk_habits">Habits</div>
             </div>
             <div class="week-metric">
               <div class="week-metric-num" id="wk-streaks">0</div>
-              <div class="week-metric-label">Streaks</div>
+              <div class="week-metric-label" data-i18n="home.wk_streaks">Streaks</div>
             </div>
           </div>
           <div class="week-bar-wrap" id="week-bar-wrap"></div>
           <div class="week-total">
-            <div class="week-total-text">This Week's Activity Score</div>
+            <div class="week-total-text" data-i18n="home.wk_activity_score">This Week's Activity Score</div>
             <div class="week-total-num" id="week-total-num">0</div>
           </div>
           <div class="tip" style="margin-top: 10px">
-            <strong>Consistency beats intensity.</strong> A little every day rewires your brain.
+            <strong data-i18n="home.wk_tip_strong">Consistency beats intensity.</strong> <span data-i18n="home.wk_tip_body">A little every day rewires your brain.</span>
           </div>
         </div>
       </section>
@@ -655,10 +661,10 @@
       <!-- DETOX TAB -->
       <section id="tab-detox" class="tab-content hidden">
         <div class="section-label">
-          <span>🧘 Protocol</span>
+          <span data-i18n="detox.protocol">🧘 Protocol</span>
           <div class="line"></div>
         </div>
-        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px">
+        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px" data-i18n="detox.title">
           Neural Reset Protocol
         </div>
         <div
@@ -668,14 +674,15 @@
             line-height: var(--line-relaxed);
             margin-bottom: var(--space-3);
           "
+          data-i18n="detox.subtitle"
         >
           Abstinence resets your reward pathways.
         </div>
 
         <div class="card">
           <div class="flex justify-between items-center mb-2">
-            <div style="font-weight: 700; font-size: var(--font-base)">Urge Surfing</div>
-            <span class="tag tag-blue">20 min</span>
+            <div style="font-weight: 700; font-size: var(--font-base)" data-i18n="detox.urge_surfing">Urge Surfing</div>
+            <span class="tag tag-blue" data-i18n="detox.urge_time">20 min</span>
           </div>
           <div
             style="
@@ -684,6 +691,7 @@
               margin-bottom: var(--space-3);
               line-height: var(--line-relaxed);
             "
+            data-i18n="detox.urge_desc"
           >
             Urges peak at 20–30 min then fade. Observe without acting.
           </div>
@@ -708,39 +716,39 @@
               </svg>
               <div class="timer-text">
                 <div class="timer-digits" id="urge-timer">20:00</div>
-                <div class="timer-label">Urge Timer</div>
+                <div class="timer-label" id="urge-timer-label" data-i18n="detox.urge_timer">Urge Timer</div>
               </div>
             </div>
           </div>
           <div class="btn-group">
-            <button class="btn btn-block" id="urge-start-btn">Start Surf</button>
-            <button class="btn btn-ghost btn-block" id="urge-reset-btn">Reset</button>
+            <button class="btn btn-block" id="urge-start-btn" data-i18n="detox.start_surf">Start Surf</button>
+            <button class="btn btn-ghost btn-block" id="urge-reset-btn" data-i18n="detox.reset">Reset</button>
           </div>
         </div>
 
         <div class="card">
-          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)">
+          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)" data-i18n="detox.replacements">
             Replacement Activities
           </div>
           <div class="check-row" style="cursor: default">
-            <span style="font-size: 1.1rem">🚶</span
-            ><span style="font-size: var(--font-sm); font-weight: 500">Walk without phone</span>
+            <span style="font-size: 1.1rem">🚶</span>
+            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_walk">Walk without phone</span>
           </div>
           <div class="check-row" style="cursor: default">
-            <span style="font-size: 1.1rem">🚿</span
-            ><span style="font-size: var(--font-sm); font-weight: 500">Cold shower</span>
+            <span style="font-size: 1.1rem">🚿</span>
+            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_shower">Cold shower</span>
           </div>
           <div class="check-row" style="cursor: default">
-            <span style="font-size: 1.1rem">📝</span
-            ><span style="font-size: var(--font-sm); font-weight: 500">Journal your "Why"</span>
+            <span style="font-size: 1.1rem">📝</span>
+            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_journal">Journal your "Why"</span>
           </div>
           <div class="check-row" style="cursor: default">
-            <span style="font-size: 1.1rem">📖</span
-            ><span style="font-size: var(--font-sm); font-weight: 500">Read physical books</span>
+            <span style="font-size: 1.1rem">📖</span>
+            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_books">Read physical books</span>
           </div>
           <div class="check-row" style="cursor: default">
-            <span style="font-size: 1.1rem">🧘</span
-            ><span style="font-size: var(--font-sm); font-weight: 500">Meditate 10 min</span>
+            <span style="font-size: 1.1rem">🧘</span>
+            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_meditate">Meditate 10 min</span>
           </div>
         </div>
       </section>
@@ -748,10 +756,10 @@
       <!-- BACKLOG TAB -->
       <section id="tab-backlog" class="tab-content hidden">
         <div class="section-label">
-          <span>📚 Work</span>
+          <span data-i18n="backlog.work">📚 Work</span>
           <div class="line"></div>
         </div>
-        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px">
+        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px" data-i18n="backlog.title">
           Backlog Blaster
         </div>
         <div
@@ -761,6 +769,7 @@
             line-height: var(--line-relaxed);
             margin-bottom: var(--space-3);
           "
+          data-i18n="backlog.subtitle"
         >
           Micro-modules. Small wins. Big dopamine.
         </div>
@@ -772,6 +781,7 @@
               class="input flex-1"
               id="bl-name"
               placeholder="Topic (e.g., Rotational Motion)"
+              data-i18n-placeholder="backlog.ph_name"
               maxlength="100"
             />
             <input
@@ -779,6 +789,7 @@
               class="input short"
               id="bl-count"
               placeholder="Lectures"
+              data-i18n-placeholder="backlog.ph_count"
               min="1"
               max="9999"
             />
@@ -792,21 +803,22 @@
               text-transform: uppercase;
               letter-spacing: 0.06em;
             "
+            data-i18n="backlog.select_subject"
           >
             Select Subject
           </div>
           <div class="chip-row" id="bl-chip-row">
-            <span class="tag tag-blue chip active" data-sub="Physics">Physics</span>
-            <span class="tag tag-red chip" data-sub="Chemistry">Chemistry</span>
-            <span class="tag tag-gold chip" data-sub="Math">Math</span>
-            <span class="tag tag-green chip" data-sub="Biology">Biology</span>
-            <span class="tag tag-hindi chip" data-sub="Hindi">Hindi</span>
-            <span class="tag tag-english chip" data-sub="English">English</span>
-            <span class="tag tag-it chip" data-sub="IT">IT</span>
-            <span class="tag chip" data-sub="Other">Other</span>
+            <span class="tag tag-blue chip active" data-sub="Physics" data-i18n="subject.Physics">Physics</span>
+            <span class="tag tag-red chip" data-sub="Chemistry" data-i18n="subject.Chemistry">Chemistry</span>
+            <span class="tag tag-gold chip" data-sub="Math" data-i18n="subject.Math">Math</span>
+            <span class="tag tag-green chip" data-sub="Biology" data-i18n="subject.Biology">Biology</span>
+            <span class="tag tag-hindi chip" data-sub="Hindi" data-i18n="subject.Hindi">Hindi</span>
+            <span class="tag tag-english chip" data-sub="English" data-i18n="subject.English">English</span>
+            <span class="tag tag-it chip" data-sub="IT" data-i18n="subject.IT">IT</span>
+            <span class="tag chip" data-sub="Other" data-i18n="subject.Other">Other</span>
           </div>
           <input type="hidden" id="bl-subject" value="Physics" />
-          <button class="btn btn-block" id="bl-add-btn">Add Backlog (+10 XP)</button>
+          <button class="btn btn-block" id="bl-add-btn" data-i18n="backlog.add_btn">Add Backlog (+10 XP)</button>
           <div id="backlog-list" class="mt-4"></div>
         </div>
       </section>
@@ -814,10 +826,10 @@
       <!-- FOCUS TAB -->
       <section id="tab-focus" class="tab-content hidden">
         <div class="section-label">
-          <span>⏱️ Focus</span>
+          <span data-i18n="focus.label">⏱️ Focus</span>
           <div class="line"></div>
         </div>
-        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px">Deep Work</div>
+        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px" data-i18n="focus.title">Deep Work</div>
         <div
           style="
             font-size: var(--font-sm);
@@ -825,15 +837,16 @@
             line-height: var(--line-relaxed);
             margin-bottom: var(--space-3);
           "
+          data-i18n="focus.subtitle"
         >
           Ultradian rhythm aligned. Single-task only.
         </div>
 
         <div class="card" style="text-align: center">
           <div class="timer-modes">
-            <button class="timer-chip active" data-mode="0" id="mode-25">25 min</button>
-            <button class="timer-chip" data-mode="1" id="mode-52">52 min</button>
-            <button class="timer-chip" data-mode="2" id="mode-90">90 min</button>
+            <button class="timer-chip active" data-mode="0" id="mode-25" data-i18n="focus.mode_25">25 min</button>
+            <button class="timer-chip" data-mode="1" id="mode-52" data-i18n="focus.mode_52">52 min</button>
+            <button class="timer-chip" data-mode="2" id="mode-90" data-i18n="focus.mode_90">90 min</button>
           </div>
           <div class="timer-wrap">
             <div class="timer-ring-wrap">
@@ -861,38 +874,37 @@
             </div>
           </div>
           <div class="btn-group" style="max-width: 320px; margin: 0 auto">
-            <button class="btn" id="focus-btn">Start</button>
-            <button class="btn btn-ghost" id="focus-reset-btn">Reset</button>
+            <button class="btn" id="focus-btn" data-i18n="focus.start">Start</button>
+            <button class="btn btn-ghost" id="focus-reset-btn" data-i18n="focus.reset">Reset</button>
           </div>
         </div>
 
         <div class="card">
-          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)">
+          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)" data-i18n="focus.checklist_title">
             Focus Checklist
           </div>
           <div class="check-row">
-            <input type="checkbox" id="f1" /><label>Phone in another room</label>
+            <input type="checkbox" id="f1" /><label data-i18n="focus.chk1">Phone in another room</label>
           </div>
           <div class="check-row">
-            <input type="checkbox" id="f2" /><label>Only 1 browser tab</label>
+            <input type="checkbox" id="f2" /><label data-i18n="focus.chk2">Only 1 browser tab</label>
           </div>
           <div class="check-row">
-            <input type="checkbox" id="f3" /><label>Notifications OFF</label>
+            <input type="checkbox" id="f3" /><label data-i18n="focus.chk3">Notifications OFF</label>
           </div>
           <div class="check-row">
-            <input type="checkbox" id="f4" /><label>Water + notebook ready</label>
+            <input type="checkbox" id="f4" /><label data-i18n="focus.chk4">Water + notebook ready</label>
           </div>
           <div class="check-row">
-            <input type="checkbox" id="f5" /><label>Specific task written</label>
+            <input type="checkbox" id="f5" /><label data-i18n="focus.chk5">Specific task written</label>
           </div>
           <div class="tip">
-            <strong>Specificity beats motivation.</strong> Vague tasks trigger procrastination.
-            Write exactly what you will do.
+            <strong data-i18n="focus.tip_strong">Specificity beats motivation.</strong> <span data-i18n="focus.tip_body">Vague tasks trigger procrastination. Write exactly what you will do.</span>
           </div>
         </div>
 
         <div class="card" id="focus-history-card">
-          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)">
+          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)" data-i18n="focus.recent_sessions">
             Recent Sessions
           </div>
           <div id="focus-history">
@@ -906,10 +918,10 @@
       <!-- PLAN TAB -->
       <section id="tab-plan" class="tab-content hidden">
         <div class="section-label">
-          <span>🎯 Plan</span>
+          <span data-i18n="plan.label">🎯 Plan</span>
           <div class="line"></div>
         </div>
-        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px">
+        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px" data-i18n="plan.title">
           Growth Plan
         </div>
         <div
@@ -919,12 +931,13 @@
             line-height: var(--line-relaxed);
             margin-bottom: var(--space-3);
           "
+          data-i18n="plan.subtitle"
         >
           Stack habits. Plan battles. Earn XP.
         </div>
 
         <div class="card">
-          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)">
+          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)" data-i18n="plan.habit_forge">
             Habit Forge (+15 XP)
           </div>
           <div class="input-row mb-3">
@@ -933,6 +946,7 @@
               class="input flex-1"
               id="h-name"
               placeholder="Habit (e.g., 10 Pushups)"
+              data-i18n-placeholder="plan.ph_habit_name"
               maxlength="80"
             />
             <input
@@ -940,15 +954,16 @@
               class="input flex-1"
               id="h-anchor"
               placeholder="After I... (brush teeth)"
+              data-i18n-placeholder="plan.ph_habit_anchor"
               maxlength="80"
             />
           </div>
-          <button class="btn btn-block" id="h-add-btn">Add Habit</button>
+          <button class="btn btn-block" id="h-add-btn" data-i18n="plan.add_habit">Add Habit</button>
           <div id="habit-list" class="mt-4"></div>
         </div>
 
         <div class="card">
-          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)">
+          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)" data-i18n="plan.battle_plan">
             Battle Plan
           </div>
           <div class="input-row mb-3">
@@ -957,6 +972,7 @@
               class="input flex-1"
               id="bp-task"
               placeholder="Task"
+              data-i18n-placeholder="plan.ph_battle_task"
               maxlength="200"
             />
             <select class="input short" id="bp-priority">
@@ -965,33 +981,33 @@
               <option value="C">C</option>
             </select>
             <select class="input short" id="bp-time">
-              <option value="morning">Morning</option>
-              <option value="afternoon">Afternoon</option>
-              <option value="evening">Evening</option>
+              <option value="morning" data-i18n="plan.time_morning">Morning</option>
+              <option value="afternoon" data-i18n="plan.time_afternoon">Afternoon</option>
+              <option value="evening" data-i18n="plan.time_evening">Evening</option>
             </select>
           </div>
-          <button class="btn btn-block" id="bp-add-btn">Add Task</button>
+          <button class="btn btn-block" id="bp-add-btn" data-i18n="plan.add_task">Add Task</button>
           <div id="battle-list" class="mt-4"></div>
         </div>
 
         <div class="card">
-          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)">
+          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)" data-i18n="plan.evening_review">
             Evening Review
           </div>
           <div class="check-row">
-            <input type="checkbox" id="e1" /><label>3 wins from today</label>
+            <input type="checkbox" id="e1" /><label data-i18n="plan.rev1">3 wins from today</label>
           </div>
           <div class="check-row">
-            <input type="checkbox" id="e2" /><label>Biggest time-waster</label>
+            <input type="checkbox" id="e2" /><label data-i18n="plan.rev2">Biggest time-waster</label>
           </div>
           <div class="check-row">
-            <input type="checkbox" id="e3" /><label>Tomorrow's improvement</label>
+            <input type="checkbox" id="e3" /><label data-i18n="plan.rev3">Tomorrow's improvement</label>
           </div>
           <div class="check-row">
-            <input type="checkbox" id="e4" /><label>Detox rules followed</label>
+            <input type="checkbox" id="e4" /><label data-i18n="plan.rev4">Detox rules followed</label>
           </div>
           <div class="check-row">
-            <input type="checkbox" id="e5" /><label>Proud of today's effort</label>
+            <input type="checkbox" id="e5" /><label data-i18n="plan.rev5">Proud of today's effort</label>
           </div>
         </div>
       </section>
@@ -1045,9 +1061,9 @@
     <div class="overlay" id="trophy-overlay">
       <div class="modal">
         <button class="modal-close" id="trophy-close-btn">×</button>
-        <div class="modal-title">🏆 Trophy Room</div>
+        <div class="modal-title" data-i18n="trophy.title">🏆 Trophy Room</div>
         <div class="trophy-count">
-          <div class="trophy-count-text">Badges Unlocked</div>
+          <div class="trophy-count-text" data-i18n="trophy.badges_unlocked">Badges Unlocked</div>
           <div class="trophy-count-num" id="trophy-count">0 / 35</div>
         </div>
         <div class="rank-display" id="trophy-rank-display">
@@ -1079,7 +1095,7 @@
               <div class="profile-info">
                 <div class="profile-name" id="profile-name">Warrior</div>
                 <div class="profile-rank" id="profile-rank">Initiate · Level 1</div>
-                <div class="sync-status online" id="sync-status">💾 Auto-saved locally</div>
+                <div class="sync-status online" id="sync-status" data-i18n="settings.auto_saved">💾 Auto-saved locally</div>
               </div>
             </div>
             <div class="profile-mission" id="profile-mission">
@@ -1091,6 +1107,7 @@
                 class="input"
                 id="profile-name-input"
                 placeholder="Your display name"
+                data-i18n-placeholder="settings.ph_display_name"
                 maxlength="30"
               />
               <button
@@ -1102,7 +1119,7 @@
                 Save
               </button>
             </div>
-            <button class="btn btn-ghost btn-sm btn-block mt-2" id="switch-profile-btn">
+            <button class="btn btn-ghost btn-sm btn-block mt-2" id="switch-profile-btn" data-i18n="settings.switch_profile">
               ↪ Switch Profile
             </button>
           </div>
@@ -1129,20 +1146,20 @@
             <div class="line"></div>
           </div>
           <div class="card">
-            <div id="account-status" class="sync-status online">
+            <div id="account-status" class="sync-status online" data-i18n="settings.account_local_msg">
               Local only — login recommended to protect progress.
             </div>
             <div id="account-email" class="text-xs text-secondary mt-2"></div>
-            <button class="btn btn-sm btn-block mt-3" id="settings-login-btn">
+            <button class="btn btn-sm btn-block mt-3" id="settings-login-btn" data-i18n="settings.login_protect">
               Login to protect progress
             </button>
-            <button class="btn btn-ghost btn-sm btn-block mt-2 hidden" id="sync-now-btn">
+            <button class="btn btn-ghost btn-sm btn-block mt-2 hidden" id="sync-now-btn" data-i18n="settings.sync_now">
               Sync now
             </button>
-            <button class="btn btn-ghost btn-sm btn-block mt-2" id="export-backup-btn">
+            <button class="btn btn-ghost btn-sm btn-block mt-2" id="export-backup-btn" data-i18n="settings.export_backup">
               Export backup
             </button>
-            <button class="btn btn-ghost btn-sm btn-block mt-2" id="import-backup-btn">
+            <button class="btn btn-ghost btn-sm btn-block mt-2" id="import-backup-btn" data-i18n="settings.restore_backup">
               Restore from backup
             </button>
             <input
@@ -1152,7 +1169,7 @@
               style="display: none"
             />
             <p id="import-message" class="tip mt-2" aria-live="polite"></p>
-            <button class="btn btn-ghost btn-sm btn-block mt-2 hidden" id="logout-btn">
+            <button class="btn btn-ghost btn-sm btn-block mt-2 hidden" id="logout-btn" data-i18n="settings.logout">
               Logout
             </button>
           </div>
@@ -1164,7 +1181,7 @@
             <div class="line"></div>
           </div>
           <div class="card">
-            <div style="font-weight: 700; font-size: var(--font-sm); margin-bottom: var(--space-3)">
+            <div style="font-weight: 700; font-size: var(--font-sm); margin-bottom: var(--space-3)" data-i18n="settings.theme_title">
               Theme
             </div>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2)">
@@ -1174,8 +1191,8 @@
                 id="theme-midnight"
                 style="flex-direction: column; gap: 4px; padding: 10px 6px"
               >
-                <span style="font-size: 1.2rem">🌙</span
-                ><span style="font-size: 0.65rem">Midnight</span>
+                <span style="font-size: 1.2rem">🌙</span>
+                <span style="font-size: 0.65rem" data-i18n="settings.theme_midnight">Midnight</span>
               </button>
               <button
                 class="btn btn-ghost btn-sm"
@@ -1183,8 +1200,8 @@
                 id="theme-light"
                 style="flex-direction: column; gap: 4px; padding: 10px 6px"
               >
-                <span style="font-size: 1.2rem">☀️</span
-                ><span style="font-size: 0.65rem">Cream</span>
+                <span style="font-size: 1.2rem">☀️</span>
+                <span style="font-size: 0.65rem" data-i18n="settings.theme_cream">Cream</span>
               </button>
               <button
                 class="btn btn-ghost btn-sm"
@@ -1192,8 +1209,8 @@
                 id="theme-dusk"
                 style="flex-direction: column; gap: 4px; padding: 10px 6px"
               >
-                <span style="font-size: 1.2rem">🌅</span
-                ><span style="font-size: 0.65rem">Dusk</span>
+                <span style="font-size: 1.2rem">🌅</span>
+                <span style="font-size: 0.65rem" data-i18n="settings.theme_dusk">Dusk</span>
               </button>
             </div>
             <div
@@ -1218,7 +1235,7 @@
                   id="auto-theme"
                   style="width: 18px; height: 18px; accent-color: var(--accent-start)"
                 />
-                <span>Auto-switch by time (Light 6AM–6PM, Dark 6PM–6AM)</span>
+                <span data-i18n="settings.auto_theme_label">Auto-switch by time (Light 6AM–6PM, Dark 6PM–6AM)</span>
               </label>
             </div>
           </div>
@@ -1226,7 +1243,7 @@
 
         <div class="settings-section">
           <div class="section-label">
-            <span>📋 Mission</span>
+            <span data-i18n="settings.mission">📋 Mission</span>
             <div class="line"></div>
           </div>
           <div class="card">
@@ -1235,15 +1252,16 @@
               id="mission-input"
               rows="2"
               placeholder="Your personal mission statement..."
+              data-i18n-placeholder="settings.ph_mission"
               maxlength="300"
             ></textarea>
-            <button class="btn btn-sm btn-block mt-3" id="save-mission-btn">Update Mission</button>
+            <button class="btn btn-sm btn-block mt-3" id="save-mission-btn" data-i18n="settings.update_mission">Update Mission</button>
           </div>
         </div>
 
         <div class="settings-section">
           <div class="section-label">
-            <span>👥 Accountability</span>
+            <span data-i18n="settings.accountability">👥 Accountability</span>
             <div class="line"></div>
           </div>
           <div class="card" id="settings-buddy">
@@ -1253,19 +1271,21 @@
                 class="input mb-2"
                 id="settings-buddy-name"
                 placeholder="Partner's name"
+                data-i18n-placeholder="settings.ph_partner_name"
                 maxlength="50"
               />
-              <button class="btn btn-sm btn-block" id="set-buddy-btn">Set Partner</button>
+              <button class="btn btn-sm btn-block" id="set-buddy-btn" data-i18n="settings.set_partner">Set Partner</button>
             </div>
             <div id="settings-buddy-active" class="hidden">
               <div class="flex justify-between items-center mb-2">
-                <div style="font-size: var(--font-sm); font-weight: 700">
+                <div style="font-size: var(--font-sm); font-weight: 700" data-i18n="settings.partner_label">
                   Accountability Partner
                 </div>
                 <button
                   class="btn btn-ghost btn-sm"
                   id="remove-buddy-btn"
                   style="width: auto; padding: 6px 10px; font-size: 0.75rem"
+                  data-i18n="settings.remove"
                 >
                   Remove
                 </button>
@@ -1276,7 +1296,7 @@
               >
                 None
               </div>
-              <button class="btn btn-ghost btn-block mt-3" id="share-progress-btn">
+              <button class="btn btn-ghost btn-block mt-3" id="share-progress-btn" data-i18n="settings.share_progress">
                 📤 Share Progress
               </button>
             </div>
@@ -1285,7 +1305,7 @@
 
         <div class="settings-section">
           <div class="section-label">
-            <span>⚠️ Data</span>
+            <span data-i18n="settings.data_section">⚠️ Data</span>
             <div class="line"></div>
           </div>
           <div class="card">
@@ -1293,6 +1313,7 @@
               class="btn btn-ghost btn-block mb-2"
               id="reset-today-btn"
               style="color: var(--danger); font-size: var(--font-sm)"
+              data-i18n="settings.reset_today"
             >
               🔄 Reset Today's Progress
             </button>
@@ -1300,6 +1321,7 @@
               class="btn btn-ghost btn-block"
               id="reset-all-btn"
               style="color: var(--danger); font-size: var(--font-sm)"
+              data-i18n="settings.delete_all"
             >
               ⚠️ Delete All Data
             </button>

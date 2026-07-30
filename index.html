@@ -16,10 +16,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta
       name="description"
-      content="NeuroFocusX — Gamified productivity & study app with XP, streaks, habits, and focus timer."
+      content="NeuroFocusX — turn studying into a game. Focus, earn XP, build streaks, and level up. Free, offline, and private."
     />
-    <meta property="og:title" content="NeuroFocusX" />
-    <meta property="og:description" content="Level up your brain. Build unbreakable discipline." />
+    <meta property="og:title" content="NeuroFocusX — Turn studying into a game" />
+    <meta
+      property="og:description"
+      content="Focus, earn XP, build streaks, and level up. Free, offline, and private."
+    />
+    <meta property="og:image" content="https://neurofocusx.vercel.app/icon-512.png" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="NeuroFocusX" />
     <meta property="og:url" content="https://neurofocusx.vercel.app/" />
@@ -35,6 +39,160 @@
   <body>
     <div class="ambient"></div>
 
+    <!-- Welcome screen: shown once before login. Explains what the app is,
+         why it matters and how to use it — before asking for anything. -->
+    <div
+      class="overlay center hidden"
+      id="welcome-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="welcome-title"
+      aria-describedby="welcome-subtitle"
+    >
+      <div class="modal welcome-modal">
+        <div class="welcome-shell">
+          <header class="welcome-hero">
+            <div class="welcome-logo" aria-hidden="true">🧠</div>
+            <p class="welcome-kicker" data-i18n="welcome.kicker">For students who want to win</p>
+            <h1 class="welcome-title" id="welcome-title" data-i18n="welcome.title">
+              Turn studying into a game
+            </h1>
+            <p class="welcome-subtitle" id="welcome-subtitle" data-i18n="welcome.subtitle">
+              Every session you focus earns XP. Keep your streak, level up your rank, and clear
+              your exam backlog — one win at a time.
+            </p>
+          </header>
+
+          <section aria-label="Why NeuroFocusX works">
+            <h2 class="welcome-section-title" data-i18n="welcome.why_title">
+              Why you will actually stick with it
+            </h2>
+            <div class="welcome-grid">
+              <div class="welcome-card">
+                <span class="welcome-card-icon" aria-hidden="true">⚡</span>
+                <div>
+                  <strong data-i18n="welcome.why1_title">Beat distractions</strong>
+                  <span data-i18n="welcome.why1_sub"
+                    >A focus timer and urge-surfing tools retrain your brain, session by
+                    session.</span
+                  >
+                </div>
+              </div>
+              <div class="welcome-card">
+                <span class="welcome-card-icon" aria-hidden="true">🔥</span>
+                <div>
+                  <strong data-i18n="welcome.why2_title">Build discipline</strong>
+                  <span data-i18n="welcome.why2_sub"
+                    >Daily quests, habits, and streaks make skipping a day feel like losing.</span
+                  >
+                </div>
+              </div>
+              <div class="welcome-card">
+                <span class="welcome-card-icon" aria-hidden="true">📈</span>
+                <div>
+                  <strong data-i18n="welcome.why3_title">See real progress</strong>
+                  <span data-i18n="welcome.why3_sub"
+                    >XP, ranks, trophies, and weekly reports turn your effort into numbers.</span
+                  >
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section aria-label="How to use NeuroFocusX">
+            <h2 class="welcome-section-title" data-i18n="welcome.how_title">How to use it</h2>
+            <ol class="welcome-steps">
+              <li>
+                <span class="welcome-step-num" aria-hidden="true">1</span>
+                <div>
+                  <strong data-i18n="welcome.step1_title">Start a 25-minute focus session</strong>
+                  <span data-i18n="welcome.step1_sub">One subject. Phone away. Timer on.</span>
+                </div>
+              </li>
+              <li>
+                <span class="welcome-step-num" aria-hidden="true">2</span>
+                <div>
+                  <strong data-i18n="welcome.step2_title">Earn XP and protect your streak</strong>
+                  <span data-i18n="welcome.step2_sub"
+                    >Finish sessions and daily quests to grow your score every day.</span
+                  >
+                </div>
+              </li>
+              <li>
+                <span class="welcome-step-num" aria-hidden="true">3</span>
+                <div>
+                  <strong data-i18n="welcome.step3_title">Level up and clear your backlog</strong>
+                  <span data-i18n="welcome.step3_sub"
+                    >Ranks climb while your chapters turn green before the exam.</span
+                  >
+                </div>
+              </li>
+            </ol>
+          </section>
+
+          <div class="welcome-chips">
+            <span class="welcome-chip">✦ <span data-i18n="welcome.chip_free">100% free</span></span>
+            <span class="welcome-chip"
+              >✦ <span data-i18n="welcome.chip_offline">Works offline</span></span
+            >
+            <span class="welcome-chip"
+              >✦
+              <span data-i18n="welcome.chip_private">Private — data stays on your device</span></span
+            >
+          </div>
+
+          <footer>
+            <button class="btn btn-block" id="welcome-cta-btn" type="button" data-i18n="welcome.cta">
+              Get started — it's free
+            </button>
+            <p class="welcome-cta-note" data-i18n="welcome.cta_note">
+              Takes 10 seconds. No account needed.
+            </p>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <!-- Language picker: shown once after first login / local start.
+         Hinglish is featured on top for Indian students. -->
+    <div
+      class="overlay center hidden"
+      id="language-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="language-title"
+      aria-describedby="language-subtitle"
+    >
+      <div class="modal language-modal">
+        <div class="language-shell">
+          <header class="language-header">
+            <div class="language-globe" aria-hidden="true">🌐</div>
+            <h2 class="language-title" id="language-title" data-i18n="lang.title">
+              Choose your language
+            </h2>
+            <p class="language-subtitle" id="language-subtitle" data-i18n="lang.subtitle">
+              Pick what feels natural. You can change it anytime in Settings.
+            </p>
+          </header>
+          <div
+            class="language-list"
+            id="language-list"
+            role="listbox"
+            aria-label="Available languages"
+          ></div>
+          <p class="language-preview" id="language-preview" aria-live="polite"></p>
+          <button
+            class="btn btn-block"
+            id="language-continue-btn"
+            type="button"
+            data-i18n="lang.continue"
+          >
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Account start screen: clear account and device-only paths -->
     <div
       class="overlay center hidden"
@@ -47,9 +205,9 @@
       <div class="modal auth-modal">
         <header class="auth-header">
           <div class="auth-logo" aria-hidden="true">🧠</div>
-          <p class="auth-kicker" id="login-kicker">Focus. Build. Grow.</p>
-          <h1 class="auth-title" id="login-title">Welcome to NeuroFocusX</h1>
-          <p class="auth-subtitle" id="login-subtitle">
+          <p class="auth-kicker" id="login-kicker" data-i18n="auth.kicker">Focus. Build. Grow.</p>
+          <h1 class="auth-title" id="login-title" data-i18n="auth.title">Welcome to NeuroFocusX</h1>
+          <p class="auth-subtitle" id="login-subtitle" data-i18n="auth.subtitle">
             Choose how you want to save your progress.
           </p>
         </header>
@@ -58,36 +216,51 @@
           <div class="auth-benefit">
             <span class="auth-benefit-icon" aria-hidden="true">☁</span>
             <div>
-              <strong>Protect your progress</strong>
-              <span>An account backs up your XP and keeps it available across devices.</span>
+            <strong data-i18n="auth.benefit_title">Protect your progress</strong>
+            <span data-i18n="auth.benefit_sub"
+              >An account backs up your XP and keeps it available across devices.</span
+            >
             </div>
           </div>
 
           <div class="auth-choice-actions" aria-label="Account options">
-            <button class="btn btn-block" id="email-login-btn" type="button">Sign in</button>
-            <button class="btn btn-ghost btn-block" id="create-account-btn" type="button">
+            <button class="btn btn-block" id="email-login-btn" type="button" data-i18n="auth.sign_in">
+              Sign in
+            </button>
+            <button
+              class="btn btn-ghost btn-block"
+              id="create-account-btn"
+              type="button"
+              data-i18n="auth.create_account"
+            >
               Create free account
             </button>
           </div>
 
-          <div class="auth-divider" aria-hidden="true"><span>or</span></div>
+          <div class="auth-divider" aria-hidden="true"><span data-i18n="auth.or">or</span></div>
 
           <button class="auth-device-button" id="skip-login-btn" type="button">
-            <span>Continue without an account</span>
+            <span data-i18n="auth.device_cta">Continue without an account</span>
             <span aria-hidden="true">→</span>
           </button>
-          <p class="auth-device-note">
+          <p class="auth-device-note" data-i18n="auth.device_note">
             No account needed. Progress stays in this browser and will not sync to other devices.
           </p>
         </div>
 
         <form id="email-login-form" class="hidden" novalidate>
           <button class="auth-back" id="back-login-btn" type="button">
-            <span aria-hidden="true">←</span> All options
+            <span aria-hidden="true">←</span> <span data-i18n="auth.back">All options</span>
           </button>
 
           <div class="auth-mode-switch" role="group" aria-label="Account action">
-            <button class="auth-mode-button" id="auth-tab-signin" type="button" aria-pressed="true">
+            <button
+              class="auth-mode-button"
+              id="auth-tab-signin"
+              type="button"
+              aria-pressed="true"
+              data-i18n="auth.tab_signin"
+            >
               Sign in
             </button>
             <button
@@ -95,13 +268,16 @@
               id="auth-tab-signup"
               type="button"
               aria-pressed="false"
+              data-i18n="auth.tab_signup"
             >
               Create account
             </button>
           </div>
 
           <div class="auth-field">
-            <label class="auth-label" for="login-email">Email address</label>
+            <label class="auth-label" for="login-email" data-i18n="auth.email_label"
+              >Email address</label
+            >
             <input
               type="email"
               class="input"
@@ -118,13 +294,16 @@
           </div>
 
           <div class="auth-field">
-            <label class="auth-label" for="login-password">Password</label>
+            <label class="auth-label" for="login-password" data-i18n="auth.password_label"
+              >Password</label
+            >
             <div class="password-field">
               <input
                 type="password"
                 class="input"
                 id="login-password"
                 placeholder="Enter your password"
+                data-i18n-placeholder="auth.password_ph_signin"
                 autocomplete="current-password"
                 maxlength="200"
                 aria-describedby="password-hint login-message"
@@ -135,19 +314,33 @@
                 id="toggle-login-password"
                 type="button"
                 aria-label="Show password"
+                data-i18n="auth.show"
+                data-i18n-aria-label="auth.show_password"
                 aria-controls="login-password"
                 aria-pressed="false"
               >
                 Show
               </button>
             </div>
-            <p class="auth-hint hidden" id="password-hint">Use at least 6 characters.</p>
+            <p class="auth-hint hidden" id="password-hint" data-i18n="auth.password_hint">
+              Use at least 6 characters.
+            </p>
           </div>
 
-          <button class="btn btn-block auth-submit" id="send-login-btn" type="submit">
+          <button
+            class="btn btn-block auth-submit"
+            id="send-login-btn"
+            type="submit"
+            data-i18n="auth.submit_signin"
+          >
             Sign in
           </button>
-          <button class="btn btn-ghost btn-block hidden" id="resend-confirmation-btn" type="button">
+          <button
+            class="btn btn-ghost btn-block hidden"
+            id="resend-confirmation-btn"
+            type="button"
+            data-i18n="auth.resend"
+          >
             Resend confirmation email
           </button>
           <p id="login-message" class="auth-message" role="status" aria-live="polite"></p>
@@ -155,32 +348,42 @@
 
         <form id="local-login-form" class="hidden" novalidate>
           <button class="auth-back" id="back-local-btn" type="button">
-            <span aria-hidden="true">←</span> All options
+            <span aria-hidden="true">←</span> <span data-i18n="auth.back">All options</span>
           </button>
 
           <div class="auth-field">
-            <label class="auth-label" for="login-name">What should we call you?</label>
+            <label class="auth-label" for="login-name" data-i18n="auth.local_name_label"
+              >What should we call you?</label
+            >
             <input
               type="text"
               class="input"
               id="login-name"
               placeholder="Your name"
+              data-i18n-placeholder="auth.local_name_ph"
               maxlength="30"
               autocomplete="name"
               aria-describedby="local-name-hint local-login-message"
               required
             />
-            <p class="auth-hint" id="local-name-hint">
+            <p class="auth-hint" id="local-name-hint" data-i18n="auth.local_name_hint">
               Used to personalize NeuroFocusX on this device.
             </p>
           </div>
 
           <div class="auth-local-warning">
             <span aria-hidden="true">ⓘ</span>
-            <p>Your progress is saved only in this browser. Clearing browser data can remove it.</p>
+            <p data-i18n="auth.local_warning">
+              Your progress is saved only in this browser. Clearing browser data can remove it.
+            </p>
           </div>
 
-          <button class="btn btn-block auth-submit" id="login-continue-btn" type="submit">
+          <button
+            class="btn btn-block auth-submit"
+            id="login-continue-btn"
+            type="submit"
+            data-i18n="auth.local_cta"
+          >
             Start using NeuroFocusX
           </button>
           <p id="local-login-message" class="auth-message" role="status" aria-live="polite"></p>
@@ -797,19 +1000,19 @@
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
       <button class="nav-item active" data-tab="home">
-        <span class="icon">🏠</span><span>Home</span>
+        <span class="icon">🏠</span><span data-i18n="nav.home">Home</span>
       </button>
       <button class="nav-item" data-tab="detox">
-        <span class="icon">🧘</span><span>Detox</span>
+        <span class="icon">🧘</span><span data-i18n="nav.detox">Detox</span>
       </button>
       <button class="nav-item" data-tab="backlog">
-        <span class="icon">📚</span><span>Backlog</span>
+        <span class="icon">📚</span><span data-i18n="nav.backlog">Backlog</span>
       </button>
       <button class="nav-item" data-tab="focus">
-        <span class="icon">⏱️</span><span>Focus</span>
+        <span class="icon">⏱️</span><span data-i18n="nav.focus">Focus</span>
       </button>
       <button class="nav-item" data-tab="plan">
-        <span class="icon">🎯</span><span>Plan</span>
+        <span class="icon">🎯</span><span data-i18n="nav.plan">Plan</span>
       </button>
     </nav>
 
@@ -831,7 +1034,9 @@
           <div class="rank-up-title" id="rank-up-title">Rank Up!</div>
           <div class="rank-up-new" id="rank-up-new">Scholar</div>
           <div class="rank-up-sub" id="rank-up-sub">Your brain is evolving. Keep going.</div>
-          <button class="btn btn-block" id="rank-up-close-btn">Continue</button>
+          <button class="btn btn-block" id="rank-up-close-btn" data-i18n="common.continue">
+            Continue
+          </button>
         </div>
       </div>
     </div>
@@ -859,13 +1064,13 @@
     <div class="overlay right" id="settings-overlay">
       <div class="modal" style="padding: 20px 16px">
         <div class="settings-header">
-          <div class="modal-title">≡ Settings</div>
+          <div class="modal-title"><span data-i18n="settings.title">≡ Settings</span></div>
           <button class="modal-close" id="settings-close-btn">×</button>
         </div>
 
         <div class="settings-section">
           <div class="section-label" style="margin-top: 0">
-            <span>👤 Profile</span>
+            <span data-i18n="settings.profile">👤 Profile</span>
             <div class="line"></div>
           </div>
           <div class="card">
@@ -888,7 +1093,12 @@
                 placeholder="Your display name"
                 maxlength="30"
               />
-              <button class="btn btn-sm" id="save-name-btn" style="width: auto; flex-shrink: 0">
+              <button
+                class="btn btn-sm"
+                id="save-name-btn"
+                style="width: auto; flex-shrink: 0"
+                data-i18n="settings.save"
+              >
                 Save
               </button>
             </div>
@@ -900,7 +1110,22 @@
 
         <div class="settings-section">
           <div class="section-label">
-            <span>🔐 Data safety</span>
+            <span data-i18n="settings.language">🌐 Language</span>
+            <div class="line"></div>
+          </div>
+          <div class="card">
+            <div
+              class="language-list language-list-compact"
+              id="settings-language-list"
+              role="listbox"
+              aria-label="Language"
+            ></div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="section-label">
+            <span data-i18n="settings.data_safety">🔐 Data safety</span>
             <div class="line"></div>
           </div>
           <div class="card">
@@ -935,7 +1160,7 @@
 
         <div class="settings-section">
           <div class="section-label">
-            <span>🎨 Appearance</span>
+            <span data-i18n="settings.appearance">🎨 Appearance</span>
             <div class="line"></div>
           </div>
           <div class="card">

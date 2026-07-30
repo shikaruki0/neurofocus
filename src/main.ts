@@ -15,6 +15,7 @@ import './styles/variables.css';
 import './styles/base.css';
 import './styles/components.css';
 import './styles/animations.css';
+import './styles/onboarding.css';
 
 import { data, resetHabitsForNewDay } from './modules/data.ts';
 import { clearAll } from './modules/storage.ts';
@@ -66,6 +67,19 @@ import {
 } from './modules/auth.ts';
 import { createLocalBackup, syncOnLogin, syncNow } from './modules/cloudSync.ts';
 import { exportAll } from './modules/storage.ts';
+import {
+  detectInitialLocale,
+  getLocale,
+  getSupportedLocales,
+  hasChosenLanguage,
+  initI18n,
+  markLanguageChosen,
+  previewIn,
+  setLocale,
+  t,
+} from './modules/i18n.ts';
+import type { LocaleCode, TranslationKey } from './modules/i18n.ts';
+import { hasSeenWelcome, markWelcomeSeen } from './modules/onboarding.ts';
 import {
   validateImportData,
   applyImport,
@@ -635,17 +649,11 @@ function renderQuote() {
   if (el) el.textContent = `"${getDailyQuote()}"`;
 }
 
-function setLoginOverlayOpen(open: boolean): void {
-  const overlay = qs<HTMLElement>('#login-overlay');
-  if (!overlay) return;
-
-  overlay.classList.toggle('hidden', !open);
-  overlay.classList.toggle('show', open);
-  document.body.classList.toggle('auth-open', open);
-
+/** Locks the app chrome (header, content, nav) behind a full-screen gate overlay. */
+function setAppChromeInert(inert: boolean): void {
   // Keep keyboard and screen-reader users inside the modal while it is open.
   qsa<HTMLElement>('#app-header, main.container, .bottom-nav').forEach((element) => {
-    if (open) {
+    if (inert) {
       element.setAttribute('inert', '');
       element.setAttribute('aria-hidden', 'true');
     } else {
@@ -655,12 +663,147 @@ function setLoginOverlayOpen(open: boolean): void {
   });
 }
 
+/** Shows/hides one of the full-screen first-run gate overlays (welcome, language, login). */
+function setGateOverlayOpen(selector: string, open: boolean): void {
+  const overlay = qs<HTMLElement>(selector);
+  if (!overlay) return;
+
+  overlay.classList.toggle('hidden', !open);
+  overlay.classList.toggle('show', open);
+  document.body.classList.toggle('auth-open', open);
+  setAppChromeInert(open);
+}
+
+function setWelcomeOverlayOpen(open: boolean): void {
+  setGateOverlayOpen('#welcome-overlay', open);
+}
+
+function setLanguageOverlayOpen(open: boolean): void {
+  setGateOverlayOpen('#language-overlay', open);
+}
+
+function setLoginOverlayOpen(open: boolean): void {
+  setGateOverlayOpen('#login-overlay', open);
+}
+
+// ===================================================================
+// LANGUAGE PICKER
+// ===================================================================
+
+/** Locale selected in the picker UI (applied only on confirm). */
+let pendingLocale: LocaleCode = 'en';
+let afterLanguagePick: (() => void) | null = null;
+
+/**
+ * Builds accessible language option buttons into `listEl`.
+ * Hinglish is pinned on top with a "suggested" badge (featured in LOCALES).
+ */
+function renderLanguageOptions(
+  listEl: HTMLElement,
+  selected: LocaleCode,
+  onPick: (code: LocaleCode) => void,
+): void {
+  listEl.textContent = '';
+  getSupportedLocales().forEach((info) => {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'language-option';
+    option.dataset.locale = info.code;
+    option.setAttribute('role', 'option');
+    option.setAttribute('aria-selected', String(info.code === selected));
+    if (info.featured) option.classList.add('featured');
+    if (info.code === selected) option.classList.add('selected');
+
+    const icon = document.createElement('span');
+    icon.className = 'language-icon';
+    icon.textContent = info.icon;
+    icon.setAttribute('aria-hidden', 'true');
+
+    const names = document.createElement('span');
+    names.className = 'language-names';
+    const nativeName = document.createElement('strong');
+    nativeName.textContent = info.nativeName;
+    const blurb = document.createElement('span');
+    blurb.textContent = info.blurb;
+    names.append(nativeName, blurb);
+
+    option.append(icon, names);
+    if (info.featured) {
+      const badge = document.createElement('span');
+      badge.className = 'language-badge';
+      badge.textContent = t('lang.suggested');
+      option.append(badge);
+    }
+    option.addEventListener('click', () => onPick(info.code));
+    listEl.append(option);
+  });
+}
+
+/** Live preview line in the first-run picker, translated into the pending language. */
+function updateLanguagePreview(): void {
+  const preview = qs<HTMLElement>('#language-preview');
+  if (preview) preview.textContent = previewIn(pendingLocale, 'lang.preview');
+}
+
+function refreshFirstRunLanguageList(): void {
+  const list = qs<HTMLElement>('#language-list');
+  if (!list) return;
+  renderLanguageOptions(list, pendingLocale, (code) => {
+    pendingLocale = code;
+    refreshFirstRunLanguageList();
+    updateLanguagePreview();
+  });
+}
+
+/** Opens the first-run language picker. `after` runs once the user confirms. */
+function openLanguagePicker(after?: () => void): void {
+  pendingLocale = detectInitialLocale();
+  afterLanguagePick = after ?? null;
+  refreshFirstRunLanguageList();
+  updateLanguagePreview();
+  setLanguageOverlayOpen(true);
+  qs<HTMLButtonElement>('#language-continue-btn')?.focus();
+}
+
+/** Confirms the pending language, translates the whole app, and closes the picker. */
+function confirmLanguagePick(): void {
+  setLocale(pendingLocale);
+  markLanguageChosen();
+  setLanguageOverlayOpen(false);
+  renderSettingsLanguageList();
+  const after = afterLanguagePick;
+  afterLanguagePick = null;
+  after?.();
+}
+
+/** Renders the always-available language switcher inside Settings. */
+function renderSettingsLanguageList(): void {
+  const list = qs<HTMLElement>('#settings-language-list');
+  if (!list) return;
+  renderLanguageOptions(list, getLocale(), (code) => {
+    if (code !== getLocale()) setLocale(code);
+    markLanguageChosen();
+    renderSettingsLanguageList();
+  });
+}
+
 function renderSession(): void {
   if (isSessionStarted() || currentUser()) {
+    setWelcomeOverlayOpen(false);
+    setLanguageOverlayOpen(false);
     setLoginOverlayOpen(false);
     return;
   }
 
+  // First visit: explain what the app is and how to use it BEFORE the account ask.
+  if (!hasSeenWelcome()) {
+    setLoginOverlayOpen(false);
+    setWelcomeOverlayOpen(true);
+    qs<HTMLButtonElement>('#welcome-cta-btn')?.focus();
+    return;
+  }
+
+  setWelcomeOverlayOpen(false);
   showLoginView('choice');
   setLoginOverlayOpen(true);
   qs<HTMLButtonElement>('#email-login-btn')?.focus();
@@ -769,13 +912,17 @@ let authMode: AuthMode = 'signin';
 let authSubmitting = false;
 let resendSubmitting = false;
 
-function setLoginHeader(kicker: string, title: string, subtitle: string): void {
+function setLoginHeader(
+  kickerKey: TranslationKey,
+  titleKey: TranslationKey,
+  subtitleKey: TranslationKey,
+): void {
   const kickerElement = qs<HTMLElement>('#login-kicker');
   const titleElement = qs<HTMLElement>('#login-title');
   const subtitleElement = qs<HTMLElement>('#login-subtitle');
-  if (kickerElement) kickerElement.textContent = kicker;
-  if (titleElement) titleElement.textContent = title;
-  if (subtitleElement) subtitleElement.textContent = subtitle;
+  if (kickerElement) kickerElement.textContent = t(kickerKey);
+  if (titleElement) titleElement.textContent = t(titleKey);
+  if (subtitleElement) subtitleElement.textContent = t(subtitleKey);
 }
 
 function setFormMessage(id: string, message = '', tone: MessageTone = 'error'): void {
@@ -797,8 +944,8 @@ function resetPasswordVisibility(): void {
   if (passwordInput) passwordInput.type = 'password';
   if (toggle) {
     toggle.setAttribute('aria-pressed', 'false');
-    toggle.setAttribute('aria-label', 'Show password');
-    toggle.textContent = 'Show';
+    toggle.setAttribute('aria-label', t('auth.show_password'));
+    toggle.textContent = t('auth.show');
   }
 }
 
@@ -806,8 +953,9 @@ function updateAuthControls(): void {
   const sendBtn = qs<HTMLButtonElement>('#send-login-btn');
   const signInButton = qs<HTMLButtonElement>('#auth-tab-signin');
   const signUpButton = qs<HTMLButtonElement>('#auth-tab-signup');
-  const action = authMode === 'signin' ? 'Sign in' : 'Create account';
-  const pendingAction = authMode === 'signin' ? 'Signing in…' : 'Creating account…';
+  const action = authMode === 'signin' ? t('auth.submit_signin') : t('auth.submit_signup');
+  const pendingAction =
+    authMode === 'signin' ? t('auth.submit_signin_pending') : t('auth.submit_signup_pending');
 
   if (sendBtn) {
     sendBtn.textContent = authSubmitting ? pendingAction : action;
@@ -842,17 +990,14 @@ function setAuthMode(mode: AuthMode): void {
       'autocomplete',
       mode === 'signin' ? 'current-password' : 'new-password',
     );
-    passwordInput.placeholder = mode === 'signin' ? 'Enter your password' : 'Create a password';
+    passwordInput.placeholder =
+      mode === 'signin' ? t('auth.password_ph_signin') : t('auth.password_ph_signup');
   }
 
   if (mode === 'signin') {
-    setLoginHeader('Your account', 'Welcome back', 'Sign in to continue with your saved progress.');
+    setLoginHeader('auth.kicker_signin', 'auth.title_signin', 'auth.subtitle_signin');
   } else {
-    setLoginHeader(
-      'Get started',
-      'Create your account',
-      'Back up your progress and use NeuroFocusX across devices.',
-    );
+    setLoginHeader('auth.kicker_signup', 'auth.title_signup', 'auth.subtitle_signup');
   }
 
   if (resendButton) {
@@ -877,11 +1022,7 @@ function showLoginView(view: LoginView, mode: AuthMode = 'signin'): void {
   qs<HTMLElement>('#local-login-form')?.classList.toggle('hidden', view !== 'local');
 
   if (view === 'choice') {
-    setLoginHeader(
-      'Focus. Build. Grow.',
-      'Welcome to NeuroFocusX',
-      'Choose how you want to save your progress.',
-    );
+    setLoginHeader('auth.kicker', 'auth.title', 'auth.subtitle');
     setFormMessage('login-message');
     setFormMessage('local-login-message');
     clearAuthFieldErrors();
@@ -898,11 +1039,7 @@ function showLoginView(view: LoginView, mode: AuthMode = 'signin'): void {
     return;
   }
 
-  setLoginHeader(
-    'Device-only setup',
-    'Make it yours',
-    'Add a name to personalize NeuroFocusX on this device.',
-  );
+  setLoginHeader('auth.kicker_local', 'auth.title_local', 'auth.subtitle_local');
   setFormMessage('local-login-message');
   qs<HTMLInputElement>('#login-name')?.removeAttribute('aria-invalid');
 }
@@ -1056,6 +1193,17 @@ function setupEventListeners() {
       qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
   });
 
+  // First-run flow: welcome screen → account start → language picker.
+  qs<HTMLElement>('#welcome-cta-btn')?.addEventListener('click', () => {
+    markWelcomeSeen();
+    setWelcomeOverlayOpen(false);
+    renderSession();
+  });
+
+  qs<HTMLElement>('#language-continue-btn')?.addEventListener('click', () => {
+    confirmLanguagePick();
+  });
+
   // Account start screen. All handlers are attached here (no inline JS).
   qs<HTMLElement>('#email-login-btn')?.addEventListener('click', () => openEmailAuth('signin'));
   qs<HTMLElement>('#create-account-btn')?.addEventListener('click', () => openEmailAuth('signup'));
@@ -1071,8 +1219,11 @@ function setupEventListeners() {
     const shouldShow = passwordInput.type === 'password';
     passwordInput.type = shouldShow ? 'text' : 'password';
     toggle.setAttribute('aria-pressed', String(shouldShow));
-    toggle.setAttribute('aria-label', shouldShow ? 'Hide password' : 'Show password');
-    toggle.textContent = shouldShow ? 'Hide' : 'Show';
+    toggle.setAttribute(
+      'aria-label',
+      shouldShow ? t('auth.hide_password') : t('auth.show_password'),
+    );
+    toggle.textContent = shouldShow ? t('auth.hide') : t('auth.show');
   });
 
   qs<HTMLElement>('#skip-login-btn')?.addEventListener('click', () => {
@@ -1121,6 +1272,11 @@ function setupEventListeners() {
         if (passwordInput) passwordInput.value = '';
         setLoginOverlayOpen(false);
         renderAccountSettings();
+        // Anyone who has entered the app is past the explainer stage —
+        // e.g. a later logout must return to login, not to the welcome screen.
+        markWelcomeSeen();
+        // First-run only: let the user pick their in-app language once.
+        if (!hasChosenLanguage()) openLanguagePicker();
       }
     } catch {
       const message = 'Something went wrong. Please try again.';
@@ -1184,7 +1340,15 @@ function setupEventListeners() {
     }
     renderSession();
     renderProfile();
-    showCelebrate('Welcome', `Ready when you are, ${data.profileName}.`, '🧠');
+    markWelcomeSeen();
+    // First-run only: pick the in-app language, then celebrate the start.
+    if (!hasChosenLanguage()) {
+      openLanguagePicker(() =>
+        showCelebrate('Welcome', `Ready when you are, ${data.profileName}.`, '🧠'),
+      );
+    } else {
+      showCelebrate('Welcome', `Ready when you are, ${data.profileName}.`, '🧠');
+    }
   });
 
   qs<HTMLElement>('#switch-profile-btn')?.addEventListener('click', () => {
@@ -1657,6 +1821,12 @@ function init() {
     console.warn('Theme load failed', e);
   }
   updateThemeButtons();
+  // Language: restore the saved locale and translate the static UI before first paint.
+  try {
+    initI18n();
+  } catch (e) {
+    console.warn('i18n init failed', e);
+  }
   try {
     resetHabitsForNewDay();
   } catch {}
@@ -1712,6 +1882,7 @@ function init() {
     console.error('Failed to setup listeners', e);
   }
   renderAccountSettings();
+  renderSettingsLanguageList();
   // Restore a returning account without blocking offline startup.
   void restoreAuthSession().then(async (user) => {
     if (!user) {

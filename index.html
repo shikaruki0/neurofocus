@@ -1331,6 +1331,70 @@
       </button>
     </nav>
 
+    <!-- Immersive Focus Overlay -->
+    <div
+      class="focus-immersive-overlay hidden"
+      id="focus-immersive-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="focus-immersive-title"
+    >
+      <div class="focus-immersive-surface">
+        <h2 id="focus-immersive-title" class="sr-only">Immersive Focus Mode</h2>
+        <div class="focus-immersive-header">
+          <div class="focus-immersive-mode" id="focus-immersive-mode">Pomodoro</div>
+          <div class="focus-immersive-status" id="focus-immersive-status">Ready to begin</div>
+        </div>
+
+        <div class="focus-immersive-timer-wrap">
+          <div class="timer-ring-wrap" id="focus-immersive-ring-wrap">
+            <svg viewBox="0 0 240 240">
+              <defs>
+                <linearGradient id="gradRingImmersive" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="var(--accent-start)" />
+                  <stop offset="100%" stop-color="var(--accent-end)" />
+                </linearGradient>
+              </defs>
+              <circle class="timer-ring-bg" cx="120" cy="120" r="110" />
+              <circle
+                class="timer-ring-fill"
+                id="focus-immersive-ring"
+                cx="120"
+                cy="120"
+                r="110"
+                stroke="url(#gradRingImmersive)"
+              />
+            </svg>
+            <div class="timer-text">
+              <div class="timer-digits" id="focus-immersive-timer" aria-live="polite">25:00</div>
+              <div class="timer-label" id="focus-immersive-label">Pomodoro</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="focus-immersive-meta">
+          <div class="focus-immersive-meta-item">
+            <span class="focus-immersive-meta-value" id="focus-immersive-elapsed">0:00</span>
+            <span class="focus-immersive-meta-label">Elapsed</span>
+          </div>
+          <div class="focus-immersive-meta-item">
+            <span class="focus-immersive-meta-value" id="focus-immersive-xp">+40 XP</span>
+            <span class="focus-immersive-meta-label">Reward</span>
+          </div>
+          <div class="focus-immersive-meta-item">
+            <span class="focus-immersive-meta-value" id="focus-immersive-progress">0%</span>
+            <span class="focus-immersive-meta-label">Progress</span>
+          </div>
+        </div>
+
+        <div class="focus-immersive-actions">
+          <button class="btn" id="focus-immersive-pause-btn">Start</button>
+          <button class="btn btn-ghost" id="focus-immersive-reset-btn">Reset</button>
+          <button class="btn btn-ghost" id="focus-immersive-exit-btn">Exit Focus Mode</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Celebration Overlay -->
     <div class="celebrate" id="celebrate">
       <div class="celebrate-box">

@@ -2995,6 +2995,171 @@ body.auth-open {
 }
 .badge-icon img { width: 1.7em; height: 1.7em; object-fit: contain; vertical-align: middle; }
 
+/* ===================================================================
+   Immersive Focus Mode
+   =================================================================== */
+
+.focus-immersive-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  overflow-x: hidden;
+}
+
+.focus-immersive-overlay.show {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.focus-immersive-overlay.hidden {
+  display: none !important;
+}
+
+.focus-immersive-surface {
+  width: 100%;
+  max-width: 720px;
+  height: 100%;
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  gap: var(--space-6);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.focus-immersive-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 480px;
+}
+
+.focus-immersive-mode {
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--accent-start);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.focus-immersive-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.focus-immersive-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 10px var(--success);
+  flex-shrink: 0;
+}
+
+.focus-immersive-status.paused::before {
+  background: var(--gold);
+  box-shadow: 0 0 10px var(--gold);
+}
+
+.focus-immersive-timer-wrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.focus-immersive-timer-wrap .timer-ring-wrap {
+  width: min(320px, 70vw);
+  height: min(320px, 70vw);
+}
+
+.focus-immersive-timer-wrap .timer-digits {
+  font-size: clamp(3.5rem, 10vw, 5rem);
+  letter-spacing: -4px;
+}
+
+.focus-immersive-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+}
+
+.focus-immersive-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.focus-immersive-meta-value {
+  font-size: var(--font-lg);
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-immersive-meta-label {
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.focus-immersive-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 480px;
+}
+
+@media (max-width: 520px) {
+  .focus-immersive-actions {
+    grid-template-columns: 1fr;
+  }
+  .focus-immersive-meta {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  .focus-immersive-meta-item {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-immersive-overlay {
+    transition: none !important;
+  }
+  .focus-immersive-overlay .timer-ring-wrap.running {
+    animation: none !important;
+  }
+}
+
 /* v2 visual language: a quiet command center rather than a collection of widgets. */
 .header-status {
   display: inline-flex;

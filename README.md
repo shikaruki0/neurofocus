@@ -27,6 +27,8 @@ _Level up your brain. Build unbreakable discipline. Track everything that matter
 - 🌅 **Morning Ritual** — 5-step priming routine for 2x XP boost
 - 🧘 **Detox Protocol** — Urge surfing timer for digital discipline
 - 📊 **Weekly Reports** — Visual activity breakdown
+- 👋 **Guided first run** — A one-time welcome screen explains what the app is, why it works, and how to use it before any account ask
+- 🌍 **In-app languages** — Built-in translation (no browser translator needed): Hinglish, English, हिन्दी, Español, Français, Deutsch — Hinglish is suggested first, switchable anytime in Settings
 - 🔐 **Safe account start** — Continue with email for cross-device sync or skip for a local-only profile
 - 💾 **Progress protection** — Local backups and explicit local/cloud/merge choices prevent silent overwrites
 - 🎨 **3 Themes** — Midnight, Cream, Dusk + auto-switch by time

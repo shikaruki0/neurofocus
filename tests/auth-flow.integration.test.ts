@@ -147,6 +147,8 @@ describe('Production auth/import flows', () => {
 
   it('keeps local-name errors in context instead of opening a separate alert', async () => {
     await loadApp();
+    // Brand-new visitors first see the welcome screen; "Get started" reveals the account start.
+    document.querySelector<HTMLElement>('#welcome-cta-btn')?.click();
     document.querySelector<HTMLButtonElement>('#skip-login-btn')?.click();
 
     const form = document.querySelector<HTMLFormElement>('#local-login-form')!;
@@ -256,6 +258,106 @@ describe('Production auth/import flows', () => {
     document.querySelector<HTMLElement>('#logout-btn')?.click();
     await new Promise((r) => setTimeout(r, 50));
     expect(overlayVisible()).toBe(true);
+  });
+});
+
+describe('First-run onboarding flow', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    document.body.innerHTML = body;
+    localStorage.clear();
+    hoisted.listeners.length = 0;
+    vi.clearAllMocks();
+    window.confirm = () => true;
+  });
+
+  const welcomeVisible = () => {
+    const overlay = document.querySelector<HTMLElement>('#welcome-overlay')!;
+    return !overlay.classList.contains('hidden') && overlay.classList.contains('show');
+  };
+
+  const languageVisible = () => {
+    const overlay = document.querySelector<HTMLElement>('#language-overlay')!;
+    return !overlay.classList.contains('hidden') && overlay.classList.contains('show');
+  };
+
+  it('explains the app before asking for anything (welcome first, login behind)', async () => {
+    await loadApp();
+    expect(welcomeVisible()).toBe(true);
+    expect(overlayVisible()).toBe(false);
+    expect(document.querySelector('#welcome-title')?.textContent).toContain('game');
+    expect(document.querySelector('#app-header')?.hasAttribute('inert')).toBe(true);
+  });
+
+  it('welcome CTA marks it seen and reveals the account start', async () => {
+    await loadApp();
+    document.querySelector<HTMLElement>('#welcome-cta-btn')?.click();
+    expect(welcomeVisible()).toBe(false);
+    expect(overlayVisible()).toBe(true);
+    expect(JSON.parse(localStorage.getItem('nf_welcomeSeen') || 'false')).toBe(true);
+  });
+
+  it('never shows the welcome screen to users who already have a session', async () => {
+    localStorage.setItem('nf_hasOnboarded', JSON.stringify(true));
+    await loadApp();
+    expect(welcomeVisible()).toBe(false);
+    expect(overlayVisible()).toBe(false);
+  });
+
+  it('offers the language picker after a local start, with Hinglish pinned on top', async () => {
+    await loadApp();
+    document.querySelector<HTMLElement>('#welcome-cta-btn')?.click();
+    document.querySelector<HTMLElement>('#skip-login-btn')?.click();
+    const name = document.querySelector<HTMLInputElement>('#login-name')!;
+    name.value = 'Aarav';
+    document.querySelector<HTMLElement>('#login-continue-btn')?.click();
+
+    expect(languageVisible()).toBe(true);
+    const options = document.querySelectorAll<HTMLElement>('.language-option');
+    expect(options.length).toBeGreaterThanOrEqual(3);
+    expect(options[0].dataset.locale).toBe('hi-Latn');
+    expect(options[0].querySelector('.language-badge')).toBeTruthy();
+
+    // Choosing Hinglish and continuing translates the whole app immediately.
+    options[0].click();
+    document.querySelector<HTMLElement>('#language-continue-btn')?.click();
+    expect(languageVisible()).toBe(false);
+    expect(JSON.parse(localStorage.getItem('nf_locale') || '""')).toBe('hi-Latn');
+    expect(JSON.parse(localStorage.getItem('nf_languageChosen') || 'false')).toBe(true);
+    expect(document.documentElement.getAttribute('lang')).toBe('hi-Latn');
+    expect(document.querySelector('[data-i18n="settings.save"]')?.textContent?.trim()).toBe(
+      'Save karo',
+    );
+  });
+
+  it('does not offer the language picker again once a language was chosen', async () => {
+    localStorage.setItem('nf_languageChosen', JSON.stringify(true));
+    await loadApp();
+    document.querySelector<HTMLElement>('#welcome-cta-btn')?.click();
+    document.querySelector<HTMLElement>('#skip-login-btn')?.click();
+    const name = document.querySelector<HTMLInputElement>('#login-name')!;
+    name.value = 'Aarav';
+    document.querySelector<HTMLElement>('#login-continue-btn')?.click();
+    expect(languageVisible()).toBe(false);
+  });
+
+  it('lets users switch language anytime from Settings, applied instantly', async () => {
+    localStorage.setItem('nf_hasOnboarded', JSON.stringify(true));
+    localStorage.setItem('nf_profileName', JSON.stringify('Aarav'));
+    await loadApp();
+    const hindi = document.querySelector<HTMLElement>(
+      '#settings-language-list [data-locale="hi"]',
+    )!;
+    hindi.click();
+    expect(JSON.parse(localStorage.getItem('nf_locale') || '""')).toBe('hi');
+    expect(document.documentElement.getAttribute('lang')).toBe('hi');
+    expect(document.querySelector('[data-i18n="nav.focus"]')?.textContent?.trim()).toBe('फ़ोकस');
+    // The switcher highlights the active language.
+    expect(
+      document
+        .querySelector('#settings-language-list [data-locale="hi"]')
+        ?.classList.contains('selected'),
+    ).toBe(true);
   });
 
   it('importing a backup applies the data and updates the dashboard', async () => {

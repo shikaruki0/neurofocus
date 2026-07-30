@@ -24,15 +24,41 @@ interface FlowState {
 }
 
 interface SubjectXP {
-  Physics: number;
-  Chemistry: number;
-  Math: number;
-  Biology: number;
-  Hindi: number;
-  English: number;
-  IT: number;
-  Other: number;
-  [key: string]: number;
+  Physics?: number;
+  Chemistry?: number;
+  Math?: number;
+  Biology?: number;
+  History?: number;
+  Geography?: number;
+  Economics?: number;
+  Hindi?: number;
+  English?: number;
+  IT?: number;
+  Other?: number;
+  [key: string]: number | undefined;
+}
+
+interface StudentProfile {
+  name: string;
+  country: string;
+  classLevel: number;
+  board: 'NCERT' | 'Other';
+  medium: 'English' | 'Hindi' | 'Other';
+  secondLanguage: 'hindi-a' | 'hindi-b' | 'sanskrit' | 'urdu' | 'other' | 'none';
+  attendsCoaching: boolean;
+  syllabusPackId: 'india-ncert-class-10' | 'manual';
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface DailyClassCheck {
+  date: string;
+  status: 'complete' | 'skipped';
+  totalHeld: number;
+  attended: number;
+  missed: number;
+  assignedBacklog: number;
+  handledAt: number;
 }
 
 interface WeeklyStat {
@@ -56,6 +82,15 @@ interface Backlog {
   total: number;
   done: number;
   subject: string;
+  subjectLabel?: string;
+  chapterId?: string;
+  chapterName?: string;
+  bookId?: string;
+  bookName?: string;
+  unitName?: string;
+  source?: 'manual' | 'ncert-class10';
+  createdFrom?: 'manual' | 'initial-setup' | 'daily-check';
+  updatedAt?: number;
 }
 
 interface Habit {
@@ -101,6 +136,9 @@ export const data = {
   detoxLastDate: get<string | null>('detoxLastDate', null),
   dailyChecks: get<Record<string, boolean>>('dailyChecks', {}),
   dailyCheckDate: get<string>('dailyCheckDate', ''),
+  studentProfile: get<StudentProfile | null>('studentProfile', null),
+  initialBacklogSetupComplete: get<boolean>('initialBacklogSetupComplete', false),
+  dailyClassCheck: get<DailyClassCheck | null>('dailyClassCheck', null),
   backlogs: get<Backlog[]>('backlogs', []),
   habits: get<Habit[]>('habits', []),
   battle: get<BattleTask[]>('battle', []),
@@ -120,6 +158,9 @@ export const data = {
     Chemistry: 0,
     Math: 0,
     Biology: 0,
+    History: 0,
+    Geography: 0,
+    Economics: 0,
     Hindi: 0,
     English: 0,
     IT: 0,

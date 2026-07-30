@@ -46,7 +46,34 @@ import {
   onTick as onUrgeTick,
   onComplete as onUrgeComplete,
 } from './modules/urge.ts';
-import { addBacklog, incrementBacklog, deleteBacklog, getBacklogs } from './modules/backlogs.ts';
+import {
+  addBacklog,
+  incrementBacklog,
+  deleteBacklog,
+  getBacklogs,
+  getBacklogsGroupedBySubject,
+  getPendingChapterCount,
+} from './modules/backlogs.ts';
+import type { BacklogInput } from './modules/backlogs.ts';
+import {
+  completeDailyClassCheck,
+  completeInitialBacklogSetup,
+  getStudentProfile,
+  hasCompletedInitialBacklogSetup,
+  isAcademicSetupComplete,
+  isNcertClass10Enabled,
+  saveStudentProfile,
+  shouldAskDailyClassCheck,
+  skipDailyClassCheck,
+  validateDailyAttendance,
+} from './modules/student.ts';
+import type { SecondLanguageChoice, StudentProfile } from './modules/student.ts';
+import {
+  findNcertChapter,
+  formatChapterOptionLabel,
+  getSubjectOptionsForProfile,
+  makeUnassignedChapter,
+} from './modules/ncert.ts';
 import { addHabit, toggleHabit, deleteHabit, getHabits } from './modules/habits.ts';
 import { addTask, toggleTask, deleteTask, getTasksSorted } from './modules/battle.ts';
 import { recordDailyStat, getWeekStats, getWeekTotals } from './modules/weekly.ts';
@@ -99,8 +126,13 @@ import { validateProfileName, validateMission } from './utils/validation.ts';
 // ===================================================================
 
 let selectedBacklogSubject = 'Physics';
+let setupBacklogSubject = 'Physics';
+let dailyMissedSubject = 'Physics';
 let dailyChecksBuilt = false;
 let lastDailyCheckDate = '';
+let dailyMissTarget = 0;
+let dailyMissAssigned = 0;
+let dailyAttendanceDraft = { totalHeld: 0, attended: 0, missed: 0 };
 
 // ===================================================================
 // TAB NAVIGATION
@@ -141,7 +173,8 @@ function renderXP() {
   if (elCount) elCount.textContent = `${data.xp} XP`;
   if (elBar) elBar.style.width = `${info.pct}%`;
   if (elBadge) elBadge.textContent = t('common.level', { level: info.level });
-  if (elNext) elNext.textContent = t('common.xp_to_next', { current: info.current, need: info.need });
+  if (elNext)
+    elNext.textContent = t('common.xp_to_next', { current: info.current, need: info.need });
 }
 
 function renderHero() {
@@ -442,7 +475,173 @@ function renderDailyChecks() {
   }
 }
 
+const FALLBACK_BACKLOG_SUBJECTS = [
+  { key: 'Physics', label: 'Physics' },
+  { key: 'Chemistry', label: 'Chemistry' },
+  { key: 'Math', label: 'Math' },
+  { key: 'Biology', label: 'Biology' },
+  { key: 'English', label: 'English' },
+  { key: 'Hindi', label: 'Hindi' },
+  { key: 'Other', label: 'Other' },
+];
+
+function subjectClass(subject: string): string {
+  const map: Record<string, string> = {
+    Physics: 'physics',
+    Chemistry: 'chem',
+    Math: 'math',
+    Biology: 'bio',
+    History: 'english',
+    Geography: 'it',
+    Economics: 'math',
+    English: 'english',
+    Hindi: 'hindi',
+    'Hindi Course A': 'hindi',
+    'Hindi Course B': 'hindi',
+    Sanskrit: 'hindi',
+    Urdu: 'hindi',
+    IT: 'it',
+    Other: 'other',
+  };
+  return map[subject] || 'other';
+}
+
+function getActiveSubjectOptions(profile: StudentProfile | null = getStudentProfile()) {
+  const ncertOptions = getSubjectOptionsForProfile(profile);
+  if (ncertOptions.length) return ncertOptions;
+  return FALLBACK_BACKLOG_SUBJECTS.map((subject) => ({
+    key: subject.key,
+    label: subject.label,
+    chapters: [],
+  }));
+}
+
+function updateChapterSelect(
+  subjectSelect: HTMLSelectElement,
+  chapterSelect: HTMLSelectElement,
+  profile: StudentProfile | null = getStudentProfile(),
+): void {
+  const selectedSubject = subjectSelect.value || 'Physics';
+  const options = getSubjectOptionsForProfile(profile);
+  const subject = options.find((item) => item.key === selectedSubject);
+  chapterSelect.textContent = '';
+
+  if (!subject) {
+    const option = document.createElement('option');
+    option.value = 'manual';
+    option.textContent = 'Manual topic';
+    chapterSelect.append(option);
+    chapterSelect.disabled = true;
+    return;
+  }
+
+  chapterSelect.disabled = false;
+  const unassigned = makeUnassignedChapter(subject.key, subject.label);
+  const unassignedOption = document.createElement('option');
+  unassignedOption.value = unassigned.id;
+  unassignedOption.textContent = `${subject.label} — Not sure yet`;
+  chapterSelect.append(unassignedOption);
+
+  subject.chapters.forEach((chapter) => {
+    const option = document.createElement('option');
+    option.value = chapter.id;
+    option.textContent = formatChapterOptionLabel(chapter);
+    chapterSelect.append(option);
+  });
+}
+
+function populateSubjectChapterControls(
+  subjectSelectId: string,
+  chapterSelectId: string,
+  selectedSubject: string,
+): void {
+  const subjectSelect = qs<HTMLSelectElement>(`#${subjectSelectId}`);
+  const chapterSelect = qs<HTMLSelectElement>(`#${chapterSelectId}`);
+  if (!subjectSelect || !chapterSelect) return;
+
+  const profile = getStudentProfile();
+  const options = getActiveSubjectOptions(profile);
+  const previous = selectedSubject || subjectSelect.value || options[0]?.key || 'Physics';
+  subjectSelect.textContent = '';
+  options.forEach((subject) => {
+    const option = document.createElement('option');
+    option.value = subject.key;
+    option.textContent = subject.label;
+    subjectSelect.append(option);
+  });
+  subjectSelect.value = options.some((subject) => subject.key === previous)
+    ? previous
+    : options[0]?.key || 'Physics';
+  updateChapterSelect(subjectSelect, chapterSelect, profile);
+}
+
+function renderBacklogControls(): void {
+  populateSubjectChapterControls('bl-subject', 'bl-chapter', selectedBacklogSubject);
+  const profile = getStudentProfile();
+  const isNcert = isNcertClass10Enabled();
+  const banner = qs<HTMLElement>('#study-pack-banner');
+  const bannerSub = qs<HTMLElement>('#study-pack-sub');
+  const manualName = qs<HTMLInputElement>('#bl-name');
+  const chapterSelect = qs<HTMLSelectElement>('#bl-chapter');
+
+  banner?.classList.toggle('hidden', !isNcert);
+  manualName?.classList.toggle('hidden', isNcert);
+  chapterSelect?.classList.toggle('hidden', !isNcert);
+  if (bannerSub && profile) {
+    bannerSub.textContent = `${profile.country} · Class ${profile.classLevel} · ${profile.board}. Select subject → chapter → lectures remaining.`;
+  }
+}
+
+function backlogInputFromControls(
+  subjectSelectId: string,
+  chapterSelectId: string,
+  countInputId: string,
+  fallbackNameInputId?: string,
+  createdFrom: BacklogInput['createdFrom'] = 'manual',
+  fixedCount?: number,
+): BacklogInput | null {
+  const subjectSelect = qs<HTMLSelectElement>(`#${subjectSelectId}`);
+  const chapterSelect = qs<HTMLSelectElement>(`#${chapterSelectId}`);
+  const countInput = qs<HTMLInputElement>(`#${countInputId}`);
+  const profile = getStudentProfile();
+  const subject = subjectSelect?.value || selectedBacklogSubject || 'Physics';
+  const count = fixedCount ?? parseInt(countInput?.value || '', 10);
+
+  if (isNcertClass10Enabled() && chapterSelect) {
+    const option = getSubjectOptionsForProfile(profile).find((item) => item.key === subject);
+    const chapter =
+      findNcertChapter(chapterSelect.value, profile) ||
+      makeUnassignedChapter(subject, option?.label || subject);
+    return {
+      name: `${chapter.subjectLabel} — ${chapter.title}`,
+      count,
+      subject: chapter.subjectKey,
+      subjectLabel: chapter.subjectLabel,
+      chapterId: chapter.id,
+      chapterName: chapter.title,
+      bookId: chapter.bookId,
+      bookName: chapter.bookName,
+      unitName: chapter.unitName,
+      source: 'ncert-class10',
+      createdFrom,
+    };
+  }
+
+  const fallbackName = fallbackNameInputId
+    ? qs<HTMLInputElement>(`#${fallbackNameInputId}`)?.value || ''
+    : '';
+  return {
+    name: fallbackName || `${subject} backlog`,
+    count,
+    subject,
+    subjectLabel: subject,
+    source: 'manual',
+    createdFrom,
+  };
+}
+
 function renderBacklogs() {
+  renderBacklogControls();
   const el = qs<HTMLElement>('#backlog-list');
   if (!el) return;
 
@@ -452,44 +651,80 @@ function renderBacklogs() {
     return;
   }
 
-  const SUBJECT_MAP: Record<string, string> = {
-    Physics: 'physics',
-    Chemistry: 'chem',
-    Math: 'math',
-    Biology: 'bio',
-    Hindi: 'hindi',
-    English: 'english',
-    IT: 'it',
-    Other: 'other',
-  };
+  const totalRemaining = backlogs.reduce(
+    (sum, backlog) => sum + Math.max(0, (backlog.total || 0) - (backlog.done || 0)),
+    0,
+  );
+  const totalDone = backlogs.reduce((sum, backlog) => sum + (backlog.done || 0), 0);
+  const pendingChapters = getPendingChapterCount();
+  const groups = getBacklogsGroupedBySubject();
 
-  el.innerHTML = backlogs
-    .map((b) => {
-      const total = b.total || 1;
-      const done = b.done || 0;
-      const pct = Math.min(100, (done / total) * 100);
-      const left = total - done;
-      const cls = `tag-sub-${SUBJECT_MAP[b.subject] || 'other'}`;
-      const subjectName = t(`subject.${b.subject}` as TranslationKey) || b.subject || 'Other';
-      const leftText = t('backlog.left', { count: left });
-      return `
-        <div class="list-item">
-          <div class="info">
-            <div class="title">${escapeHTML(b.name)}</div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-              <span class="tag-sub ${cls}">${escapeHTML(subjectName)}</span>
-              <span style="font-size:0.75rem;color:var(--text-secondary)">${done} / ${total}</span>
-            </div>
-            <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+  el.innerHTML = `
+    <div class="backlog-summary-grid">
+      <div class="backlog-summary-card">
+        <div class="backlog-summary-num">${totalRemaining}</div>
+        <div class="backlog-summary-label">Lectures left</div>
+      </div>
+      <div class="backlog-summary-card">
+        <div class="backlog-summary-num">${pendingChapters}</div>
+        <div class="backlog-summary-label">Chapters</div>
+      </div>
+      <div class="backlog-summary-card">
+        <div class="backlog-summary-num">${totalDone}</div>
+        <div class="backlog-summary-label">Completed</div>
+      </div>
+    </div>
+    ${groups
+      .map((group) => {
+        const cls = `tag-sub-${subjectClass(group.subject)}`;
+        return `
+        <div class="backlog-group">
+          <div class="backlog-group-title">
+            <span>${escapeHTML(group.subjectLabel)}</span>
+            <span class="tag-sub ${cls}">${group.remaining} left</span>
           </div>
-          <div class="flex items-center gap-2" style="flex-shrink:0">
-            <span class="tag ${left > 5 ? 'tag-red' : 'tag-green'}">${escapeHTML(leftText)}</span>
-            <button class="btn btn-success btn-sm" data-action="inc-backlog" data-id="${b.id}">+1</button>
-            <button class="btn btn-danger btn-sm" data-action="del-backlog" data-id="${b.id}">×</button>
-          </div>
+          ${group.books
+            .map(
+              (book) => `
+              <div class="backlog-book-title">${escapeHTML(book.bookName)} · ${book.remaining} left</div>
+              ${book.items
+                .map((b) => {
+                  const total = b.total || 1;
+                  const done = b.done || 0;
+                  const pct = Math.min(100, (done / total) * 100);
+                  const left = Math.max(0, total - done);
+                  const leftText = t('backlog.left', { count: left });
+                  const chapterTitle = b.chapterName || b.name;
+                  const metaParts = [
+                    b.unitName,
+                    b.createdFrom === 'daily-check' ? 'Added from daily check-in' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ');
+                  return `
+                    <div class="list-item backlog-row">
+                      <div class="info">
+                        <div class="title backlog-chapter-title">${escapeHTML(chapterTitle)}</div>
+                        <div class="meta">${escapeHTML(metaParts || b.subjectLabel || b.subject || 'Backlog')}</div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
+                          <span class="tag-sub ${cls}">${escapeHTML(b.subjectLabel || b.subject || 'Other')}</span>
+                          <span style="font-size:0.75rem;color:var(--text-secondary)">${done} / ${total} lectures</span>
+                        </div>
+                        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+                      </div>
+                      <div class="backlog-actions">
+                        <span class="tag ${left > 5 ? 'tag-red' : 'tag-green'}">${escapeHTML(leftText)}</span>
+                        <button class="btn btn-success btn-sm" data-action="inc-backlog" data-id="${b.id}">+1</button>
+                        <button class="btn btn-danger btn-sm" data-action="del-backlog" data-id="${b.id}">×</button>
+                      </div>
+                    </div>`;
+                })
+                .join('')}`,
+            )
+            .join('')}
         </div>`;
-    })
-    .join('');
+      })
+      .join('')}`;
 
   // Add handlers
   qsa<HTMLElement>('[data-action="inc-backlog"]', el).forEach((btn) => {
@@ -654,6 +889,7 @@ function renderProfile() {
   const elRank = qs<HTMLElement>('#profile-rank');
   const elAvatar = qs<HTMLElement>('#profile-avatar');
   const elMission = qs<HTMLElement>('#profile-mission');
+  const elStudy = qs<HTMLElement>('#profile-study-info');
   const elInput = qs<HTMLInputElement>('#profile-name-input');
   const elMissionInput = qs<HTMLTextAreaElement>('#mission-input');
 
@@ -661,6 +897,12 @@ function renderProfile() {
   if (elRank) elRank.textContent = `${rank.name} · ${t('common.level', { level: info.level })}`;
   if (elAvatar) elAvatar.textContent = rank.icon;
   if (elMission) elMission.textContent = data.mission;
+  const profile = getStudentProfile();
+  if (elStudy) {
+    elStudy.textContent = profile
+      ? `${profile.country} · Class ${profile.classLevel} · ${profile.board}${profile.syllabusPackId === 'india-ncert-class-10' ? ' · NCERT Class 10 loaded' : ''}`
+      : 'Study setup not completed yet.';
+  }
   if (elInput) elInput.value = data.profileName || '';
   if (elMissionInput) elMissionInput.value = data.mission || '';
 }
@@ -720,6 +962,14 @@ function setLanguageOverlayOpen(open: boolean): void {
 
 function setLoginOverlayOpen(open: boolean): void {
   setGateOverlayOpen('#login-overlay', open);
+}
+
+function setAcademicOverlayOpen(open: boolean): void {
+  setGateOverlayOpen('#academic-overlay', open);
+}
+
+function setDailyClassOverlayOpen(open: boolean): void {
+  setGateOverlayOpen('#daily-class-overlay', open);
 }
 
 // ===================================================================
@@ -809,7 +1059,8 @@ function confirmLanguagePick(): void {
   renderSettingsLanguageList();
   const after = afterLanguagePick;
   afterLanguagePick = null;
-  after?.();
+  if (after) after();
+  else maybeOpenPostLoginSetup();
 }
 
 /** Renders the always-available language switcher inside Settings. */
@@ -828,6 +1079,7 @@ function renderSession(): void {
     setWelcomeOverlayOpen(false);
     setLanguageOverlayOpen(false);
     setLoginOverlayOpen(false);
+    maybeOpenPostLoginSetup();
     return;
   }
 
@@ -867,6 +1119,151 @@ function renderAccountSettings() {
   }
 }
 
+function renderAcademicSetupProfile(): void {
+  const profile = getStudentProfile();
+  const nameInput = qs<HTMLInputElement>('#student-name');
+  const countryInput = qs<HTMLInputElement>('#student-country');
+  const classSelect = qs<HTMLSelectElement>('#student-class');
+  const mediumSelect = qs<HTMLSelectElement>('#student-medium');
+  const languageSelect = qs<HTMLSelectElement>('#student-second-language');
+  const coachingSelect = qs<HTMLSelectElement>('#student-coaching');
+
+  if (nameInput) nameInput.value = profile?.name || data.profileName || '';
+  if (countryInput) countryInput.value = profile?.country || 'India';
+  if (classSelect) classSelect.value = String(profile?.classLevel || 10);
+  if (mediumSelect) mediumSelect.value = profile?.medium || 'English';
+  if (languageSelect) languageSelect.value = profile?.secondLanguage || 'hindi-b';
+  if (coachingSelect) coachingSelect.value = profile?.attendsCoaching ? 'yes' : 'no';
+}
+
+function renderSetupBacklogPreview(): void {
+  const el = qs<HTMLElement>('#setup-backlog-preview');
+  if (!el) return;
+  const setupItems = getBacklogs().filter((item) => item.createdFrom === 'initial-setup');
+  if (!setupItems.length) {
+    el.innerHTML = `<div class="empty" style="padding:12px">No initial backlog added yet.</div>`;
+    return;
+  }
+  el.innerHTML = setupItems
+    .slice(-6)
+    .reverse()
+    .map((item) => {
+      const left = Math.max(0, (item.total || 0) - (item.done || 0));
+      return `<div class="list-item">
+        <div class="info">
+          <div class="title backlog-chapter-title">${escapeHTML(item.chapterName || item.name)}</div>
+          <div class="meta">${escapeHTML(item.bookName || item.subject || '')}</div>
+        </div>
+        <span class="tag tag-green">${left} lectures</span>
+      </div>`;
+    })
+    .join('');
+}
+
+function showAcademicStep(step: 'profile' | 'backlog'): void {
+  qs<HTMLElement>('#academic-profile-step')?.classList.toggle('hidden', step !== 'profile');
+  qs<HTMLElement>('#academic-backlog-step')?.classList.toggle('hidden', step !== 'backlog');
+  if (step === 'profile') renderAcademicSetupProfile();
+  if (step === 'backlog') {
+    populateSubjectChapterControls(
+      'setup-backlog-subject',
+      'setup-backlog-chapter',
+      setupBacklogSubject,
+    );
+    renderSetupBacklogPreview();
+  }
+}
+
+function openAcademicSetup(): void {
+  setLoginOverlayOpen(false);
+  setLanguageOverlayOpen(false);
+  setDailyClassOverlayOpen(false);
+  showAcademicStep(
+    isAcademicSetupComplete() && !hasCompletedInitialBacklogSetup() ? 'backlog' : 'profile',
+  );
+  setAcademicOverlayOpen(true);
+  qs<HTMLInputElement>('#student-name')?.focus();
+}
+
+function maybeOpenPostLoginSetup(): void {
+  if (!(isSessionStarted() || currentUser())) return;
+  if (!hasChosenLanguage()) return;
+  if (!isAcademicSetupComplete() || !hasCompletedInitialBacklogSetup()) {
+    openAcademicSetup();
+    return;
+  }
+  maybeOpenDailyClassCheck();
+}
+
+function resetDailyClassDraft(): void {
+  dailyMissTarget = 0;
+  dailyMissAssigned = 0;
+  dailyAttendanceDraft = { totalHeld: 0, attended: 0, missed: 0 };
+  const totalInput = qs<HTMLInputElement>('#daily-total-classes');
+  const attendedInput = qs<HTMLInputElement>('#daily-attended-classes');
+  if (totalInput) totalInput.value = '';
+  if (attendedInput) attendedInput.value = '';
+  setFormMessage('daily-class-message');
+  qs<HTMLElement>('#daily-attendance-step')?.classList.remove('hidden');
+  qs<HTMLElement>('#daily-missed-step')?.classList.add('hidden');
+  const finishBtn = qs<HTMLButtonElement>('#daily-finish-btn');
+  if (finishBtn) finishBtn.disabled = true;
+  const list = qs<HTMLElement>('#daily-missed-list');
+  if (list) list.textContent = '';
+}
+
+function maybeOpenDailyClassCheck(): void {
+  if (!(isSessionStarted() || currentUser())) return;
+  if (!isAcademicSetupComplete() || !hasCompletedInitialBacklogSetup()) return;
+  const overlay = qs<HTMLElement>('#daily-class-overlay');
+  if (overlay?.classList.contains('show')) return;
+  if (!shouldAskDailyClassCheck()) return;
+  resetDailyClassDraft();
+  populateSubjectChapterControls(
+    'daily-missed-subject',
+    'daily-missed-chapter',
+    dailyMissedSubject,
+  );
+  setDailyClassOverlayOpen(true);
+  qs<HTMLInputElement>('#daily-total-classes')?.focus();
+}
+
+function renderDailyMissedList(): void {
+  const list = qs<HTMLElement>('#daily-missed-list');
+  const summary = qs<HTMLElement>('#daily-missed-summary');
+  const finishBtn = qs<HTMLButtonElement>('#daily-finish-btn');
+  if (summary) {
+    summary.textContent = `You missed ${dailyMissTarget} class${dailyMissTarget === 1 ? '' : 'es'}. Added ${dailyMissAssigned}/${dailyMissTarget} to backlog.`;
+  }
+  if (finishBtn) finishBtn.disabled = dailyMissAssigned < dailyMissTarget;
+  if (!list) return;
+  const todayItems = getBacklogs()
+    .filter((item) => item.createdFrom === 'daily-check')
+    .slice(-dailyMissAssigned)
+    .reverse();
+  list.innerHTML = todayItems.length
+    ? todayItems
+        .map(
+          (item) => `<div class="list-item">
+            <div class="info">
+              <div class="title backlog-chapter-title">${escapeHTML(item.chapterName || item.name)}</div>
+              <div class="meta">${escapeHTML(item.bookName || item.subject || '')}</div>
+            </div>
+            <span class="tag tag-green">+1</span>
+          </div>`,
+        )
+        .join('')
+    : `<div class="empty" style="padding:12px">Add each missed class to an NCERT chapter.</div>`;
+}
+
+function finishDailyCheck(): void {
+  completeDailyClassCheck({ ...dailyAttendanceDraft, assignedBacklog: dailyMissAssigned });
+  setDailyClassOverlayOpen(false);
+  renderBacklogs();
+  updateDashboard();
+  showCelebrate('Daily Check-in Done', 'Your backlog is updated for today.', '🌙');
+}
+
 function downloadBackup() {
   createLocalBackup();
   const blob = new Blob([JSON.stringify(exportAll(), null, 2)], { type: 'application/json' });
@@ -903,7 +1300,9 @@ function updateDashboard() {
   // Priority section
   const dp = qs<HTMLElement>('#dash-priority');
   if (dp) {
-    const inc = data.backlogs.filter((b) => (b.done || 0) < (b.total || 0));
+    const inc = data.backlogs
+      .filter((b) => (b.done || 0) < (b.total || 0))
+      .sort((a, b) => (b.total || 0) - (b.done || 0) - ((a.total || 0) - (a.done || 0)));
     const ht = data.habits.filter((h) => !h.today);
     let html = '';
 
@@ -911,10 +1310,16 @@ function updateDashboard() {
       const remaining = (inc[0].total || 0) - (inc[0].done || 0);
       const remainingText = t('backlog.lectures_remaining', { count: remaining });
       const urgentTag = t('backlog.urgent');
-      html += `<div class="list-item"><div class="info"><div class="title">${escapeHTML(inc[0].name)}</div><div class="meta">${escapeHTML(remainingText)}</div></div><span class="tag tag-red">${escapeHTML(urgentTag)}</span></div>`;
+      const priorityTitle = inc[0].chapterName || inc[0].name;
+      const priorityMeta = [inc[0].subjectLabel || inc[0].subject, inc[0].bookName, remainingText]
+        .filter(Boolean)
+        .join(' · ');
+      html += `<div class="list-item"><div class="info"><div class="title backlog-chapter-title">${escapeHTML(priorityTitle)}</div><div class="meta">${escapeHTML(priorityMeta)}</div></div><span class="tag tag-red">${escapeHTML(urgentTag)}</span></div>`;
     }
     if (ht.length > 0 && ht[0]) {
-      const anchorText = t('plan.after_anchor', { anchor: escapeHTML(ht[0].anchor || 'waking up') });
+      const anchorText = t('plan.after_anchor', {
+        anchor: escapeHTML(ht[0].anchor || 'waking up'),
+      });
       const nextTag = t('plan.next_tag');
       html += `<div class="list-item"><div class="info"><div class="title">${escapeHTML(ht[0].name)}</div><div class="meta">${anchorText}</div></div><span class="tag tag-blue">${escapeHTML(nextTag)}</span></div>`;
     }
@@ -1245,6 +1650,149 @@ function setupEventListeners() {
     confirmLanguagePick();
   });
 
+  // Student academic setup
+  qs<HTMLElement>('#academic-save-btn')?.addEventListener('click', () => {
+    const name = qs<HTMLInputElement>('#student-name')?.value || data.profileName || '';
+    const country = qs<HTMLInputElement>('#student-country')?.value || 'India';
+    const classLevel = parseInt(qs<HTMLSelectElement>('#student-class')?.value || '10', 10);
+    const medium = (qs<HTMLSelectElement>('#student-medium')?.value ||
+      'English') as StudentProfile['medium'];
+    const secondLanguage = (qs<HTMLSelectElement>('#student-second-language')?.value ||
+      'hindi-b') as SecondLanguageChoice;
+    const attendsCoaching = (qs<HTMLSelectElement>('#student-coaching')?.value || 'yes') === 'yes';
+    const result = saveStudentProfile({
+      name,
+      country,
+      classLevel,
+      medium,
+      secondLanguage,
+      attendsCoaching,
+    });
+    if (!result.success) {
+      setFormMessage('academic-message', result.error || 'Check your details.', 'error');
+      return;
+    }
+    setFormMessage('academic-message');
+    renderProfile();
+    renderBacklogControls();
+    if (result.profile?.syllabusPackId === 'india-ncert-class-10') {
+      showAcademicStep('backlog');
+    } else {
+      completeInitialBacklogSetup();
+      setAcademicOverlayOpen(false);
+      showCelebrate('Study Setup Saved', 'Manual backlog mode is ready.', '🎒');
+      maybeOpenDailyClassCheck();
+    }
+  });
+
+  qs<HTMLSelectElement>('#setup-backlog-subject')?.addEventListener('change', (event) => {
+    setupBacklogSubject = (event.currentTarget as HTMLSelectElement).value || 'Physics';
+    const chapterSelect = qs<HTMLSelectElement>('#setup-backlog-chapter');
+    if (chapterSelect) updateChapterSelect(event.currentTarget as HTMLSelectElement, chapterSelect);
+  });
+
+  qs<HTMLElement>('#setup-add-backlog-btn')?.addEventListener('click', () => {
+    const input = backlogInputFromControls(
+      'setup-backlog-subject',
+      'setup-backlog-chapter',
+      'setup-backlog-count',
+      undefined,
+      'initial-setup',
+    );
+    if (!input) return;
+    const result = addBacklog(input);
+    if (!result.success) {
+      showCelebrate('Missing Info', result.error || 'Enter lecture count', '⚠️', true);
+      return;
+    }
+    const count = qs<HTMLInputElement>('#setup-backlog-count');
+    if (count) count.value = '';
+    renderSetupBacklogPreview();
+    renderBacklogs();
+    updateDashboard();
+  });
+
+  qs<HTMLElement>('#setup-finish-btn')?.addEventListener('click', () => {
+    completeInitialBacklogSetup();
+    setAcademicOverlayOpen(false);
+    renderBacklogs();
+    updateDashboard();
+    showCelebrate('NCERT Loaded', 'Your Class 10 backlog tracker is ready.', '📚');
+    maybeOpenDailyClassCheck();
+  });
+
+  // Daily class check-in
+  qs<HTMLElement>('#daily-skip-btn')?.addEventListener('click', () => {
+    skipDailyClassCheck();
+    setDailyClassOverlayOpen(false);
+  });
+  qs<HTMLElement>('#daily-missed-skip-btn')?.addEventListener('click', () => {
+    skipDailyClassCheck();
+    setDailyClassOverlayOpen(false);
+  });
+  qs<HTMLElement>('#daily-attendance-next-btn')?.addEventListener('click', () => {
+    const total = parseInt(qs<HTMLInputElement>('#daily-total-classes')?.value || '', 10);
+    const attended = parseInt(qs<HTMLInputElement>('#daily-attended-classes')?.value || '', 10);
+    const result = validateDailyAttendance(total, attended);
+    if (!result.success) {
+      setFormMessage('daily-class-message', result.error || 'Check class numbers.', 'error');
+      return;
+    }
+    setFormMessage('daily-class-message');
+    dailyAttendanceDraft = {
+      totalHeld: result.totalHeld || 0,
+      attended: result.attended || 0,
+      missed: result.missed || 0,
+    };
+    dailyMissTarget = result.missed || 0;
+    dailyMissAssigned = 0;
+    if (dailyMissTarget <= 0) {
+      finishDailyCheck();
+      return;
+    }
+    qs<HTMLElement>('#daily-attendance-step')?.classList.add('hidden');
+    qs<HTMLElement>('#daily-missed-step')?.classList.remove('hidden');
+    populateSubjectChapterControls(
+      'daily-missed-subject',
+      'daily-missed-chapter',
+      dailyMissedSubject,
+    );
+    renderDailyMissedList();
+  });
+
+  qs<HTMLSelectElement>('#daily-missed-subject')?.addEventListener('change', (event) => {
+    dailyMissedSubject = (event.currentTarget as HTMLSelectElement).value || 'Physics';
+    const chapterSelect = qs<HTMLSelectElement>('#daily-missed-chapter');
+    if (chapterSelect) updateChapterSelect(event.currentTarget as HTMLSelectElement, chapterSelect);
+  });
+
+  qs<HTMLElement>('#daily-add-missed-btn')?.addEventListener('click', () => {
+    if (dailyMissAssigned >= dailyMissTarget) return;
+    const input = backlogInputFromControls(
+      'daily-missed-subject',
+      'daily-missed-chapter',
+      'daily-total-classes',
+      undefined,
+      'daily-check',
+      1,
+    );
+    if (!input) return;
+    const result = addBacklog(input);
+    if (!result.success) {
+      showCelebrate('Missing Info', result.error || 'Choose subject and chapter', '⚠️', true);
+      return;
+    }
+    dailyMissAssigned += 1;
+    renderDailyMissedList();
+    renderBacklogs();
+    updateDashboard();
+  });
+
+  qs<HTMLElement>('#daily-finish-btn')?.addEventListener('click', () => {
+    if (dailyMissAssigned < dailyMissTarget) return;
+    finishDailyCheck();
+  });
+
   // Account start screen. All handlers are attached here (no inline JS).
   qs<HTMLElement>('#email-login-btn')?.addEventListener('click', () => openEmailAuth('signin'));
   qs<HTMLElement>('#create-account-btn')?.addEventListener('click', () => openEmailAuth('signup'));
@@ -1318,6 +1866,7 @@ function setupEventListeners() {
         markWelcomeSeen();
         // First-run only: let the user pick their in-app language once.
         if (!hasChosenLanguage()) openLanguagePicker();
+        else maybeOpenPostLoginSetup();
       }
     } catch {
       const message = 'Something went wrong. Please try again.';
@@ -1384,11 +1933,13 @@ function setupEventListeners() {
     markWelcomeSeen();
     // First-run only: pick the in-app language, then celebrate the start.
     if (!hasChosenLanguage()) {
-      openLanguagePicker(() =>
-        showCelebrate('Welcome', `Ready when you are, ${data.profileName}.`, '🧠'),
-      );
+      openLanguagePicker(() => {
+        showCelebrate('Welcome', `Ready when you are, ${data.profileName}.`, '🧠');
+        maybeOpenPostLoginSetup();
+      });
     } else {
       showCelebrate('Welcome', `Ready when you are, ${data.profileName}.`, '🧠');
+      maybeOpenPostLoginSetup();
     }
   });
 
@@ -1561,26 +2112,24 @@ function setupEventListeners() {
     }
   });
 
-  // Backlog subject chips
-  qsa<HTMLElement>('#bl-chip-row .chip').forEach((chip) => {
-    chip.addEventListener('click', () => {
-      qsa<HTMLElement>('#bl-chip-row .chip').forEach((c) => c.classList.remove('active'));
-      chip.classList.add('active');
-      selectedBacklogSubject = (chip as HTMLElement).dataset.sub || 'Physics';
-      const input = qs<HTMLInputElement>('#bl-subject');
-      if (input) input.value = selectedBacklogSubject;
-    });
+  // Backlog subject/chapter selectors
+  qs<HTMLSelectElement>('#bl-subject')?.addEventListener('change', (event) => {
+    selectedBacklogSubject = (event.currentTarget as HTMLSelectElement).value || 'Physics';
+    const chapterSelect = qs<HTMLSelectElement>('#bl-chapter');
+    if (chapterSelect) updateChapterSelect(event.currentTarget as HTMLSelectElement, chapterSelect);
   });
 
   // Add backlog
   qs<HTMLElement>('#bl-add-btn')?.addEventListener('click', () => {
-    const name = (qs<HTMLInputElement>('#bl-name')?.value || '') as string;
-    const countStr = (qs<HTMLInputElement>('#bl-count')?.value || '') as string;
-    const result = addBacklog({
-      name,
-      count: parseInt(countStr, 10),
-      subject: selectedBacklogSubject,
-    });
+    const input = backlogInputFromControls(
+      'bl-subject',
+      'bl-chapter',
+      'bl-count',
+      'bl-name',
+      'manual',
+    );
+    if (!input) return;
+    const result = addBacklog(input);
     if (!result.success) {
       showCelebrate('Missing Info', result.error || 'Enter details', '⚠️', true);
       return;
@@ -1766,7 +2315,8 @@ function updateTrophyModal() {
   let html = `<div class="category-label">${escapeHTML(t('trophy.category_ranks'))}</div><div class="badge-grid">`;
   html += RANK_TIERS.map((tTier) => {
     const isUnlocked = unlocked.includes(`rank_${tTier.level}`);
-    const progress = info.level >= tTier.level ? 100 : Math.max(0, (info.level / tTier.level) * 100);
+    const progress =
+      info.level >= tTier.level ? 100 : Math.max(0, (info.level / tTier.level) * 100);
     const descText = isUnlocked
       ? t('rank.level_reached', { level: tTier.level })
       : t('rank.level_to_unlock', { level: tTier.level });
@@ -1958,6 +2508,14 @@ function init() {
   }
   renderAccountSettings();
   renderSettingsLanguageList();
+  window.setInterval(() => {
+    try {
+      maybeOpenDailyClassCheck();
+    } catch {}
+  }, 60_000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) maybeOpenDailyClassCheck();
+  });
   // Restore a returning account without blocking offline startup.
   void restoreAuthSession().then(async (user) => {
     if (!user) {

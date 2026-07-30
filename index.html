@@ -58,8 +58,8 @@
               Turn studying into a game
             </h1>
             <p class="welcome-subtitle" id="welcome-subtitle" data-i18n="welcome.subtitle">
-              Every session you focus earns XP. Keep your streak, level up your rank, and clear
-              your exam backlog — one win at a time.
+              Every session you focus earns XP. Keep your streak, level up your rank, and clear your
+              exam backlog — one win at a time.
             </p>
           </header>
 
@@ -137,12 +137,19 @@
             >
             <span class="welcome-chip"
               >✦
-              <span data-i18n="welcome.chip_private">Private — data stays on your device</span></span
+              <span data-i18n="welcome.chip_private"
+                >Private — data stays on your device</span
+              ></span
             >
           </div>
 
           <footer>
-            <button class="btn btn-block" id="welcome-cta-btn" type="button" data-i18n="welcome.cta">
+            <button
+              class="btn btn-block"
+              id="welcome-cta-btn"
+              type="button"
+              data-i18n="welcome.cta"
+            >
               Get started — it's free
             </button>
             <p class="welcome-cta-note" data-i18n="welcome.cta_note">
@@ -224,7 +231,12 @@
           </div>
 
           <div class="auth-choice-actions" aria-label="Account options">
-            <button class="btn btn-block" id="email-login-btn" type="button" data-i18n="auth.sign_in">
+            <button
+              class="btn btn-block"
+              id="email-login-btn"
+              type="button"
+              data-i18n="auth.sign_in"
+            >
               Sign in
             </button>
             <button
@@ -391,6 +403,195 @@
       </div>
     </div>
 
+    <!-- Student academic setup: shown once after login/language. -->
+    <div
+      class="overlay center hidden"
+      id="academic-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="academic-title"
+      aria-describedby="academic-subtitle"
+    >
+      <div class="modal academic-modal">
+        <div class="academic-shell">
+          <header class="academic-header">
+            <div class="academic-icon" aria-hidden="true">🎒</div>
+            <p class="academic-kicker">Student setup</p>
+            <h1 class="academic-title" id="academic-title">Set up your Class 10 study tracker</h1>
+            <p class="academic-subtitle" id="academic-subtitle">
+              We use these details to load the right syllabus and show your backlog chapter-wise.
+            </p>
+          </header>
+
+          <section id="academic-profile-step" class="academic-step">
+            <div class="academic-grid">
+              <label class="field-label" for="student-name">Student name</label>
+              <input
+                class="input"
+                id="student-name"
+                maxlength="30"
+                autocomplete="name"
+                placeholder="Your name"
+              />
+
+              <label class="field-label" for="student-country">Country</label>
+              <input
+                class="input"
+                id="student-country"
+                maxlength="60"
+                value="India"
+                placeholder="Country name"
+              />
+
+              <label class="field-label" for="student-class">Class</label>
+              <select class="input" id="student-class">
+                <option value="10">Class 10</option>
+                <option value="9">Class 9</option>
+                <option value="11">Class 11</option>
+                <option value="12">Class 12</option>
+                <option value="8">Class 8 or below</option>
+              </select>
+
+              <label class="field-label" for="student-medium">Medium</label>
+              <select class="input" id="student-medium">
+                <option value="English">English</option>
+                <option value="Hindi">Hindi</option>
+                <option value="Other">Other</option>
+              </select>
+
+              <label class="field-label" for="student-second-language">Second language</label>
+              <select class="input" id="student-second-language">
+                <option value="hindi-b">Hindi Course B</option>
+                <option value="hindi-a">Hindi Course A</option>
+                <option value="sanskrit">Sanskrit</option>
+                <option value="urdu">Urdu</option>
+                <option value="other">Other / Not listed</option>
+                <option value="none">No second language</option>
+              </select>
+
+              <label class="field-label" for="student-coaching">Do you attend coaching?</label>
+              <select class="input" id="student-coaching">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <p class="academic-note" id="academic-profile-note">
+              If Country = India and Class = 10, the app automatically loads strict NCERT Class 10
+              content.
+            </p>
+            <p class="auth-message" id="academic-message" role="status" aria-live="polite"></p>
+            <button class="btn btn-block" id="academic-save-btn" type="button">
+              Continue to backlog setup
+            </button>
+          </section>
+
+          <section id="academic-backlog-step" class="academic-step hidden">
+            <div class="study-pack-banner">
+              <div class="study-pack-icon" aria-hidden="true">📚</div>
+              <div>
+                <div class="study-pack-title">NCERT Class 10 syllabus loaded</div>
+                <div class="study-pack-sub">
+                  Add only chapters where you already have backlog. You can finish with zero backlog
+                  too.
+                </div>
+              </div>
+            </div>
+            <div class="input-row mb-3">
+              <select class="input" id="setup-backlog-subject" aria-label="Setup subject"></select>
+              <select class="input" id="setup-backlog-chapter" aria-label="Setup chapter"></select>
+              <input
+                class="input short"
+                id="setup-backlog-count"
+                type="number"
+                min="1"
+                max="9999"
+                placeholder="Lectures"
+              />
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-ghost" id="setup-add-backlog-btn" type="button">
+                Add chapter
+              </button>
+              <button class="btn" id="setup-finish-btn" type="button">Finish setup</button>
+            </div>
+            <div id="setup-backlog-preview" class="mt-4"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daily 9 PM class check-in: appears once per day only. -->
+    <div
+      class="overlay center hidden"
+      id="daily-class-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="daily-class-title"
+      aria-describedby="daily-class-subtitle"
+    >
+      <div class="modal academic-modal">
+        <div class="academic-shell">
+          <header class="academic-header">
+            <div class="academic-icon" aria-hidden="true">🌙</div>
+            <p class="academic-kicker">Daily 9 PM check-in</p>
+            <h1 class="academic-title" id="daily-class-title">Any new backlog today?</h1>
+            <p class="academic-subtitle" id="daily-class-subtitle">
+              Answer once. If you skip, we will not ask again today.
+            </p>
+          </header>
+
+          <section id="daily-attendance-step" class="academic-step">
+            <div class="academic-grid">
+              <label class="field-label" for="daily-total-classes">Total classes held today</label>
+              <input
+                class="input"
+                id="daily-total-classes"
+                type="number"
+                min="0"
+                max="20"
+                inputmode="numeric"
+              />
+
+              <label class="field-label" for="daily-attended-classes"
+                >How many did you attend?</label
+              >
+              <input
+                class="input"
+                id="daily-attended-classes"
+                type="number"
+                min="0"
+                max="20"
+                inputmode="numeric"
+              />
+            </div>
+            <p class="auth-message" id="daily-class-message" role="status" aria-live="polite"></p>
+            <div class="btn-group">
+              <button class="btn btn-ghost" id="daily-skip-btn" type="button">Skip today</button>
+              <button class="btn" id="daily-attendance-next-btn" type="button">Continue</button>
+            </div>
+          </section>
+
+          <section id="daily-missed-step" class="academic-step hidden">
+            <p class="academic-note" id="daily-missed-summary"></p>
+            <div class="input-row mb-3">
+              <select class="input" id="daily-missed-subject" aria-label="Missed subject"></select>
+              <select class="input" id="daily-missed-chapter" aria-label="Missed chapter"></select>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-ghost" id="daily-missed-skip-btn" type="button">
+                Skip today
+              </button>
+              <button class="btn" id="daily-add-missed-btn" type="button">Add missed class</button>
+            </div>
+            <div id="daily-missed-list" class="mt-4"></div>
+            <button class="btn btn-block mt-3" id="daily-finish-btn" type="button" disabled>
+              Finish daily check-in
+            </button>
+          </section>
+        </div>
+      </div>
+    </div>
+
     <!-- Header -->
     <header class="header" id="app-header">
       <div class="brand">
@@ -398,7 +599,14 @@
         <div class="brand-text">Neuro<span>Focus</span></div>
       </div>
       <div class="header-actions">
-        <button class="icon-btn" id="settings-btn" title="Settings" data-i18n-aria-label="settings.title">≡</button>
+        <button
+          class="icon-btn"
+          id="settings-btn"
+          title="Settings"
+          data-i18n-aria-label="settings.title"
+        >
+          ≡
+        </button>
       </div>
     </header>
 
@@ -489,7 +697,10 @@
           <div class="line"></div>
         </div>
         <div class="card" id="ritual-card">
-          <div style="font-size: var(--font-sm); font-weight: 700; margin-bottom: 4px" data-i18n="home.ritual_prime_title">
+          <div
+            style="font-size: var(--font-sm); font-weight: 700; margin-bottom: 4px"
+            data-i18n="home.ritual_prime_title"
+          >
             Prime Your Brain
           </div>
           <div
@@ -505,7 +716,9 @@
           <div class="ritual-grid" id="ritual-grid"></div>
           <div class="ritual-boost hidden" id="ritual-boost">
             <span style="font-size: 1.1rem">⚡</span>
-            <div class="ritual-boost-text" data-i18n="home.ritual_boost_active">2x XP Boost Active</div>
+            <div class="ritual-boost-text" data-i18n="home.ritual_boost_active">
+              2x XP Boost Active
+            </div>
           </div>
         </div>
 
@@ -608,7 +821,12 @@
           >
             0 / 7 checks
           </div>
-          <button class="btn btn-gold btn-block mt-3" id="claim-btn" data-i18n="home.claim_streak" disabled>
+          <button
+            class="btn btn-gold btn-block mt-3"
+            id="claim-btn"
+            data-i18n="home.claim_streak"
+            disabled
+          >
             🔥 Claim Streak
           </button>
         </div>
@@ -649,11 +867,14 @@
           </div>
           <div class="week-bar-wrap" id="week-bar-wrap"></div>
           <div class="week-total">
-            <div class="week-total-text" data-i18n="home.wk_activity_score">This Week's Activity Score</div>
+            <div class="week-total-text" data-i18n="home.wk_activity_score">
+              This Week's Activity Score
+            </div>
             <div class="week-total-num" id="week-total-num">0</div>
           </div>
           <div class="tip" style="margin-top: 10px">
-            <strong data-i18n="home.wk_tip_strong">Consistency beats intensity.</strong> <span data-i18n="home.wk_tip_body">A little every day rewires your brain.</span>
+            <strong data-i18n="home.wk_tip_strong">Consistency beats intensity.</strong>
+            <span data-i18n="home.wk_tip_body">A little every day rewires your brain.</span>
           </div>
         </div>
       </section>
@@ -664,7 +885,10 @@
           <span data-i18n="detox.protocol">🧘 Protocol</span>
           <div class="line"></div>
         </div>
-        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px" data-i18n="detox.title">
+        <div
+          style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px"
+          data-i18n="detox.title"
+        >
           Neural Reset Protocol
         </div>
         <div
@@ -681,7 +905,12 @@
 
         <div class="card">
           <div class="flex justify-between items-center mb-2">
-            <div style="font-weight: 700; font-size: var(--font-base)" data-i18n="detox.urge_surfing">Urge Surfing</div>
+            <div
+              style="font-weight: 700; font-size: var(--font-base)"
+              data-i18n="detox.urge_surfing"
+            >
+              Urge Surfing
+            </div>
             <span class="tag tag-blue" data-i18n="detox.urge_time">20 min</span>
           </div>
           <div
@@ -716,39 +945,58 @@
               </svg>
               <div class="timer-text">
                 <div class="timer-digits" id="urge-timer">20:00</div>
-                <div class="timer-label" id="urge-timer-label" data-i18n="detox.urge_timer">Urge Timer</div>
+                <div class="timer-label" id="urge-timer-label" data-i18n="detox.urge_timer">
+                  Urge Timer
+                </div>
               </div>
             </div>
           </div>
           <div class="btn-group">
-            <button class="btn btn-block" id="urge-start-btn" data-i18n="detox.start_surf">Start Surf</button>
-            <button class="btn btn-ghost btn-block" id="urge-reset-btn" data-i18n="detox.reset">Reset</button>
+            <button class="btn btn-block" id="urge-start-btn" data-i18n="detox.start_surf">
+              Start Surf
+            </button>
+            <button class="btn btn-ghost btn-block" id="urge-reset-btn" data-i18n="detox.reset">
+              Reset
+            </button>
           </div>
         </div>
 
         <div class="card">
-          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)" data-i18n="detox.replacements">
+          <div
+            style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)"
+            data-i18n="detox.replacements"
+          >
             Replacement Activities
           </div>
           <div class="check-row" style="cursor: default">
             <span style="font-size: 1.1rem">🚶</span>
-            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_walk">Walk without phone</span>
+            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_walk"
+              >Walk without phone</span
+            >
           </div>
           <div class="check-row" style="cursor: default">
             <span style="font-size: 1.1rem">🚿</span>
-            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_shower">Cold shower</span>
+            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_shower"
+              >Cold shower</span
+            >
           </div>
           <div class="check-row" style="cursor: default">
             <span style="font-size: 1.1rem">📝</span>
-            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_journal">Journal your "Why"</span>
+            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_journal"
+              >Journal your "Why"</span
+            >
           </div>
           <div class="check-row" style="cursor: default">
             <span style="font-size: 1.1rem">📖</span>
-            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_books">Read physical books</span>
+            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_books"
+              >Read physical books</span
+            >
           </div>
           <div class="check-row" style="cursor: default">
             <span style="font-size: 1.1rem">🧘</span>
-            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_meditate">Meditate 10 min</span>
+            <span style="font-size: var(--font-sm); font-weight: 500" data-i18n="detox.act_meditate"
+              >Meditate 10 min</span
+            >
           </div>
         </div>
       </section>
@@ -759,7 +1007,10 @@
           <span data-i18n="backlog.work">📚 Work</span>
           <div class="line"></div>
         </div>
-        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px" data-i18n="backlog.title">
+        <div
+          style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px"
+          data-i18n="backlog.title"
+        >
           Backlog Blaster
         </div>
         <div
@@ -775,10 +1026,22 @@
         </div>
 
         <div class="card">
+          <div class="study-pack-banner" id="study-pack-banner">
+            <div class="study-pack-icon" aria-hidden="true">🇮🇳</div>
+            <div>
+              <div class="study-pack-title">Class 10 NCERT mode</div>
+              <div class="study-pack-sub" id="study-pack-sub">
+                Select subject → chapter → lectures remaining. Only NCERT chapters are used.
+              </div>
+            </div>
+          </div>
+
           <div class="input-row mb-3">
+            <select class="input" id="bl-subject" aria-label="Subject"></select>
+            <select class="input" id="bl-chapter" aria-label="NCERT chapter"></select>
             <input
               type="text"
-              class="input flex-1"
+              class="input hidden"
               id="bl-name"
               placeholder="Topic (e.g., Rotational Motion)"
               data-i18n-placeholder="backlog.ph_name"
@@ -794,31 +1057,9 @@
               max="9999"
             />
           </div>
-          <div
-            style="
-              font-size: var(--font-xs);
-              font-weight: 700;
-              color: var(--text-secondary);
-              margin-bottom: var(--space-2);
-              text-transform: uppercase;
-              letter-spacing: 0.06em;
-            "
-            data-i18n="backlog.select_subject"
-          >
-            Select Subject
-          </div>
-          <div class="chip-row" id="bl-chip-row">
-            <span class="tag tag-blue chip active" data-sub="Physics" data-i18n="subject.Physics">Physics</span>
-            <span class="tag tag-red chip" data-sub="Chemistry" data-i18n="subject.Chemistry">Chemistry</span>
-            <span class="tag tag-gold chip" data-sub="Math" data-i18n="subject.Math">Math</span>
-            <span class="tag tag-green chip" data-sub="Biology" data-i18n="subject.Biology">Biology</span>
-            <span class="tag tag-hindi chip" data-sub="Hindi" data-i18n="subject.Hindi">Hindi</span>
-            <span class="tag tag-english chip" data-sub="English" data-i18n="subject.English">English</span>
-            <span class="tag tag-it chip" data-sub="IT" data-i18n="subject.IT">IT</span>
-            <span class="tag chip" data-sub="Other" data-i18n="subject.Other">Other</span>
-          </div>
-          <input type="hidden" id="bl-subject" value="Physics" />
-          <button class="btn btn-block" id="bl-add-btn" data-i18n="backlog.add_btn">Add Backlog (+10 XP)</button>
+          <button class="btn btn-block" id="bl-add-btn" data-i18n="backlog.add_btn">
+            Add Backlog (+10 XP)
+          </button>
           <div id="backlog-list" class="mt-4"></div>
         </div>
       </section>
@@ -829,7 +1070,12 @@
           <span data-i18n="focus.label">⏱️ Focus</span>
           <div class="line"></div>
         </div>
-        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px" data-i18n="focus.title">Deep Work</div>
+        <div
+          style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px"
+          data-i18n="focus.title"
+        >
+          Deep Work
+        </div>
         <div
           style="
             font-size: var(--font-sm);
@@ -844,9 +1090,15 @@
 
         <div class="card" style="text-align: center">
           <div class="timer-modes">
-            <button class="timer-chip active" data-mode="0" id="mode-25" data-i18n="focus.mode_25">25 min</button>
-            <button class="timer-chip" data-mode="1" id="mode-52" data-i18n="focus.mode_52">52 min</button>
-            <button class="timer-chip" data-mode="2" id="mode-90" data-i18n="focus.mode_90">90 min</button>
+            <button class="timer-chip active" data-mode="0" id="mode-25" data-i18n="focus.mode_25">
+              25 min
+            </button>
+            <button class="timer-chip" data-mode="1" id="mode-52" data-i18n="focus.mode_52">
+              52 min
+            </button>
+            <button class="timer-chip" data-mode="2" id="mode-90" data-i18n="focus.mode_90">
+              90 min
+            </button>
           </div>
           <div class="timer-wrap">
             <div class="timer-ring-wrap">
@@ -875,36 +1127,55 @@
           </div>
           <div class="btn-group" style="max-width: 320px; margin: 0 auto">
             <button class="btn" id="focus-btn" data-i18n="focus.start">Start</button>
-            <button class="btn btn-ghost" id="focus-reset-btn" data-i18n="focus.reset">Reset</button>
+            <button class="btn btn-ghost" id="focus-reset-btn" data-i18n="focus.reset">
+              Reset
+            </button>
           </div>
         </div>
 
         <div class="card">
-          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)" data-i18n="focus.checklist_title">
+          <div
+            style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)"
+            data-i18n="focus.checklist_title"
+          >
             Focus Checklist
           </div>
           <div class="check-row">
-            <input type="checkbox" id="f1" /><label data-i18n="focus.chk1">Phone in another room</label>
+            <input type="checkbox" id="f1" /><label data-i18n="focus.chk1"
+              >Phone in another room</label
+            >
           </div>
           <div class="check-row">
-            <input type="checkbox" id="f2" /><label data-i18n="focus.chk2">Only 1 browser tab</label>
+            <input type="checkbox" id="f2" /><label data-i18n="focus.chk2"
+              >Only 1 browser tab</label
+            >
           </div>
           <div class="check-row">
             <input type="checkbox" id="f3" /><label data-i18n="focus.chk3">Notifications OFF</label>
           </div>
           <div class="check-row">
-            <input type="checkbox" id="f4" /><label data-i18n="focus.chk4">Water + notebook ready</label>
+            <input type="checkbox" id="f4" /><label data-i18n="focus.chk4"
+              >Water + notebook ready</label
+            >
           </div>
           <div class="check-row">
-            <input type="checkbox" id="f5" /><label data-i18n="focus.chk5">Specific task written</label>
+            <input type="checkbox" id="f5" /><label data-i18n="focus.chk5"
+              >Specific task written</label
+            >
           </div>
           <div class="tip">
-            <strong data-i18n="focus.tip_strong">Specificity beats motivation.</strong> <span data-i18n="focus.tip_body">Vague tasks trigger procrastination. Write exactly what you will do.</span>
+            <strong data-i18n="focus.tip_strong">Specificity beats motivation.</strong>
+            <span data-i18n="focus.tip_body"
+              >Vague tasks trigger procrastination. Write exactly what you will do.</span
+            >
           </div>
         </div>
 
         <div class="card" id="focus-history-card">
-          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)" data-i18n="focus.recent_sessions">
+          <div
+            style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)"
+            data-i18n="focus.recent_sessions"
+          >
             Recent Sessions
           </div>
           <div id="focus-history">
@@ -921,7 +1192,10 @@
           <span data-i18n="plan.label">🎯 Plan</span>
           <div class="line"></div>
         </div>
-        <div style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px" data-i18n="plan.title">
+        <div
+          style="font-size: var(--font-lg); font-weight: 700; margin-bottom: 4px"
+          data-i18n="plan.title"
+        >
           Growth Plan
         </div>
         <div
@@ -937,7 +1211,10 @@
         </div>
 
         <div class="card">
-          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)" data-i18n="plan.habit_forge">
+          <div
+            style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)"
+            data-i18n="plan.habit_forge"
+          >
             Habit Forge (+15 XP)
           </div>
           <div class="input-row mb-3">
@@ -963,7 +1240,10 @@
         </div>
 
         <div class="card">
-          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)" data-i18n="plan.battle_plan">
+          <div
+            style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)"
+            data-i18n="plan.battle_plan"
+          >
             Battle Plan
           </div>
           <div class="input-row mb-3">
@@ -991,23 +1271,34 @@
         </div>
 
         <div class="card">
-          <div style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)" data-i18n="plan.evening_review">
+          <div
+            style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)"
+            data-i18n="plan.evening_review"
+          >
             Evening Review
           </div>
           <div class="check-row">
             <input type="checkbox" id="e1" /><label data-i18n="plan.rev1">3 wins from today</label>
           </div>
           <div class="check-row">
-            <input type="checkbox" id="e2" /><label data-i18n="plan.rev2">Biggest time-waster</label>
+            <input type="checkbox" id="e2" /><label data-i18n="plan.rev2"
+              >Biggest time-waster</label
+            >
           </div>
           <div class="check-row">
-            <input type="checkbox" id="e3" /><label data-i18n="plan.rev3">Tomorrow's improvement</label>
+            <input type="checkbox" id="e3" /><label data-i18n="plan.rev3"
+              >Tomorrow's improvement</label
+            >
           </div>
           <div class="check-row">
-            <input type="checkbox" id="e4" /><label data-i18n="plan.rev4">Detox rules followed</label>
+            <input type="checkbox" id="e4" /><label data-i18n="plan.rev4"
+              >Detox rules followed</label
+            >
           </div>
           <div class="check-row">
-            <input type="checkbox" id="e5" /><label data-i18n="plan.rev5">Proud of today's effort</label>
+            <input type="checkbox" id="e5" /><label data-i18n="plan.rev5"
+              >Proud of today's effort</label
+            >
           </div>
         </div>
       </section>
@@ -1095,11 +1386,16 @@
               <div class="profile-info">
                 <div class="profile-name" id="profile-name">Warrior</div>
                 <div class="profile-rank" id="profile-rank">Initiate · Level 1</div>
-                <div class="sync-status online" id="sync-status" data-i18n="settings.auto_saved">💾 Auto-saved locally</div>
+                <div class="sync-status online" id="sync-status" data-i18n="settings.auto_saved">
+                  💾 Auto-saved locally
+                </div>
               </div>
             </div>
             <div class="profile-mission" id="profile-mission">
               I am building discipline to score 100% and master my skills.
+            </div>
+            <div class="profile-study-info" id="profile-study-info">
+              Study setup not completed yet.
             </div>
             <div class="input-row mt-3">
               <input
@@ -1119,7 +1415,11 @@
                 Save
               </button>
             </div>
-            <button class="btn btn-ghost btn-sm btn-block mt-2" id="switch-profile-btn" data-i18n="settings.switch_profile">
+            <button
+              class="btn btn-ghost btn-sm btn-block mt-2"
+              id="switch-profile-btn"
+              data-i18n="settings.switch_profile"
+            >
               ↪ Switch Profile
             </button>
           </div>
@@ -1146,20 +1446,40 @@
             <div class="line"></div>
           </div>
           <div class="card">
-            <div id="account-status" class="sync-status online" data-i18n="settings.account_local_msg">
+            <div
+              id="account-status"
+              class="sync-status online"
+              data-i18n="settings.account_local_msg"
+            >
               Local only — login recommended to protect progress.
             </div>
             <div id="account-email" class="text-xs text-secondary mt-2"></div>
-            <button class="btn btn-sm btn-block mt-3" id="settings-login-btn" data-i18n="settings.login_protect">
+            <button
+              class="btn btn-sm btn-block mt-3"
+              id="settings-login-btn"
+              data-i18n="settings.login_protect"
+            >
               Login to protect progress
             </button>
-            <button class="btn btn-ghost btn-sm btn-block mt-2 hidden" id="sync-now-btn" data-i18n="settings.sync_now">
+            <button
+              class="btn btn-ghost btn-sm btn-block mt-2 hidden"
+              id="sync-now-btn"
+              data-i18n="settings.sync_now"
+            >
               Sync now
             </button>
-            <button class="btn btn-ghost btn-sm btn-block mt-2" id="export-backup-btn" data-i18n="settings.export_backup">
+            <button
+              class="btn btn-ghost btn-sm btn-block mt-2"
+              id="export-backup-btn"
+              data-i18n="settings.export_backup"
+            >
               Export backup
             </button>
-            <button class="btn btn-ghost btn-sm btn-block mt-2" id="import-backup-btn" data-i18n="settings.restore_backup">
+            <button
+              class="btn btn-ghost btn-sm btn-block mt-2"
+              id="import-backup-btn"
+              data-i18n="settings.restore_backup"
+            >
               Restore from backup
             </button>
             <input
@@ -1169,7 +1489,11 @@
               style="display: none"
             />
             <p id="import-message" class="tip mt-2" aria-live="polite"></p>
-            <button class="btn btn-ghost btn-sm btn-block mt-2 hidden" id="logout-btn" data-i18n="settings.logout">
+            <button
+              class="btn btn-ghost btn-sm btn-block mt-2 hidden"
+              id="logout-btn"
+              data-i18n="settings.logout"
+            >
               Logout
             </button>
           </div>
@@ -1181,7 +1505,10 @@
             <div class="line"></div>
           </div>
           <div class="card">
-            <div style="font-weight: 700; font-size: var(--font-sm); margin-bottom: var(--space-3)" data-i18n="settings.theme_title">
+            <div
+              style="font-weight: 700; font-size: var(--font-sm); margin-bottom: var(--space-3)"
+              data-i18n="settings.theme_title"
+            >
               Theme
             </div>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2)">
@@ -1235,7 +1562,9 @@
                   id="auto-theme"
                   style="width: 18px; height: 18px; accent-color: var(--accent-start)"
                 />
-                <span data-i18n="settings.auto_theme_label">Auto-switch by time (Light 6AM–6PM, Dark 6PM–6AM)</span>
+                <span data-i18n="settings.auto_theme_label"
+                  >Auto-switch by time (Light 6AM–6PM, Dark 6PM–6AM)</span
+                >
               </label>
             </div>
           </div>
@@ -1255,7 +1584,13 @@
               data-i18n-placeholder="settings.ph_mission"
               maxlength="300"
             ></textarea>
-            <button class="btn btn-sm btn-block mt-3" id="save-mission-btn" data-i18n="settings.update_mission">Update Mission</button>
+            <button
+              class="btn btn-sm btn-block mt-3"
+              id="save-mission-btn"
+              data-i18n="settings.update_mission"
+            >
+              Update Mission
+            </button>
           </div>
         </div>
 
@@ -1274,11 +1609,20 @@
                 data-i18n-placeholder="settings.ph_partner_name"
                 maxlength="50"
               />
-              <button class="btn btn-sm btn-block" id="set-buddy-btn" data-i18n="settings.set_partner">Set Partner</button>
+              <button
+                class="btn btn-sm btn-block"
+                id="set-buddy-btn"
+                data-i18n="settings.set_partner"
+              >
+                Set Partner
+              </button>
             </div>
             <div id="settings-buddy-active" class="hidden">
               <div class="flex justify-between items-center mb-2">
-                <div style="font-size: var(--font-sm); font-weight: 700" data-i18n="settings.partner_label">
+                <div
+                  style="font-size: var(--font-sm); font-weight: 700"
+                  data-i18n="settings.partner_label"
+                >
                   Accountability Partner
                 </div>
                 <button
@@ -1296,7 +1640,11 @@
               >
                 None
               </div>
-              <button class="btn btn-ghost btn-block mt-3" id="share-progress-btn" data-i18n="settings.share_progress">
+              <button
+                class="btn btn-ghost btn-block mt-3"
+                id="share-progress-btn"
+                data-i18n="settings.share_progress"
+              >
                 📤 Share Progress
               </button>
             </div>

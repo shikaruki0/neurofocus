@@ -2912,3 +2912,156 @@ body.auth-open {
     flex-direction: column;
   }
 }
+
+/* ===================================================================
+   NeuroFocus product refresh — calm, intentional, desktop-ready UI
+   =================================================================== */
+.brand-icon,
+.welcome-logo,
+.auth-logo,
+.profile-avatar,
+.hero-icon,
+.celebrate-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-icon img,
+.welcome-logo img,
+.auth-logo img,
+.profile-avatar img,
+.hero-icon img,
+.celebrate-emoji img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-icon img { width: 27px; height: 27px; }
+.welcome-logo img { width: 76px; height: 76px; }
+.auth-logo img { width: 84px; height: 84px; }
+.profile-avatar img { width: 42px; height: 42px; }
+.hero-icon { width: 72px; height: 72px; margin-bottom: var(--space-3); }
+.hero-icon img { filter: drop-shadow(0 8px 18px var(--shadow)); }
+
+/* Use the settings drawer as a persistent-feeling workspace panel from the left. */
+.overlay.left {
+  justify-content: flex-start;
+  align-items: stretch;
+  padding: 0;
+}
+.overlay.left .modal {
+  border-radius: 0 var(--radius-2xl) var(--radius-2xl) 0;
+  max-width: 420px;
+  height: 100vh;
+  max-height: 100vh;
+  transform: translateX(-100%);
+  margin: 0 auto 0 0;
+  box-shadow: 20px 0 60px rgba(0, 0, 0, 0.3);
+}
+.overlay.left.show .modal { transform: translateX(0); }
+
+/* Stronger hierarchy and less visual noise on the primary dashboard. */
+.container { max-width: 960px; padding-top: 28px; }
+.header { padding: 14px max(20px, calc((100vw - 960px) / 2)); }
+.brand-text { font-size: 1.1rem; letter-spacing: -0.04em; }
+.card { background: color-mix(in srgb, var(--surface) 92%, transparent); }
+.hero-card { padding: 40px 24px 32px; border-color: color-mix(in srgb, var(--accent-start) 24%, var(--border)); }
+.hero-title { font-size: clamp(1.4rem, 3vw, 2rem); }
+.section-label { margin-top: 32px; color: var(--text-secondary); }
+.xp-card { border-left: 3px solid var(--accent-start); }
+.nav-item { min-height: 50px; }
+
+@media (min-width: 760px) {
+  .container { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
+  .container > .tab-content { grid-column: 1 / -1; }
+  #tab-home { display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px; align-items: start; }
+  #tab-home > .hero-card { grid-column: 1 / -1; }
+  #tab-home > .section-label,
+  #tab-home > #daily-quests,
+  #tab-home > #ritual-card,
+  #tab-home > .stats-grid,
+  #tab-home > #weekly-chart,
+  #tab-home > #streak-card { min-width: 0; }
+  #tab-home > .section-label:nth-of-type(1), #tab-home > #daily-quests { grid-column: 1; }
+  #tab-home > .section-label:nth-of-type(2), #tab-home > #ritual-card { grid-column: 2; }
+  #tab-home > .section-label:nth-of-type(3), #tab-home > .stats-grid { grid-column: 1 / -1; }
+  .bottom-nav { left: 50%; right: auto; transform: translateX(-50%); width: min(680px, calc(100% - 32px)); border: 1px solid var(--border); border-radius: 18px 18px 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-icon { animation: none; }
+}
+.badge-icon img { width: 1.7em; height: 1.7em; object-fit: contain; vertical-align: middle; }
+
+/* v2 visual language: a quiet command center rather than a collection of widgets. */
+.header-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 0.64rem;
+  font-weight: 750;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--surface) 68%, transparent);
+}
+.header-status span { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 10px var(--success); }
+.icon-btn svg, .nav-item svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; position: relative; z-index: 1; }
+.icon-btn svg { width: 20px; height: 20px; }
+
+.hero-card { isolation: isolate; }
+.hero-eyebrow { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text-secondary); font-size: .61rem; font-weight: 800; letter-spacing: .18em; }
+.hero-eyebrow span { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-start); box-shadow: 0 0 12px var(--accent-start); }
+.hero-orbit { position: absolute; border: 1px solid color-mix(in srgb, var(--accent-start) 22%, transparent); border-radius: 50%; pointer-events: none; opacity: .8; }
+.hero-orbit-one { width: 310px; height: 120px; left: 50%; top: 48%; transform: translate(-50%, -50%) rotate(-18deg); }
+.hero-orbit-two { width: 220px; height: 82px; left: 50%; top: 48%; transform: translate(-50%, -50%) rotate(32deg); border-color: color-mix(in srgb, var(--accent-end) 22%, transparent); }
+.nav-item .icon { display: grid; place-items: center; height: 24px; }
+.nav-item.active .icon { transform: translateY(-3px); }
+
+@media (min-width: 760px) {
+  body { padding-left: 94px; padding-bottom: 30px; }
+  .header { padding-left: 28px; padding-right: 28px; }
+  .bottom-nav { top: 0; bottom: 0; left: 0; right: auto; width: 94px; height: 100vh; transform: none; border: 0; border-right: 1px solid var(--border); border-radius: 0; flex-direction: column; justify-content: center; gap: 12px; padding: 24px 10px; }
+  .nav-item { flex: 0 0 auto; width: 72px; max-width: none; padding: 11px 6px; border-radius: 14px; }
+  .nav-item.active { background: linear-gradient(135deg, var(--accent-start-fade), var(--accent-end-fade)); }
+  .nav-item.active::after { display: none; }
+  .container { padding-bottom: 50px; }
+}
+@media (max-width: 520px) { .header-status { display: none; } }
+
+/* Focus Mode — the product's primary, distraction-free experience. */
+#tab-focus { max-width: 900px; margin: 0 auto; }
+.focus-command-strip { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 10px 0 14px; padding: 17px 20px; border: 1px solid var(--border); border-radius: 18px; background: linear-gradient(110deg, color-mix(in srgb, var(--accent-start) 8%, var(--surface)), var(--surface)); box-shadow: var(--shadow-sm); }
+.focus-command-kicker { display: block; color: var(--accent-start); font-size: .6rem; font-weight: 850; letter-spacing: .17em; margin-bottom: 4px; }
+.focus-command-strip strong { font-size: .95rem; letter-spacing: -.02em; }
+.focus-live-badge { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; color: var(--text-secondary); font-size: .7rem; font-weight: 700; }
+.focus-live-badge span:first-child { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 12px var(--success); }
+.focus-session-card { padding: 24px 20px 28px; background: radial-gradient(circle at 50% 40%, var(--accent-start-fade), transparent 46%), var(--surface); border-color: color-mix(in srgb, var(--accent-start) 18%, var(--border)); }
+.focus-session-header { display: flex; align-items: center; gap: 9px; color: var(--text-tertiary); font-size: .58rem; font-weight: 850; letter-spacing: .16em; }
+.focus-session-header span:last-child { color: var(--accent-start); letter-spacing: .04em; }
+.focus-session-line { height: 1px; flex: 1; background: var(--border); }
+.focus-session-card .timer-modes { margin-top: 18px; }
+.focus-session-card .timer-ring-wrap { width: min(280px, 72vw); height: min(280px, 72vw); margin: 5px auto 10px; }
+.focus-session-card .timer-ring-bg, .focus-session-card .timer-ring-fill { stroke-width: 6; }
+.focus-session-card .timer-digits { font-size: clamp(3rem, 8vw, 4.3rem); letter-spacing: -4px; }
+.focus-session-card .timer-label { color: var(--accent-start); }
+.focus-session-card .btn-group { gap: 10px; }
+.focus-session-card #focus-btn { min-height: 50px; font-size: 1rem; }
+.focus-session-card #focus-reset-btn { width: auto; min-width: 120px; margin: 0 auto; }
+.focus-session-card:has(.timer-ring-wrap.running) .focus-live-badge span:first-child { animation: statusPulse 1.4s ease-in-out infinite; }
+@keyframes statusPulse { 50% { transform: scale(.6); opacity: .45; } }
+#tab-focus > .card:not(.focus-session-card) { background: color-mix(in srgb, var(--surface) 85%, var(--surface-2)); }
+@media (min-width: 760px) {
+  #tab-focus { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(270px, .75fr); gap: 16px; align-items: start; }
+  #tab-focus > .section-label, #tab-focus > [data-i18n="focus.title"], #tab-focus > .focus-command-strip { grid-column: 1 / -1; }
+  #tab-focus > .section-label + div { grid-column: 1 / -1; }
+  #tab-focus > .focus-session-card { grid-column: 1; grid-row: 4 / span 2; }
+  #tab-focus > .focus-session-card + .card { grid-column: 2; }
+  #tab-focus > #focus-history-card { grid-column: 2; }
+}
+@media (max-width: 520px) { .focus-command-strip { align-items: flex-start; flex-direction: column; } }

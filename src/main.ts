@@ -1934,11 +1934,11 @@ function setupEventListeners() {
     // First-run only: pick the in-app language, then celebrate the start.
     if (!hasChosenLanguage()) {
       openLanguagePicker(() => {
-        showCelebrate('Welcome', `Ready when you are, ${data.profileName}.`, '🧠');
+        showCelebrate('Welcome', `Ready when you are, ${data.profileName}.`, 'neuro-mark');
         maybeOpenPostLoginSetup();
       });
     } else {
-      showCelebrate('Welcome', `Ready when you are, ${data.profileName}.`, '🧠');
+      showCelebrate('Welcome', `Ready when you are, ${data.profileName}.`, 'neuro-mark');
       maybeOpenPostLoginSetup();
     }
   });
@@ -2233,6 +2233,10 @@ function updateFocusUI() {
   const elLabel = qs<HTMLElement>('#focus-mode-label');
   const elRing = qs<HTMLElement>('#focus-ring');
   const button = qs<HTMLElement>('#focus-btn');
+  const ringWrap = qs<HTMLElement>('#tab-focus .timer-ring-wrap');
+  const sessionState = qs<HTMLElement>('#focus-session-state');
+  if (ringWrap) ringWrap.classList.toggle('running', state.running);
+  if (sessionState) sessionState.textContent = state.running ? 'In flow' : 'Ready to begin';
 
   // A restored session must also restore its controls, not only the digits.
   if (button) button.textContent = state.running ? t('focus.pause') : t('focus.start');
@@ -2334,7 +2338,7 @@ function updateTrophyModal() {
     const isUnlocked = unlocked.includes(b.id);
     return `
       <div class="badge-item ${isUnlocked ? 'unlocked' : 'locked'}">
-        <div class="badge-icon">${b.icon}</div>
+        <div class="badge-icon">${b.icon === 'neuro-mark' ? '<img src="/favicon.svg" alt="NeuroFocus" />' : escapeHTML(b.icon)}</div>
         <div class="badge-name">${escapeHTML(b.name)}</div>
         <div class="badge-rarity">${b.rarity}</div>
         <div class="badge-desc">${isUnlocked ? escapeHTML(b.desc) : escapeHTML(t('trophy.locked'))}</div>

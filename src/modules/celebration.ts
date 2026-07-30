@@ -45,7 +45,13 @@ export function showCelebrate(
 
   if (elTitle) elTitle.textContent = title;
   if (elSub) elSub.textContent = subtitle || 'Keep the momentum';
-  if (elEmoji) elEmoji.textContent = emoji;
+  if (elEmoji) {
+    if (emoji === 'neuro-mark') {
+      elEmoji.innerHTML = '<img src="/favicon.svg" alt="NeuroFocus" />';
+    } else {
+      elEmoji.textContent = emoji;
+    }
+  }
 
   if (elXp) {
     if (xp !== null && xp !== undefined) {

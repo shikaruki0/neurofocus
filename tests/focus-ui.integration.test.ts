@@ -82,11 +82,173 @@ describe('Focus mode UI wiring', () => {
     const state = document.querySelector<HTMLElement>('#focus-session-state')!;
 
     focusBtn.click();
+    // Exit immersive before the long advancement to keep JSDOM fast
+    document.querySelector<HTMLButtonElement>('#focus-immersive-exit-btn')!.click();
     vi.advanceTimersByTime(25 * 60 * 1000);
 
     expect(focusBtn.textContent?.trim()).toBe('Start');
     expect(state.textContent?.trim()).toBe('Ready to begin');
     expect(ringWrap.classList.contains('running')).toBe(false);
     expect(document.querySelector<HTMLElement>('#focus-timer')?.textContent?.trim()).toBe('25:00');
+  }, 10000);
+});
+
+describe('Immersive focus mode', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    vi.useRealTimers();
+    document.body.innerHTML = body;
+    localStorage.clear();
+    localStorage.setItem('nf_hasOnboarded', JSON.stringify(true));
+    localStorage.setItem('nf_profileName', JSON.stringify('Aarav'));
+    localStorage.setItem('nf_languageChosen', JSON.stringify(true));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('opens immersive mode when starting the timer and keeps it usable through pause/resume', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T13:00:00Z'));
+    await loadApp();
+
+    const focusBtn = document.querySelector<HTMLButtonElement>('#focus-btn')!;
+    const overlay = document.querySelector<HTMLElement>('#focus-immersive-overlay')!;
+    const immersiveTimer = document.querySelector<HTMLElement>('#focus-immersive-timer')!;
+    const immersivePauseBtn = document.querySelector<HTMLButtonElement>('#focus-immersive-pause-btn')!;
+    const immersiveStatus = document.querySelector<HTMLElement>('#focus-immersive-status')!;
+
+    // Start timer
+    focusBtn.click();
+    expect(overlay.classList.contains('show')).toBe(true);
+    expect(immersivePauseBtn.textContent?.trim()).toBe('Pause');
+    expect(immersiveStatus.textContent?.trim()).toBe('In flow');
+
+    // Timer should tick down
+    vi.advanceTimersByTime(5000);
+    expect(immersiveTimer.textContent?.trim()).toBe('24:55');
+
+    // Pause from immersive
+    immersivePauseBtn.click();
+    expect(immersivePauseBtn.textContent?.trim()).toBe('Start');
+    expect(immersiveStatus.textContent?.trim()).toBe('Paused');
+
+    // Resume from immersive
+    immersivePauseBtn.click();
+    expect(immersivePauseBtn.textContent?.trim()).toBe('Pause');
+    expect(immersiveStatus.textContent?.trim()).toBe('In flow');
+  });
+
+  it('closes immersive on Escape without resetting the timer', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T13:00:00Z'));
+    await loadApp();
+
+    const focusBtn = document.querySelector<HTMLButtonElement>('#focus-btn')!;
+    const overlay = document.querySelector<HTMLElement>('#focus-immersive-overlay')!;
+    const normalTimer = document.querySelector<HTMLElement>('#focus-timer')!;
+
+    focusBtn.click();
+    expect(overlay.classList.contains('show')).toBe(true);
+
+    vi.advanceTimersByTime(10000);
+    expect(normalTimer.textContent?.trim()).toBe('24:50');
+
+    // Press Escape
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(overlay.classList.contains('show')).toBe(false);
+
+    // Timer should still be running
+    vi.advanceTimersByTime(5000);
+    expect(normalTimer.textContent?.trim()).toBe('24:45');
+  });
+
+  it('resets timer and returns visual state to initial', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T13:00:00Z'));
+    await loadApp();
+
+    const focusBtn = document.querySelector<HTMLButtonElement>('#focus-btn')!;
+    const resetBtn = document.querySelector<HTMLButtonElement>('#focus-reset-btn')!;
+    const normalTimer = document.querySelector<HTMLElement>('#focus-timer')!;
+    const ringWrap = document.querySelector<HTMLElement>('#tab-focus .timer-ring-wrap')!;
+    const state = document.querySelector<HTMLElement>('#focus-session-state')!;
+
+    focusBtn.click();
+    vi.advanceTimersByTime(10000);
+    expect(normalTimer.textContent?.trim()).toBe('24:50');
+
+    resetBtn.click();
+    expect(normalTimer.textContent?.trim()).toBe('25:00');
+    expect(focusBtn.textContent?.trim()).toBe('Start');
+    expect(state.textContent?.trim()).toBe('Ready to begin');
+    expect(ringWrap.classList.contains('running')).toBe(false);
+  });
+
+  it('switches timer modes and updates immersive correctly', async () => {
+    await loadApp();
+
+    const mode52 = document.querySelector<HTMLButtonElement>('#mode-52')!;
+    const mode90 = document.querySelector<HTMLButtonElement>('#mode-90')!;
+    const focusBtn = document.querySelector<HTMLButtonElement>('#focus-btn')!;
+    const immersiveMode = document.querySelector<HTMLElement>('#focus-immersive-mode')!;
+    const immersiveTimer = document.querySelector<HTMLElement>('#focus-immersive-timer')!;
+    const immersiveXP = document.querySelector<HTMLElement>('#focus-immersive-xp')!;
+
+    mode52.click();
+    focusBtn.click();
+    expect(immersiveMode.textContent?.trim()).toBe('Deep Work');
+    expect(immersiveTimer.textContent?.trim()).toBe('52:00');
+    expect(immersiveXP.textContent?.trim()).toBe('+60 XP');
+
+    // Reset and switch to 90
+    document.querySelector<HTMLButtonElement>('#focus-immersive-reset-btn')!.click();
+    mode90.click();
+    focusBtn.click();
+    expect(immersiveMode.textContent?.trim()).toBe('Flow State');
+    expect(immersiveTimer.textContent?.trim()).toBe('90:00');
+    expect(immersiveXP.textContent?.trim()).toBe('+100 XP');
+  });
+
+  it('restores a running session after page refresh', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T13:00:00Z'));
+    await loadApp();
+
+    const focusBtn = document.querySelector<HTMLButtonElement>('#focus-btn')!;
+    focusBtn.click();
+    vi.advanceTimersByTime(60_000);
+
+    const saved = localStorage.getItem('nf_focusTimer');
+    expect(saved).toBeTruthy();
+    const parsed = JSON.parse(saved!);
+    expect(parsed.running).toBe(true);
+
+    // Simulate page refresh: reset modules and reload app
+    vi.resetModules();
+    await import('../src/main.ts');
+
+    const normalTimer = document.querySelector<HTMLElement>('#focus-timer')!;
+    const focusBtnAfter = document.querySelector<HTMLButtonElement>('#focus-btn')!;
+    expect(focusBtnAfter.textContent?.trim()).toBe('Pause');
+    expect(normalTimer.textContent?.trim()).toBe('24:00');
+  });
+
+  it('does not overflow horizontally on mobile or desktop', async () => {
+    await loadApp();
+
+    const overlay = document.querySelector<HTMLElement>('#focus-immersive-overlay')!;
+    const surface = document.querySelector<HTMLElement>('.focus-immersive-surface')!;
+
+    // Verify the overlay and surface have the overflow-prevention classes
+    expect(overlay.classList.contains('focus-immersive-overlay')).toBe(true);
+    expect(surface.classList.contains('focus-immersive-surface')).toBe(true);
+
+    // Open immersive to verify it renders without error
+    document.querySelector<HTMLButtonElement>('#focus-btn')!.click();
+    expect(overlay.classList.contains('show')).toBe(true);
+    expect(surface.style.overflowX).not.toBe('auto');
   });
 });

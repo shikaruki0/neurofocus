@@ -38,6 +38,7 @@ import {
   onTick,
   onComplete,
   TIMER_MODES,
+  type TimerState,
 } from './modules/focus.ts';
 import {
   startTimer as startUrge,
@@ -2193,6 +2194,7 @@ function setupEventListeners() {
       pauseTimer();
     } else {
       startTimer();
+      openImmersiveFocus();
     }
     updateFocusUI();
   });
@@ -2203,6 +2205,42 @@ function setupEventListeners() {
     const btn = qs<HTMLElement>('#focus-btn');
     if (btn) btn.textContent = t('focus.start');
     updateFocusUI();
+  });
+
+  // Immersive focus controls
+  qs<HTMLElement>('#focus-immersive-pause-btn')?.addEventListener('click', () => {
+    const state = getTimerState();
+    if (state.running) {
+      pauseTimer();
+    } else {
+      startTimer();
+    }
+    updateFocusUI();
+  });
+
+  qs<HTMLElement>('#focus-immersive-reset-btn')?.addEventListener('click', () => {
+    stopTimer();
+    const btn = qs<HTMLElement>('#focus-btn');
+    if (btn) btn.textContent = t('focus.start');
+    updateFocusUI();
+  });
+
+  qs<HTMLElement>('#focus-immersive-exit-btn')?.addEventListener('click', () => {
+    closeImmersiveFocus();
+  });
+
+  // Global keyboard handlers for immersive focus
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      trapFocusInImmersive(e);
+    }
+    if (e.key === 'Escape') {
+      const overlay = qs<HTMLElement>('#focus-immersive-overlay');
+      if (overlay?.classList.contains('show')) {
+        e.preventDefault();
+        closeImmersiveFocus();
+      }
+    }
   });
 
   // Urge timer
@@ -2256,6 +2294,146 @@ function updateFocusUI() {
     (elRing as unknown as HTMLElement).style.strokeDashoffset = String(offset);
     // Actually set attribute for SVG circle
     (elRing as unknown as SVGCircleElement).style.strokeDashoffset = `${offset}`;
+  }
+  updateImmersiveFocusUI(state);
+}
+
+function openImmersiveFocus(): void {
+  const overlay = qs<HTMLElement>('#focus-immersive-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  overlay.classList.add('show');
+  document.body.classList.add('immersive-open');
+  isImmersiveOpen = true;
+
+  const pauseBtn = qs<HTMLButtonElement>('#focus-immersive-pause-btn');
+  pauseBtn?.focus();
+
+  updateImmersiveFocusUI(getTimerState());
+}
+
+function closeImmersiveFocus(): void {
+  const overlay = qs<HTMLElement>('#focus-immersive-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('show');
+  document.body.classList.remove('immersive-open');
+  isImmersiveOpen = false;
+  lastImmersiveTime = '';
+  lastImmersiveRunning = false;
+
+  const focusBtn = qs<HTMLButtonElement>('#focus-btn');
+  focusBtn?.focus();
+
+  setTimeout(() => {
+    if (!overlay.classList.contains('show')) {
+      overlay.classList.add('hidden');
+    }
+  }, 300);
+}
+
+let immersiveEls: {
+  timer: HTMLElement | null;
+  label: HTMLElement | null;
+  mode: HTMLElement | null;
+  status: HTMLElement | null;
+  ring: SVGCircleElement | null;
+  ringWrap: HTMLElement | null;
+  elapsed: HTMLElement | null;
+  xp: HTMLElement | null;
+  progress: HTMLElement | null;
+  pauseBtn: HTMLButtonElement | null;
+} | null = null;
+
+function getImmersiveEls() {
+  if (!immersiveEls) {
+    immersiveEls = {
+      timer: qs<HTMLElement>('#focus-immersive-timer'),
+      label: qs<HTMLElement>('#focus-immersive-label'),
+      mode: qs<HTMLElement>('#focus-immersive-mode'),
+      status: qs<HTMLElement>('#focus-immersive-status'),
+      ring: qs<HTMLElement>('#focus-immersive-ring') as unknown as SVGCircleElement | null,
+      ringWrap: qs<HTMLElement>('#focus-immersive-ring-wrap'),
+      elapsed: qs<HTMLElement>('#focus-immersive-elapsed'),
+      xp: qs<HTMLElement>('#focus-immersive-xp'),
+      progress: qs<HTMLElement>('#focus-immersive-progress'),
+      pauseBtn: qs<HTMLButtonElement>('#focus-immersive-pause-btn'),
+    };
+  }
+  return immersiveEls;
+}
+
+function updateImmersiveFocusUI(state: TimerState): void {
+  const els = getImmersiveEls();
+  const total = TIMER_MODES[state.mode].minutes * 60;
+  const remaining = state.minutes * 60 + state.seconds;
+  const elapsed = total - remaining;
+  const pct = total > 0 ? Math.round((elapsed / total) * 100) : 0;
+
+  if (els.timer) {
+    const m = state.minutes.toString().padStart(2, '0');
+    const s = state.seconds.toString().padStart(2, '0');
+    els.timer.textContent = `${m}:${s}`;
+  }
+  if (els.label) {
+    const modeKeys: TranslationKey[] = ['focus.mode_25', 'focus.mode_52', 'focus.mode_90'];
+    els.label.textContent = t(modeKeys[state.mode] || 'focus.mode_25');
+  }
+  if (els.mode) {
+    els.mode.textContent = state.modeLabel;
+  }
+  if (els.status) {
+    els.status.textContent = state.running
+      ? 'In flow'
+      : remaining < total
+        ? 'Paused'
+        : 'Ready to begin';
+    const isPaused = !state.running && remaining < total;
+    if (els.status.classList.contains('paused') !== isPaused) {
+      els.status.classList.toggle('paused', isPaused);
+    }
+  }
+  if (els.ring) {
+    els.ring.style.strokeDashoffset = `${691 * (1 - elapsed / total)}`;
+  }
+  if (els.ringWrap && els.ringWrap.classList.contains('running') !== state.running) {
+    els.ringWrap.classList.toggle('running', state.running);
+  }
+  if (els.elapsed) {
+    const em = Math.floor(elapsed / 60).toString();
+    const es = (elapsed % 60).toString().padStart(2, '0');
+    els.elapsed.textContent = `${em}:${es}`;
+  }
+  if (els.xp) {
+    els.xp.textContent = `+${TIMER_MODES[state.mode].xp} XP`;
+  }
+  if (els.progress) {
+    els.progress.textContent = `${pct}%`;
+  }
+  if (els.pauseBtn) {
+    els.pauseBtn.textContent = state.running ? t('focus.pause') : t('focus.start');
+  }
+}
+
+function trapFocusInImmersive(e: KeyboardEvent): void {
+  const overlay = qs<HTMLElement>('#focus-immersive-overlay');
+  if (!overlay || !overlay.classList.contains('show')) return;
+
+  const focusables = overlay.querySelectorAll<HTMLElement>(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+  );
+  if (focusables.length === 0) return;
+
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+
+  if (e.key === 'Tab') {
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
   }
 }
 
@@ -2350,6 +2528,10 @@ function updateTrophyModal() {
 // TIMER CALLBACKS
 // ===================================================================
 
+let lastImmersiveTime = '';
+let lastImmersiveRunning = false;
+let isImmersiveOpen = false;
+
 onTick((state) => {
   const elTimer = qs<HTMLElement>('#focus-timer');
   const elRing = qs<HTMLElement>('#focus-ring') as unknown as SVGCircleElement;
@@ -2363,11 +2545,22 @@ onTick((state) => {
     const elapsed = total - (state.minutes * 60 + state.seconds);
     elRing.style.strokeDashoffset = `${691 * (1 - elapsed / total)}`;
   }
+  // Only update immersive UI when overlay is open and the displayed time changed
+  if (isImmersiveOpen) {
+    const currentTime = `${state.minutes}:${state.seconds}`;
+    const runningChanged = lastImmersiveRunning !== state.running;
+    if (currentTime !== lastImmersiveTime || runningChanged) {
+      lastImmersiveTime = currentTime;
+      lastImmersiveRunning = state.running;
+      updateImmersiveFocusUI(state);
+    }
+  }
 });
 
 onComplete((mode) => {
   showCelebrate('Focus Complete', 'Take a real break. No phone.', '⏱️', false, mode.xp);
   updateFocusUI();
+  closeImmersiveFocus();
   updateDashboard();
   checkQuests();
   renderFlowBanner();

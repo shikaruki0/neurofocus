@@ -3230,3 +3230,61 @@ body.auth-open {
   #tab-focus > #focus-history-card { grid-column: 2; }
 }
 @media (max-width: 520px) { .focus-command-strip { align-items: flex-start; flex-direction: column; } }
+
+/* ==========================================================================
+   Mission Planner (Focus tab — planning layer only)
+   ========================================================================== */
+.mission-planner-card { padding: 20px; }
+.mission-planner-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.mission-planner-kicker { color: var(--accent-start); font-size: .6rem; font-weight: 850; letter-spacing: .17em; text-transform: uppercase; margin-bottom: 4px; }
+.mission-planner-title { font-size: 1.05rem; font-weight: 800; letter-spacing: -.01em; }
+.mission-planner-icon { font-size: 1.5rem; flex-shrink: 0; }
+
+.mission-rec { display: flex; flex-direction: column; gap: 10px; }
+.mission-rec-card { padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: color-mix(in srgb, var(--accent-start) 6%, var(--surface)); }
+.mission-rec-subject { font-size: .7rem; font-weight: 700; color: var(--accent-start); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+.mission-rec-topic { font-size: .95rem; font-weight: 700; margin-bottom: 6px; line-height: 1.3; word-break: break-word; overflow-wrap: break-word; }
+.mission-rec-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.mission-rec-meta .tag { font-size: .7rem; }
+.mission-rec-reason { font-size: .78rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4; }
+.mission-rec-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.mission-rec-actions .btn { font-size: .8rem; padding: 8px 14px; }
+
+.mission-empty { padding: 18px 0; text-align: center; color: var(--text-secondary); font-size: .88rem; line-height: 1.5; }
+.mission-empty .btn { margin-top: 12px; }
+
+.mission-quick-win { padding: 12px; border: 1px dashed var(--border); border-radius: 12px; margin-top: 4px; }
+.mission-quick-win-label { font-size: .72rem; font-weight: 700; color: var(--success); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+.mission-quick-win-topic { font-size: .85rem; font-weight: 600; margin-bottom: 6px; word-break: break-word; overflow-wrap: break-word; }
+.mission-quick-win-meta { font-size: .75rem; color: var(--text-secondary); margin-bottom: 8px; }
+
+/* Mission Setup Form */
+.mission-setup-card { padding: 20px; }
+.mission-setup-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.mission-setup-title { font-size: 1rem; font-weight: 800; }
+.mission-setup-header .btn { width: auto; padding: 6px 10px; font-size: .8rem; }
+.mission-setup-grid { display: flex; flex-direction: column; gap: 8px; }
+.mission-setup-grid .field-label { font-size: .78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: -4px; }
+.mission-setup-grid .input { margin-bottom: 4px; }
+
+.mission-blocks-preview { margin-top: 14px; }
+.mission-blocks-preview-title { font-size: .75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+.mission-blocks-list { display: flex; flex-direction: column; gap: 4px; }
+.mission-block-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 8px; background: color-mix(in srgb, var(--surface-2) 60%, var(--surface)); font-size: .82rem; }
+.mission-block-item-label { font-weight: 600; }
+.mission-block-item-time { color: var(--accent-start); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Confirmed Mission */
+.mission-confirmed-card { padding: 20px; border-left: 3px solid var(--accent-start); }
+.mission-confirmed-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.mission-confirmed-title { font-size: 1rem; font-weight: 800; word-break: break-word; overflow-wrap: break-word; }
+.mission-confirmed-header .btn { width: auto; flex-shrink: 0; padding: 6px 10px; font-size: .78rem; }
+.mission-confirmed-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.mission-confirmed-meta .tag { font-size: .7rem; }
+
+/* Grid layout adjustments for mission planner in focus tab */
+@media (min-width: 760px) {
+  #tab-focus > .mission-planner-card,
+  #tab-focus > .mission-setup-card,
+  #tab-focus > .mission-confirmed-card { grid-column: 1 / -1; }
+}

@@ -2189,15 +2189,12 @@ function setupEventListeners() {
   // Focus start/pause
   qs<HTMLElement>('#focus-btn')?.addEventListener('click', () => {
     const state = getTimerState();
-    const btn = qs<HTMLElement>('#focus-btn');
-    if (!btn) return;
     if (state.running) {
       pauseTimer();
-      btn.textContent = t('focus.pause');
     } else {
       startTimer();
-      btn.textContent = t('focus.start');
     }
+    updateFocusUI();
   });
 
   // Focus reset
@@ -2370,8 +2367,7 @@ onTick((state) => {
 
 onComplete((mode) => {
   showCelebrate('Focus Complete', 'Take a real break. No phone.', '⏱️', false, mode.xp);
-  const btn = qs<HTMLElement>('#focus-btn');
-  if (btn) btn.textContent = t('focus.start');
+  updateFocusUI();
   updateDashboard();
   checkQuests();
   renderFlowBanner();

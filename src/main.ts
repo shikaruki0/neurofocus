@@ -2233,6 +2233,10 @@ function updateFocusUI() {
   const elLabel = qs<HTMLElement>('#focus-mode-label');
   const elRing = qs<HTMLElement>('#focus-ring');
   const button = qs<HTMLElement>('#focus-btn');
+  const ringWrap = qs<HTMLElement>('#tab-focus .timer-ring-wrap');
+  const sessionState = qs<HTMLElement>('#focus-session-state');
+  if (ringWrap) ringWrap.classList.toggle('running', state.running);
+  if (sessionState) sessionState.textContent = state.running ? 'In flow' : 'Ready to begin';
 
   // A restored session must also restore its controls, not only the digits.
   if (button) button.textContent = state.running ? t('focus.pause') : t('focus.start');

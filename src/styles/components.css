@@ -3033,3 +3033,35 @@ body.auth-open {
   .container { padding-bottom: 50px; }
 }
 @media (max-width: 520px) { .header-status { display: none; } }
+
+/* Focus Mode — the product's primary, distraction-free experience. */
+#tab-focus { max-width: 900px; margin: 0 auto; }
+.focus-command-strip { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 10px 0 14px; padding: 17px 20px; border: 1px solid var(--border); border-radius: 18px; background: linear-gradient(110deg, color-mix(in srgb, var(--accent-start) 8%, var(--surface)), var(--surface)); box-shadow: var(--shadow-sm); }
+.focus-command-kicker { display: block; color: var(--accent-start); font-size: .6rem; font-weight: 850; letter-spacing: .17em; margin-bottom: 4px; }
+.focus-command-strip strong { font-size: .95rem; letter-spacing: -.02em; }
+.focus-live-badge { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; color: var(--text-secondary); font-size: .7rem; font-weight: 700; }
+.focus-live-badge span:first-child { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 12px var(--success); }
+.focus-session-card { padding: 24px 20px 28px; background: radial-gradient(circle at 50% 40%, var(--accent-start-fade), transparent 46%), var(--surface); border-color: color-mix(in srgb, var(--accent-start) 18%, var(--border)); }
+.focus-session-header { display: flex; align-items: center; gap: 9px; color: var(--text-tertiary); font-size: .58rem; font-weight: 850; letter-spacing: .16em; }
+.focus-session-header span:last-child { color: var(--accent-start); letter-spacing: .04em; }
+.focus-session-line { height: 1px; flex: 1; background: var(--border); }
+.focus-session-card .timer-modes { margin-top: 18px; }
+.focus-session-card .timer-ring-wrap { width: min(280px, 72vw); height: min(280px, 72vw); margin: 5px auto 10px; }
+.focus-session-card .timer-ring-bg, .focus-session-card .timer-ring-fill { stroke-width: 6; }
+.focus-session-card .timer-digits { font-size: clamp(3rem, 8vw, 4.3rem); letter-spacing: -4px; }
+.focus-session-card .timer-label { color: var(--accent-start); }
+.focus-session-card .btn-group { gap: 10px; }
+.focus-session-card #focus-btn { min-height: 50px; font-size: 1rem; }
+.focus-session-card #focus-reset-btn { width: auto; min-width: 120px; margin: 0 auto; }
+.focus-session-card:has(.timer-ring-wrap.running) .focus-live-badge span:first-child { animation: statusPulse 1.4s ease-in-out infinite; }
+@keyframes statusPulse { 50% { transform: scale(.6); opacity: .45; } }
+#tab-focus > .card:not(.focus-session-card) { background: color-mix(in srgb, var(--surface) 85%, var(--surface-2)); }
+@media (min-width: 760px) {
+  #tab-focus { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(270px, .75fr); gap: 16px; align-items: start; }
+  #tab-focus > .section-label, #tab-focus > [data-i18n="focus.title"], #tab-focus > .focus-command-strip { grid-column: 1 / -1; }
+  #tab-focus > .section-label + div { grid-column: 1 / -1; }
+  #tab-focus > .focus-session-card { grid-column: 1; grid-row: 4 / span 2; }
+  #tab-focus > .focus-session-card + .card { grid-column: 2; }
+  #tab-focus > #focus-history-card { grid-column: 2; }
+}
+@media (max-width: 520px) { .focus-command-strip { align-items: flex-start; flex-direction: column; } }

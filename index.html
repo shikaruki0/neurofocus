@@ -1091,7 +1091,12 @@
           Ultradian rhythm aligned. Single-task only.
         </div>
 
-        <div class="card" style="text-align: center">
+        <div class="focus-command-strip">
+          <div><span class="focus-command-kicker">DEEP WORK PROTOCOL</span><strong>One task. Zero noise.</strong></div>
+          <div class="focus-live-badge"><span></span><span id="focus-session-state">Ready to begin</span></div>
+        </div>
+        <div class="card focus-session-card" style="text-align: center">
+          <div class="focus-session-header"><span>SESSION LENGTH</span><span class="focus-session-line"></span><span id="focus-xp-hint">+25 XP</span></div>
           <div class="timer-modes">
             <button class="timer-chip active" data-mode="0" id="mode-25" data-i18n="focus.mode_25">
               25 min
@@ -1123,7 +1128,7 @@
                 />
               </svg>
               <div class="timer-text">
-                <div class="timer-digits" id="focus-timer">25:00</div>
+                <div class="timer-digits" id="focus-timer" aria-live="polite">25:00</div>
                 <div class="timer-label" id="focus-mode-label">Pomodoro</div>
               </div>
             </div>

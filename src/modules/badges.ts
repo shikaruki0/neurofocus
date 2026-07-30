@@ -48,7 +48,7 @@ export const SPECIAL_BADGES: SpecialBadge[] = [
     id: 'first_focus',
     name: 'First Dive',
     desc: 'Complete 1 focus session',
-    icon: '🧠',
+    icon: 'neuro-mark',
     rarity: 'common',
     check: () => data.totalFocusMinutes >= 25,
   },

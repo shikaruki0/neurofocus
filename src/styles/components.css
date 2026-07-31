@@ -3307,3 +3307,22 @@ body.auth-open {
   #tab-focus > .mission-setup-card,
   #tab-focus > .mission-confirmed-card { grid-column: 1 / -1; }
 }
+
+/* Date-scoped focus history (Milestone 4) */
+.focus-history-heading { font-weight: 800; font-size: var(--font-base); letter-spacing: .08em; margin-bottom: var(--space-3); }
+.focus-history-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.focus-history-controls .btn { min-height: 42px; }
+.focus-history-date-label { flex: 1 1 180px; text-align: center; font-weight: 700; color: var(--text-primary); }
+.focus-history-controls input[type="date"] { min-height: 42px; min-width: 145px; padding: 8px; color: var(--text-primary); background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; }
+.focus-history-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.focus-history-stats > div { display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; color: var(--text-tertiary); font-size: .78rem; }
+.focus-history-stats strong { color: var(--text-primary); font-size: 1rem; }
+.focus-history-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 28px 12px; text-align: center; }
+.focus-history-empty span { color: var(--text-tertiary); }
+@media (max-width: 640px) {
+  .focus-history-controls > .btn { flex: 1 1 42%; }
+  .focus-history-date-label { order: -1; flex-basis: 100%; }
+  .focus-history-controls input[type="date"] { flex: 1 1 100%; width: 100%; }
+  .focus-history-stats { grid-template-columns: repeat(2, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { .focus-history-controls .btn { transition: none; } }

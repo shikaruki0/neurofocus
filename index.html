@@ -1229,17 +1229,22 @@
         </div>
 
         <div class="card" id="focus-history-card">
-          <div
-            style="font-weight: 700; font-size: var(--font-base); margin-bottom: var(--space-3)"
-            data-i18n="focus.recent_sessions"
-          >
-            Recent Sessions
+          <div class="focus-history-heading" data-i18n="focus.recent_sessions">FOCUS HISTORY</div>
+          <div class="focus-history-controls" aria-label="Focus history date navigation">
+            <button class="btn btn-ghost" id="focus-history-prev" type="button" aria-label="Previous day">Previous Day</button>
+            <button class="btn btn-ghost" id="focus-history-today" type="button">Today</button>
+            <span class="focus-history-date-label" id="focus-history-date-label" aria-live="polite"></span>
+            <button class="btn btn-ghost" id="focus-history-next" type="button" aria-label="Next day">Next Day</button>
+            <label class="sr-only" for="focus-history-date">Select history date</label>
+            <input id="focus-history-date" type="date" inputmode="numeric" aria-label="Select history date" />
           </div>
-          <div id="focus-history">
-            <div class="empty" style="padding: var(--space-3)">
-              No sessions yet. Complete a focus timer to see history.
-            </div>
+          <div class="focus-history-stats" aria-label="Daily focus statistics">
+            <div><span>Total focus:</span><strong id="focus-history-total">0 minutes</strong></div>
+            <div><span>Completed blocks:</span><strong id="focus-history-blocks">0</strong></div>
+            <div><span>Completed missions:</span><strong id="focus-history-missions">0</strong></div>
+            <div><span>XP earned:</span><strong id="focus-history-xp">—</strong></div>
           </div>
+          <div id="focus-history"></div>
         </div>
       </section>
 

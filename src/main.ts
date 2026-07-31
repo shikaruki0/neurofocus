@@ -57,11 +57,7 @@ import {
   getPendingChapterCount,
 } from './modules/backlogs.ts';
 import type { BacklogInput, Backlog } from './modules/backlogs.ts';
-import {
-  recommendMission,
-  calculateBlocks,
-  buildMissionSetup,
-} from './modules/missionPlanner.ts';
+import { recommendMission, calculateBlocks, buildMissionSetup } from './modules/missionPlanner.ts';
 import {
   startMission,
   getActiveMission,
@@ -136,7 +132,8 @@ import {
 } from './modules/progressImport.ts';
 import { escapeHTML } from './utils/sanitize.ts';
 import { qs, qsa } from './utils/dom.ts';
-import { todayStr, currentDOW, DAY_LABELS } from './utils/date.ts';
+import { todayStr, currentDOW, DAY_LABELS, localISODate, shiftISODate } from './utils/date.ts';
+import { getDailyFocusHistory } from './modules/focusHistory.ts';
 import { validateProfileName, validateMission, validateMissionSetup } from './utils/validation.ts';
 
 // ===================================================================
@@ -157,6 +154,7 @@ let missionSelectedSubject = '';
 let missionDraftBacklogId: number | null = null;
 // Transient banner shown after a block completes, until the user picks an option.
 let lastBlockCompletionMinutes: number | null = null;
+let focusHistoryDate = localISODate();
 
 // ===================================================================
 // TAB NAVIGATION
@@ -1027,9 +1025,12 @@ function openMissionSetup(backlog: Backlog | null): void {
   const message = qs<HTMLElement>('#mission-setup-message');
   const preview = qs<HTMLElement>('#mission-blocks-preview');
 
-  if (titleInput) titleInput.value = backlog ? (backlog.chapterName || backlog.name) : '';
+  if (titleInput) titleInput.value = backlog ? backlog.chapterName || backlog.name : '';
   if (subjectSelect) {
-    populateMissionSubjectSelect(subjectSelect, backlog?.subject || missionSelectedSubject || 'Physics');
+    populateMissionSubjectSelect(
+      subjectSelect,
+      backlog?.subject || missionSelectedSubject || 'Physics',
+    );
   }
   if (totalInput) totalInput.value = '';
   if (blockInput) blockInput.value = '25';
@@ -1355,27 +1356,50 @@ function renderFocusHistory() {
   const el = qs<HTMLElement>('#focus-history');
   if (!el) return;
 
-  const sessions = getRecentSessions(10);
-  if (!sessions.length) {
-    el.innerHTML = `<div class="empty" style="padding:12px">${escapeHTML(t('focus.no_sessions'))}</div>`;
+  const today = localISODate();
+  const selected = getDailyFocusHistory(focusHistoryDate);
+  const dateInput = qs<HTMLInputElement>('#focus-history-date');
+  if (dateInput) dateInput.value = focusHistoryDate;
+  const dateLabel = qs<HTMLElement>('#focus-history-date-label');
+  if (dateLabel) {
+    const date = new Date(`${focusHistoryDate}T12:00:00`);
+    dateLabel.textContent = date.toLocaleDateString([], {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+  const next = qs<HTMLButtonElement>('#focus-history-next');
+  if (next) next.disabled = focusHistoryDate >= today;
+
+  qs<HTMLElement>('#focus-history-total')!.textContent = `${selected.totalMinutes} minutes`;
+  qs<HTMLElement>('#focus-history-blocks')!.textContent = String(selected.completedBlocks);
+  qs<HTMLElement>('#focus-history-missions')!.textContent = String(selected.completedMissions);
+  const xp = qs<HTMLElement>('#focus-history-xp');
+  if (xp) xp.textContent = selected.xpEarned === null ? '—' : `${selected.xpEarned} XP`;
+
+  if (!selected.sessions.length) {
+    el.innerHTML = `<div class="empty focus-history-empty"><div class="empty-icon">🗓️</div><strong>No focus sessions on this date.</strong><span>Start a session to build your record.</span></div>`;
     return;
   }
-
-  el.innerHTML = sessions
-    .map((s) => {
-      const d = new Date(s.time);
-      const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const sessionTitle = t('focus.deep_work_session', { min: s.duration });
-      return `
-        <div class="list-item">
-          <div class="info">
-            <div class="title">${escapeHTML(sessionTitle)}</div>
-            <div class="meta">${s.date} at ${timeStr}</div>
-          </div>
-          <span class="tag tag-green">${s.duration}m</span>
-        </div>`;
-    })
+  el.innerHTML = selected.sessions
+    .map(
+      (session) => `
+    <div class="list-item">
+      <div class="info"><div class="title">${escapeHTML(session.missionName)}${session.subject ? ` <span class="meta">· ${escapeHTML(session.subject)}</span>` : ''}</div>
+      <div class="meta">${session.duration} minutes · completed ${escapeHTML(session.completionTime)}</div></div>
+      <span class="tag tag-green">${session.duration}m</span>
+    </div>`,
+    )
     .join('');
+}
+
+function setFocusHistoryDate(date: string): void {
+  // Date inputs provide ISO values; reject malformed values and future dates safely.
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return;
+  focusHistoryDate = date;
+  renderFocusHistory();
 }
 
 function renderProfile() {
@@ -2696,6 +2720,19 @@ function setupEventListeners() {
   });
 
   // Focus start/pause
+  qs<HTMLElement>('#focus-history-today')?.addEventListener('click', () =>
+    setFocusHistoryDate(localISODate()),
+  );
+  qs<HTMLElement>('#focus-history-prev')?.addEventListener('click', () =>
+    setFocusHistoryDate(shiftISODate(focusHistoryDate, -1)),
+  );
+  qs<HTMLElement>('#focus-history-next')?.addEventListener('click', () =>
+    setFocusHistoryDate(shiftISODate(focusHistoryDate, 1)),
+  );
+  qs<HTMLInputElement>('#focus-history-date')?.addEventListener('change', (event) => {
+    setFocusHistoryDate((event.currentTarget as HTMLInputElement).value);
+  });
+
   qs<HTMLElement>('#focus-btn')?.addEventListener('click', () => {
     const state = getTimerState();
     if (state.running) {

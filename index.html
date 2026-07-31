@@ -1228,23 +1228,59 @@
           </div>
         </div>
 
-        <div class="card" id="focus-history-card">
-          <div class="focus-history-heading" data-i18n="focus.recent_sessions">FOCUS HISTORY</div>
-          <div class="focus-history-controls" aria-label="Focus history date navigation">
-            <button class="btn btn-ghost" id="focus-history-prev" type="button" aria-label="Previous day">Previous Day</button>
-            <button class="btn btn-ghost" id="focus-history-today" type="button">Today</button>
-            <span class="focus-history-date-label" id="focus-history-date-label" aria-live="polite"></span>
-            <button class="btn btn-ghost" id="focus-history-next" type="button" aria-label="Next day">Next Day</button>
-            <label class="sr-only" for="focus-history-date">Select history date</label>
-            <input id="focus-history-date" type="date" inputmode="numeric" aria-label="Select history date" />
+        <div class="card focus-history-card" id="focus-history-card">
+          <div class="focus-history-header">
+            <div>
+              <div class="focus-history-kicker">History · Local time</div>
+              <div class="focus-history-heading" data-i18n="focus.recent_sessions">FOCUS HISTORY</div>
+            </div>
+            <div class="focus-history-header-accent" aria-hidden="true"></div>
           </div>
+
+          <div class="focus-history-nav">
+            <div class="focus-history-date-display">
+              <span class="focus-history-date-label" id="focus-history-date-label" aria-live="polite"></span>
+              <span class="focus-history-relative" id="focus-history-relative" aria-live="polite"></span>
+            </div>
+
+            <div class="focus-history-controls" aria-label="Focus history date navigation">
+              <div class="focus-history-control-group">
+                <button class="btn btn-ghost focus-history-nav-btn" id="focus-history-prev" type="button" aria-label="Previous day">
+                  <span aria-hidden="true">‹</span> Prev
+                </button>
+                <button class="btn focus-history-today-btn" id="focus-history-today" type="button" aria-label="Go to today">Today</button>
+                <button class="btn btn-ghost focus-history-nav-btn" id="focus-history-next" type="button" aria-label="Next day">
+                  Next <span aria-hidden="true">›</span>
+                </button>
+              </div>
+              <div class="focus-history-divider" aria-hidden="true"></div>
+              <label class="focus-history-date-input-wrap" for="focus-history-date">
+                <span class="sr-only">Select history date</span>
+                <input id="focus-history-date" type="date" inputmode="numeric" aria-label="Select history date" />
+              </label>
+            </div>
+          </div>
+
           <div class="focus-history-stats" aria-label="Daily focus statistics">
-            <div><span>Total focus:</span><strong id="focus-history-total">0 minutes</strong></div>
-            <div><span>Completed blocks:</span><strong id="focus-history-blocks">0</strong></div>
-            <div><span>Completed missions:</span><strong id="focus-history-missions">0</strong></div>
-            <div><span>XP earned:</span><strong id="focus-history-xp">—</strong></div>
+            <div class="focus-history-stat focus-history-stat--primary">
+              <div class="focus-history-stat-label">Total focus</div>
+              <strong id="focus-history-total">0 min</strong>
+            </div>
+            <div class="focus-history-stat">
+              <div class="focus-history-stat-label">Blocks</div>
+              <strong id="focus-history-blocks">0</strong>
+            </div>
+            <div class="focus-history-stat">
+              <div class="focus-history-stat-label">Mission blocks</div>
+              <strong id="focus-history-missions">0</strong>
+            </div>
+            <div class="focus-history-stat">
+              <div class="focus-history-stat-label">XP earned</div>
+              <strong id="focus-history-xp">—</strong>
+            </div>
           </div>
-          <div id="focus-history"></div>
+
+          <div class="focus-history-list" id="focus-history" aria-live="polite"></div>
         </div>
       </section>
 

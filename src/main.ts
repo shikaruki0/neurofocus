@@ -29,6 +29,7 @@ import { claimStreak, useFreeze, canUseFreeze, getStreakInfo } from './modules/s
 import { getSubjectsWithInfo } from './modules/subjects.ts';
 import {
   setMode,
+  setCustomBlock,
   startTimer,
   pauseTimer,
   stopTimer,
@@ -61,7 +62,17 @@ import {
   calculateBlocks,
   buildMissionSetup,
 } from './modules/missionPlanner.ts';
-import type { MissionSetup } from './modules/missionPlanner.ts';
+import {
+  startMission,
+  getActiveMission,
+  getCurrentBlock,
+  getCurrentBlockNumber,
+  completeCurrentBlock,
+  startNextBlock,
+  endMission,
+  resumeMission,
+  clearMission,
+} from './modules/mission.ts';
 import {
   completeDailyClassCheck,
   completeInitialBacklogSetup,
@@ -144,7 +155,8 @@ let dailyAttendanceDraft = { totalHeld: 0, attended: 0, missed: 0 };
 // Mission planner state (planning layer only — does not touch timer/XP/backlog)
 let missionSelectedSubject = '';
 let missionDraftBacklogId: number | null = null;
-let activeMission: MissionSetup | null = null;
+// Transient banner shown after a block completes, until the user picks an option.
+let lastBlockCompletionMinutes: number | null = null;
 
 // ===================================================================
 // TAB NAVIGATION
@@ -898,7 +910,7 @@ function renderMissionPlanner(): void {
   if (!body) return;
 
   // If a mission is already confirmed, hide recommendation — show confirmed card instead
-  if (activeMission) {
+  if (getActiveMission()) {
     body.innerHTML = `<div class="mission-empty" style="padding:8px 0">Mission locked in. Start your timer below when ready.</div>`;
     renderMissionConfirmed();
     return;
@@ -1104,9 +1116,14 @@ function confirmMission(): void {
     return;
   }
 
-  activeMission = mission;
+  const runtime = startMission(mission);
+  lastBlockCompletionMinutes = null;
+  // Point the existing timer at the first block; user starts it with the normal Start button.
+  const firstBlock = runtime.blocks[0];
+  if (firstBlock) prepareTimerForBlock(firstBlock.plannedDuration);
   closeMissionSetup();
   renderMissionPlanner();
+  updateFocusUI();
 }
 
 function renderMissionConfirmed(): void {
@@ -1114,44 +1131,207 @@ function renderMissionConfirmed(): void {
   const titleEl = qs<HTMLElement>('#mission-confirmed-title');
   const metaEl = qs<HTMLElement>('#mission-confirmed-meta');
   const blocksEl = qs<HTMLElement>('#mission-confirmed-blocks');
-  if (!card || !activeMission) return;
+  const kickerEl = qs<HTMLElement>('#mission-confirmed-kicker');
+  const mission = getActiveMission();
+  if (!card || !mission) return;
 
   card.classList.remove('hidden');
-  if (titleEl) titleEl.textContent = activeMission.title;
+  // Titles use textContent — never innerHTML — so user-supplied text can't inject markup.
+  if (titleEl) titleEl.textContent = mission.title;
+  if (kickerEl) {
+    kickerEl.textContent =
+      mission.status === 'completed'
+        ? 'MISSION COMPLETE'
+        : mission.status === 'paused'
+          ? 'MISSION PAUSED'
+          : mission.status === 'cancelled'
+            ? 'MISSION ENDED'
+            : 'ACTIVE MISSION';
+  }
 
-  const linkedBacklog = activeMission.backlogId
-    ? (getBacklogs() as Backlog[]).find((b) => b.id === activeMission!.backlogId)
+  const linkedBacklog = mission.backlogId
+    ? (getBacklogs() as Backlog[]).find((b) => b.id === mission.backlogId)
     : null;
+
+  const currentBlock = getCurrentBlock();
+  const currentNumber = getCurrentBlockNumber();
+  const totalBlocks = mission.blocks.length;
 
   if (metaEl) {
     metaEl.innerHTML = `
-      <span class="tag tag-blue">${escapeHTML(activeMission.subject)}</span>
-      <span class="tag tag-green">${activeMission.totalMinutes} min total</span>
-      <span class="tag">${activeMission.blockMinutes} min blocks</span>
+      <span class="tag tag-blue">${escapeHTML(mission.subject)}</span>
+      <span class="tag tag-green">${mission.totalDuration} min total</span>
+      <span class="tag">${mission.blockDuration} min blocks</span>
       ${linkedBacklog ? `<span class="tag tag-red">Linked: ${escapeHTML(linkedBacklog.chapterName || linkedBacklog.name)}</span>` : ''}
     `;
   }
 
-  if (blocksEl) {
-    blocksEl.innerHTML = `
-      <div class="mission-blocks-preview-title">Focus blocks (${activeMission.blocks.length})</div>
-      <div class="mission-blocks-list">
-        ${activeMission.blocks
-          .map(
-            (b) => `<div class="mission-block-item">
-              <span class="mission-block-item-label">Block ${b.index}</span>
-              <span class="mission-block-item-time">${b.minutes} min</span>
-            </div>`,
-          )
-          .join('')}
+  if (!blocksEl) return;
+
+  const isComplete = mission.status === 'completed';
+  const isPaused = mission.status === 'paused' || mission.status === 'cancelled';
+
+  // "Current block" summary (hidden once the whole mission is complete).
+  const currentSummary =
+    !isComplete && currentBlock
+      ? `
+      <div class="mission-current-block">
+        <div class="mission-current-block-label">BLOCK ${currentNumber} OF ${totalBlocks}</div>
+        <div class="mission-current-block-time">${currentBlock.plannedDuration} minutes</div>
+      </div>`
+      : '';
+
+  // Mission progress line — accounted minutes vs total.
+  const progressLine = `
+    <div class="mission-progress">
+      <div class="mission-progress-label">Mission progress:</div>
+      <div class="mission-progress-value">${mission.completedDuration} / ${mission.totalDuration} minutes completed</div>
+    </div>`;
+
+  // Block completion banner (aria-live) — only after a block just completed.
+  let bannerHTML = '';
+  if (lastBlockCompletionMinutes !== null) {
+    if (isComplete) {
+      bannerHTML = `
+        <div class="mission-complete-banner">
+          <div class="mission-block-complete-title">MISSION COMPLETE</div>
+          <div class="mission-block-complete-line">${mission.completedDuration} minutes completed</div>
+          <div class="mission-block-complete-xp">+ existing XP reward</div>
+        </div>`;
+    } else {
+      const next = mission.blocks[mission.currentBlock];
+      const nextLine = next
+        ? `Block ${currentNumber} of ${totalBlocks} · ${next.plannedDuration} minutes`
+        : '';
+      bannerHTML = `
+        <div class="mission-complete-banner">
+          <div class="mission-block-complete-title">BLOCK COMPLETE</div>
+          <div class="mission-block-complete-line">${lastBlockCompletionMinutes} minutes completed</div>
+          <div class="mission-block-complete-xp">+ existing XP reward</div>
+          ${nextLine ? `<div class="mission-next-label">Next:</div><div class="mission-next-value">${nextLine}</div>` : ''}
+        </div>`;
+    }
+  }
+
+  // Action buttons — shown after a block completes (choice point) or when paused.
+  let actionsHTML = '';
+  if (lastBlockCompletionMinutes !== null && !isComplete) {
+    actionsHTML = `
+      <div class="mission-actions">
+        <button class="btn" id="mission-next-block-btn" type="button">Start next block</button>
+        <button class="btn btn-ghost" id="mission-break-btn" type="button">Take a break</button>
+        <button class="btn btn-ghost" id="mission-end-btn" type="button">End mission</button>
+      </div>`;
+  } else if (isComplete) {
+    actionsHTML = `
+      <div class="mission-actions">
+        <button class="btn" id="mission-finish-btn" type="button">Finish mission</button>
+      </div>`;
+  } else if (isPaused) {
+    actionsHTML = `
+      <div class="mission-actions">
+        <button class="btn" id="mission-resume-btn" type="button">Resume mission</button>
+        <button class="btn btn-ghost" id="mission-end-btn" type="button">Discard mission</button>
+      </div>`;
+  } else {
+    // Active with a running/idle block — always allow ending the mission early.
+    actionsHTML = `
+      <div class="mission-actions">
+        <button class="btn btn-ghost" id="mission-end-btn" type="button">End mission</button>
       </div>`;
   }
+
+  const blockList = mission.blocks
+    .map((b, i) => {
+      const stateLabel =
+        b.status === 'completed'
+          ? `${b.completedDuration} min ✓`
+          : i === mission.currentBlock && !isComplete && !isPaused
+            ? `${b.plannedDuration} min · active`
+            : `${b.plannedDuration} min`;
+      return `<div class="mission-block-item mission-block-${b.status}">
+          <span class="mission-block-item-label">Block ${i + 1}</span>
+          <span class="mission-block-item-time">${stateLabel}</span>
+        </div>`;
+    })
+    .join('');
+
+  // aria-live on the wrapper so screen readers announce block/mission completion.
+  blocksEl.setAttribute('aria-live', 'polite');
+  blocksEl.innerHTML = `
+    ${currentSummary}
+    ${progressLine}
+    ${bannerHTML}
+    <div class="mission-blocks-preview-title">Focus blocks (${totalBlocks})</div>
+    <div class="mission-blocks-list">${blockList}</div>
+    ${actionsHTML}`;
+
+  // Wire mission action buttons (keyboard accessible — real <button> elements).
+  qs<HTMLElement>('#mission-next-block-btn')?.addEventListener('click', () => {
+    onMissionStartNextBlock();
+  });
+  qs<HTMLElement>('#mission-break-btn')?.addEventListener('click', () => {
+    onMissionTakeBreak();
+  });
+  qs<HTMLElement>('#mission-end-btn')?.addEventListener('click', () => {
+    onMissionEnd();
+  });
+  qs<HTMLElement>('#mission-finish-btn')?.addEventListener('click', () => {
+    clearActiveMission();
+  });
+  qs<HTMLElement>('#mission-resume-btn')?.addEventListener('click', () => {
+    resumeMission();
+    lastBlockCompletionMinutes = null;
+    renderMissionPlanner();
+    updateFocusUI();
+  });
+}
+
+/** Manually start the next block: resets the timer to the block's length, then starts it. */
+function onMissionStartNextBlock(): void {
+  const block = startNextBlock();
+  lastBlockCompletionMinutes = null;
+  if (block) {
+    prepareTimerForBlock(block.plannedDuration);
+    startTimer();
+    openImmersiveFocus();
+  }
+  renderMissionPlanner();
+  updateFocusUI();
+}
+
+/** Take a break: leave the next block pending, do NOT start any timer. */
+function onMissionTakeBreak(): void {
+  lastBlockCompletionMinutes = null;
+  stopTimer();
+  renderMissionPlanner();
+  updateFocusUI();
+}
+
+/** End the mission early, preserving all completed/unfinished block history. */
+function onMissionEnd(): void {
+  endMission();
+  lastBlockCompletionMinutes = null;
+  stopTimer();
+  renderMissionPlanner();
+  updateFocusUI();
 }
 
 function clearActiveMission(): void {
-  activeMission = null;
+  clearMission();
+  lastBlockCompletionMinutes = null;
   qs<HTMLElement>('#mission-confirmed-card')?.classList.add('hidden');
   renderMissionPlanner();
+  updateFocusUI();
+}
+
+/**
+ * Points the EXISTING focus timer at a mission block's length.
+ * Reuses the single timer engine (no second timer); a custom-length remainder block
+ * (e.g. the 10-min tail of a 60/25 plan) runs on the same countdown as the presets.
+ */
+function prepareTimerForBlock(minutes: number): void {
+  setCustomBlock(minutes, { label: 'Mission Block' });
 }
 
 function renderFocusHistory() {
@@ -2596,12 +2776,16 @@ function updateFocusUI() {
     elTimer.textContent = `${m}:${s}`;
   }
   if (elLabel) {
-    const modeKeys: TranslationKey[] = ['focus.mode_25', 'focus.mode_52', 'focus.mode_90'];
-    elLabel.textContent = t(modeKeys[state.mode] || 'focus.mode_25');
+    if (state.isCustom) {
+      elLabel.textContent = state.modeLabel;
+    } else {
+      const modeKeys: TranslationKey[] = ['focus.mode_25', 'focus.mode_52', 'focus.mode_90'];
+      elLabel.textContent = t(modeKeys[state.mode] || 'focus.mode_25');
+    }
   }
   if (elRing) {
-    const offset =
-      691 * (1 - (state.minutes * 60 + state.seconds) / (TIMER_MODES[state.mode].minutes * 60));
+    const total = state.total || TIMER_MODES[state.mode].minutes * 60;
+    const offset = 691 * (1 - (state.minutes * 60 + state.seconds) / total);
     (elRing as unknown as HTMLElement).style.strokeDashoffset = String(offset);
     // Actually set attribute for SVG circle
     (elRing as unknown as SVGCircleElement).style.strokeDashoffset = `${offset}`;
@@ -2675,7 +2859,7 @@ function getImmersiveEls() {
 
 function updateImmersiveFocusUI(state: TimerState): void {
   const els = getImmersiveEls();
-  const total = TIMER_MODES[state.mode].minutes * 60;
+  const total = state.total || TIMER_MODES[state.mode].minutes * 60;
   const remaining = state.minutes * 60 + state.seconds;
   const elapsed = total - remaining;
   const pct = total > 0 ? Math.round((elapsed / total) * 100) : 0;
@@ -2686,8 +2870,12 @@ function updateImmersiveFocusUI(state: TimerState): void {
     els.timer.textContent = `${m}:${s}`;
   }
   if (els.label) {
-    const modeKeys: TranslationKey[] = ['focus.mode_25', 'focus.mode_52', 'focus.mode_90'];
-    els.label.textContent = t(modeKeys[state.mode] || 'focus.mode_25');
+    if (state.isCustom) {
+      els.label.textContent = state.modeLabel;
+    } else {
+      const modeKeys: TranslationKey[] = ['focus.mode_25', 'focus.mode_52', 'focus.mode_90'];
+      els.label.textContent = t(modeKeys[state.mode] || 'focus.mode_25');
+    }
   }
   if (els.mode) {
     els.mode.textContent = state.modeLabel;
@@ -2715,7 +2903,7 @@ function updateImmersiveFocusUI(state: TimerState): void {
     els.elapsed.textContent = `${em}:${es}`;
   }
   if (els.xp) {
-    els.xp.textContent = `+${TIMER_MODES[state.mode].xp} XP`;
+    els.xp.textContent = `+${state.xp} XP`;
   }
   if (els.progress) {
     els.progress.textContent = `${pct}%`;
@@ -2852,7 +3040,7 @@ onTick((state) => {
     elTimer.textContent = `${m}:${s}`;
   }
   if (elRing) {
-    const total = TIMER_MODES[state.mode].minutes * 60;
+    const total = state.total || TIMER_MODES[state.mode].minutes * 60;
     const elapsed = total - (state.minutes * 60 + state.seconds);
     elRing.style.strokeDashoffset = `${691 * (1 - elapsed / total)}`;
   }
@@ -2869,6 +3057,22 @@ onTick((state) => {
 });
 
 onComplete((mode) => {
+  // A running mission credits its current block off the SAME completion event.
+  // XP + session recording already happened inside focus.ts — we only account for it.
+  const mission = getActiveMission();
+  if (mission && mission.status === 'active') {
+    // Link to the session focus.ts just recorded (most recent), for provenance.
+    const sessions = getRecentSessions(1);
+    const sessionId = sessions.length ? sessions[0].time : null;
+    // Credit the block's planned duration (defaults inside completeCurrentBlock),
+    // keeping mission math aligned with the plan regardless of preset mode swaps.
+    const result = completeCurrentBlock({ sessionId });
+    if (result.completed || result.alreadyCompleted) {
+      lastBlockCompletionMinutes = result.block ? result.block.completedDuration : mode.minutes;
+      renderMissionPlanner();
+    }
+  }
+
   showCelebrate('Focus Complete', 'Take a real break. No phone.', '⏱️', false, mode.xp);
   updateFocusUI();
   closeImmersiveFocus();

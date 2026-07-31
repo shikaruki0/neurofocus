@@ -27,6 +27,10 @@ export interface TimerState {
   running: boolean;
   mode: number;
   modeLabel: string;
+  /** True when running a custom mission block instead of a preset mode. */
+  isCustom: boolean;
+  /** XP that will be awarded on completion of the active session. */
+  xp: number;
 }
 
 interface PersistedTimerState {
@@ -35,6 +39,10 @@ interface PersistedTimerState {
   remainingSeconds: number;
   running: boolean;
   endTimestamp: number | null;
+  /** Custom block length (mission blocks that don't match a preset mode). */
+  customMinutes?: number | null;
+  customXp?: number | null;
+  customLabel?: string | null;
 }
 
 const TIMER_STORAGE_KEY = 'focusTimer';
@@ -47,6 +55,27 @@ let isRunning = false;
 let endTimestamp = 0;
 let isCompleting = false;
 
+// When set, the SAME timer runs a custom-length block instead of the preset mode.
+// This is not a second timer — it reuses all countdown/start/pause/complete machinery.
+let customMinutes: number | null = null;
+let customXp: number | null = null;
+let customLabel: string | null = null;
+
+/** The active session length in minutes (custom block if set, else the preset mode). */
+function activeMinutes(): number {
+  return customMinutes !== null ? customMinutes : TIMER_MODES[currentMode].minutes;
+}
+
+/** The XP awarded on completion (custom block if set, else the preset mode). */
+function activeXp(): number {
+  return customXp !== null ? customXp : TIMER_MODES[currentMode].xp;
+}
+
+/** The label for the active session (custom block if set, else the preset mode). */
+function activeLabel(): string {
+  return customLabel !== null ? customLabel : TIMER_MODES[currentMode].label;
+}
+
 function isValidMode(mode: number): boolean {
   return Number.isInteger(mode) && mode >= 0 && mode < TIMER_MODES.length;
 }
@@ -58,6 +87,9 @@ function saveTimerState(): void {
     remainingSeconds,
     running: isRunning,
     endTimestamp: isRunning ? endTimestamp : null,
+    customMinutes,
+    customXp,
+    customLabel,
   } satisfies PersistedTimerState);
 }
 
@@ -88,7 +120,26 @@ function restoreTimerState(): void {
   if (!saved || saved.version !== 1 || !isValidMode(saved.mode ?? -1)) return;
 
   const mode = saved.mode as number;
-  const maximum = TIMER_MODES[mode].minutes * 60;
+
+  // Restore a custom mission block if one was persisted (same timer engine).
+  if (
+    typeof saved.customMinutes === 'number' &&
+    Number.isFinite(saved.customMinutes) &&
+    saved.customMinutes > 0
+  ) {
+    customMinutes = Math.floor(saved.customMinutes);
+    customXp =
+      typeof saved.customXp === 'number' && Number.isFinite(saved.customXp)
+        ? saved.customXp
+        : TIMER_MODES[mode].xp;
+    customLabel = typeof saved.customLabel === 'string' ? saved.customLabel : null;
+  } else {
+    customMinutes = null;
+    customXp = null;
+    customLabel = null;
+  }
+
+  const maximum = activeMinutes() * 60;
   if (!Number.isFinite(saved.remainingSeconds) || saved.remainingSeconds! < 0) {
     remove(TIMER_STORAGE_KEY);
     return;
@@ -106,14 +157,49 @@ function restoreTimerState(): void {
   }
 }
 
-/** Sets the timer mode and resets the current timer. */
+/** Sets the timer mode and resets the current timer. Clears any custom block. */
 export function setMode(modeIndex: number): void {
   if (!isValidMode(modeIndex)) return;
   stopTimer();
+  customMinutes = null;
+  customXp = null;
+  customLabel = null;
   currentMode = modeIndex;
   remainingSeconds = TIMER_MODES[modeIndex].minutes * 60;
   totalSeconds = remainingSeconds;
   saveTimerState();
+}
+
+/**
+ * Configures the SAME timer to run a custom-length mission block.
+ * Reuses the existing countdown/start/pause/complete engine — no second timer.
+ * When minutes matches a preset mode exactly, we fall back to that preset (so XP/label
+ * stay consistent with the standard focus experience).
+ */
+export function setCustomBlock(minutes: number, options?: { xp?: number; label?: string }): void {
+  if (!Number.isFinite(minutes) || minutes <= 0) return;
+  stopTimer();
+  const mins = Math.floor(minutes);
+  const preset = TIMER_MODES.findIndex((m) => m.minutes === mins);
+  if (preset !== -1 && options?.xp === undefined && options?.label === undefined) {
+    // Exact preset match — behave like a normal mode change for consistency.
+    customMinutes = null;
+    customXp = null;
+    customLabel = null;
+    currentMode = preset;
+  } else {
+    customMinutes = mins;
+    customXp = typeof options?.xp === 'number' ? options.xp : TIMER_MODES[currentMode].xp;
+    customLabel = typeof options?.label === 'string' ? options.label : null;
+  }
+  remainingSeconds = activeMinutes() * 60;
+  totalSeconds = remainingSeconds;
+  saveTimerState();
+}
+
+/** True when the timer is running a custom mission block (not a preset mode). */
+export function isCustomBlock(): boolean {
+  return customMinutes !== null;
 }
 
 /** Starts or resumes the timer. */
@@ -142,7 +228,7 @@ export function stopTimer(): void {
   isRunning = false;
   endTimestamp = 0;
   clearTimerInterval();
-  remainingSeconds = TIMER_MODES[currentMode].minutes * 60;
+  remainingSeconds = activeMinutes() * 60;
   totalSeconds = remainingSeconds;
   saveTimerState();
 }
@@ -156,7 +242,11 @@ function completeSession(): void {
   clearTimerInterval();
   remove(TIMER_STORAGE_KEY);
 
-  const mode = TIMER_MODES[currentMode];
+  // Preserve the exact preset object for standard modes; synthesize one for custom blocks.
+  const mode: TimerMode =
+    customMinutes !== null
+      ? { minutes: activeMinutes(), xp: activeXp(), label: activeLabel() }
+      : TIMER_MODES[currentMode];
   const today = todayStr();
   data.focusMinutes = (data.focusMinutes || 0) + mode.minutes;
   data.totalFocusMinutes = (data.totalFocusMinutes || 0) + mode.minutes;
@@ -190,7 +280,9 @@ export function getTimerState(): TimerState {
     total: totalSeconds,
     running: isRunning,
     mode: currentMode,
-    modeLabel: TIMER_MODES[currentMode].label,
+    modeLabel: activeLabel(),
+    isCustom: customMinutes !== null,
+    xp: activeXp(),
   };
 }
 

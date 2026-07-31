@@ -3282,6 +3282,25 @@ body.auth-open {
 .mission-confirmed-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .mission-confirmed-meta .tag { font-size: .7rem; }
 
+/* Active mission runtime UI */
+.mission-current-block { margin: 4px 0 12px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--accent-start) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent-start) 30%, transparent); }
+.mission-current-block-label { font-size: .72rem; font-weight: 800; letter-spacing: .08em; color: var(--accent-start); text-transform: uppercase; }
+.mission-current-block-time { font-size: 1.1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.mission-progress { margin-bottom: 12px; }
+.mission-progress-label { font-size: .72rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; }
+.mission-progress-value { font-size: .9rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mission-complete-banner { margin: 4px 0 12px; padding: 12px; border-radius: 10px; background: color-mix(in srgb, var(--success, #22c55e) 14%, var(--surface)); border: 1px solid color-mix(in srgb, var(--success, #22c55e) 34%, transparent); }
+.mission-block-complete-title { font-size: .82rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.mission-block-complete-line { font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.mission-block-complete-xp { font-size: .8rem; font-weight: 700; color: var(--accent-start); }
+.mission-next-label { margin-top: 8px; font-size: .72rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; }
+.mission-next-value { font-size: .88rem; font-weight: 700; }
+.mission-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.mission-actions .btn { width: auto; flex: 1 1 auto; min-width: 120px; }
+.mission-block-item.mission-block-completed { opacity: .7; }
+.mission-block-item.mission-block-completed .mission-block-item-time { color: var(--success, #22c55e); }
+.mission-block-item.mission-block-active { border: 1px solid color-mix(in srgb, var(--accent-start) 40%, transparent); }
+
 /* Grid layout adjustments for mission planner in focus tab */
 @media (min-width: 760px) {
   #tab-focus > .mission-planner-card,

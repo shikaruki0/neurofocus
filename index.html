@@ -599,7 +599,7 @@
         <div class="brand-text">Neuro<span>Focus</span></div>
       </div>
       <div class="header-actions">
-        <div class="header-status" aria-label="App status"><span></span> Focus system online</div>
+        <div class="header-status" id="app-status"><span class="status-dot online"></span> System Online</div>
         <button
           class="icon-btn"
           id="settings-btn"
@@ -645,14 +645,7 @@
           </div>
         </div>
 
-        <div
-          class="card"
-          style="
-            text-align: center;
-            padding: var(--space-3);
-            border-left: 3px solid var(--accent-start);
-          "
-        >
+        <div class="card card-accent-left text-center">
           <div
             style="
               font-size: var(--font-xs);
@@ -699,7 +692,7 @@
           <span data-i18n="home.morning_ritual">🌅 Morning Ritual</span>
           <div class="line"></div>
         </div>
-        <div class="card" id="ritual-card">
+        <div class="card card-featured" id="ritual-card">
           <div
             style="font-size: var(--font-sm); font-weight: 700; margin-bottom: 4px"
             data-i18n="home.ritual_prime_title"
@@ -838,7 +831,7 @@
           <span data-i18n="home.priority">⚡ Priority</span>
           <div class="line"></div>
         </div>
-        <div class="card" id="dash-priority">
+        <div class="card card-accent-left" id="dash-priority">
           <div class="empty">
             <div class="empty-icon">🎯</div>
             <span data-i18n="home.priority_loading">Loading your priorities...</span>
@@ -1815,14 +1808,13 @@
 
         <div class="settings-section">
           <div class="section-label">
-            <span data-i18n="settings.data_section">⚠️ Data</span>
+            <span data-i18n="settings.data_section">⚠️ Danger Zone</span>
             <div class="line"></div>
           </div>
-          <div class="card">
+          <div class="settings-danger-zone">
             <button
-              class="btn btn-ghost btn-block mb-2"
+              class="btn btn-ghost btn-block mb-3"
               id="reset-today-btn"
-              style="color: var(--danger); font-size: var(--font-sm)"
               data-i18n="settings.reset_today"
             >
               🔄 Reset Today's Progress
@@ -1830,7 +1822,6 @@
             <button
               class="btn btn-ghost btn-block"
               id="reset-all-btn"
-              style="color: var(--danger); font-size: var(--font-sm)"
               data-i18n="settings.delete_all"
             >
               ⚠️ Delete All Data

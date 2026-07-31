@@ -183,7 +183,10 @@ describe('date-scoped focus history - core filtering', () => {
       backlogId: null,
       totalMinutes: 50,
       blockMinutes: 25,
-      blocks: [{ minutes: 25 }, { minutes: 25 }],
+      blocks: [
+        { index: 1, minutes: 25, cumulative: 25 },
+        { index: 2, minutes: 25, cumulative: 50 },
+      ],
     });
     // manually link sessionIds to blocks for test
     const mission = getActiveMission();
@@ -210,7 +213,10 @@ describe('date-scoped focus history - core filtering', () => {
       backlogId: null,
       totalMinutes: 50,
       blockMinutes: 25,
-      blocks: [{ minutes: 25 }, { minutes: 25 }],
+      blocks: [
+        { index: 1, minutes: 25, cumulative: 25 },
+        { index: 2, minutes: 25, cumulative: 50 },
+      ],
     });
     const mission = getActiveMission();
     if (mission) {

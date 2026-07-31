@@ -132,7 +132,15 @@ import {
 } from './modules/progressImport.ts';
 import { escapeHTML } from './utils/sanitize.ts';
 import { qs, qsa } from './utils/dom.ts';
-import { todayStr, currentDOW, DAY_LABELS, localISODate, shiftISODate } from './utils/date.ts';
+import {
+  todayStr,
+  currentDOW,
+  DAY_LABELS,
+  localISODate,
+  shiftISODate,
+  isValidISODate,
+  parseLocalISODate,
+} from './utils/date.ts';
 import { getDailyFocusHistory } from './modules/focusHistory.ts';
 import { validateProfileName, validateMission, validateMissionSetup } from './utils/validation.ts';
 
@@ -1354,50 +1362,128 @@ function prepareTimerForBlock(minutes: number): void {
 
 function renderFocusHistory() {
   const el = qs<HTMLElement>('#focus-history');
+  // Guard: if container is missing (e.g., during early init), do nothing but don't crash.
   if (!el) return;
+
+  // Ensure focusHistoryDate is always a valid ISO date; fallback to today if corrupted.
+  if (!isValidISODate(focusHistoryDate)) {
+    focusHistoryDate = localISODate();
+  }
 
   const today = localISODate();
   const selected = getDailyFocusHistory(focusHistoryDate);
+
+  // Date input: initialize safely, set max to today to guide native picker, but still allow future via code.
   const dateInput = qs<HTMLInputElement>('#focus-history-date');
-  if (dateInput) dateInput.value = focusHistoryDate;
-  const dateLabel = qs<HTMLElement>('#focus-history-date-label');
-  if (dateLabel) {
-    const date = new Date(`${focusHistoryDate}T12:00:00`);
-    dateLabel.textContent = date.toLocaleDateString([], {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  if (dateInput) {
+    dateInput.value = focusHistoryDate;
+    try {
+      dateInput.max = today;
+    } catch {
+      // ignore if browser doesn't support max
+    }
   }
+
+  // Prominent selected date label + relative hint (Today/Yesterday/Tomorrow/Future)
+  const dateLabel = qs<HTMLElement>('#focus-history-date-label');
+  const relativeLabel = qs<HTMLElement>('#focus-history-relative');
+  if (dateLabel) {
+    const parsed = parseLocalISODate(focusHistoryDate);
+    if (parsed) {
+      dateLabel.textContent = parsed.toLocaleDateString([], {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } else {
+      dateLabel.textContent = focusHistoryDate;
+    }
+  }
+  if (relativeLabel) {
+    const isToday = focusHistoryDate === today;
+    const isYesterday = focusHistoryDate === shiftISODate(today, -1);
+    const isTomorrow = focusHistoryDate === shiftISODate(today, 1);
+    const isFuture = focusHistoryDate > today;
+    const isPast = focusHistoryDate < today && !isYesterday;
+    if (isToday) relativeLabel.textContent = 'Today';
+    else if (isYesterday) relativeLabel.textContent = 'Yesterday';
+    else if (isTomorrow) relativeLabel.textContent = 'Tomorrow';
+    else if (isFuture) relativeLabel.textContent = 'Future';
+    else if (isPast) relativeLabel.textContent = 'Past';
+    else relativeLabel.textContent = '';
+    relativeLabel.classList.toggle('is-today', isToday);
+    relativeLabel.classList.toggle('is-future', isFuture);
+  }
+
+  // Next button disabled when at or beyond today — clear visual disabled state.
   const next = qs<HTMLButtonElement>('#focus-history-next');
-  if (next) next.disabled = focusHistoryDate >= today;
+  if (next) {
+    const disableNext = focusHistoryDate >= today;
+    next.disabled = disableNext;
+    next.setAttribute('aria-disabled', String(disableNext));
+  }
 
-  qs<HTMLElement>('#focus-history-total')!.textContent = `${selected.totalMinutes} minutes`;
-  qs<HTMLElement>('#focus-history-blocks')!.textContent = String(selected.completedBlocks);
-  qs<HTMLElement>('#focus-history-missions')!.textContent = String(selected.completedMissions);
-  const xp = qs<HTMLElement>('#focus-history-xp');
-  if (xp) xp.textContent = selected.xpEarned === null ? '—' : `${selected.xpEarned} XP`;
+  // Today button indicates active state when on today.
+  const todayBtn = qs<HTMLButtonElement>('#focus-history-today');
+  if (todayBtn) {
+    todayBtn.classList.toggle('is-active', focusHistoryDate === today);
+    todayBtn.setAttribute('aria-pressed', String(focusHistoryDate === today));
+  }
 
+  // Statistics — safe optional updates (no unsafe non-null assertions).
+  const totalEl = qs<HTMLElement>('#focus-history-total');
+  if (totalEl) totalEl.textContent = `${selected.totalMinutes} min`;
+
+  const blocksEl = qs<HTMLElement>('#focus-history-blocks');
+  if (blocksEl) blocksEl.textContent = String(selected.completedBlocks);
+
+  const missionsEl = qs<HTMLElement>('#focus-history-missions');
+  if (missionsEl) missionsEl.textContent = String(selected.completedMissions);
+
+  const xpEl = qs<HTMLElement>('#focus-history-xp');
+  if (xpEl) xpEl.textContent = selected.xpEarned === null ? '—' : `${selected.xpEarned} XP`;
+
+  // Highlight total minutes when there is data — premium emphasis.
+  const statsWrap = qs<HTMLElement>('#focus-history-card .focus-history-stats');
+  if (statsWrap) {
+    statsWrap.classList.toggle('has-data', selected.totalMinutes > 0);
+  }
+
+  // Empty / future / success states — designed, not broken.
   if (!selected.sessions.length) {
-    el.innerHTML = `<div class="empty focus-history-empty"><div class="empty-icon">🗓️</div><strong>No focus sessions on this date.</strong><span>Start a session to build your record.</span></div>`;
+    const isFuture = focusHistoryDate > today;
+    if (isFuture) {
+      el.innerHTML = `<div class="focus-history-empty focus-history-future"><div class="empty-icon">🔮</div><strong>Future date</strong><span>No sessions yet — this day is still ahead. Stay focused today and it will fill up.</span></div>`;
+    } else {
+      el.innerHTML = `<div class="focus-history-empty"><div class="empty-icon">📭</div><strong>No focus sessions on this date.</strong><span>Start a deep-work session to build your record. Every minute counts.</span></div>`;
+    }
     return;
   }
+
+  // Session list — premium scannable rows: mission primary, subject + time secondary, duration badge.
   el.innerHTML = selected.sessions
     .map(
       (session) => `
-    <div class="list-item">
-      <div class="info"><div class="title">${escapeHTML(session.missionName)}${session.subject ? ` <span class="meta">· ${escapeHTML(session.subject)}</span>` : ''}</div>
-      <div class="meta">${session.duration} minutes · completed ${escapeHTML(session.completionTime)}</div></div>
-      <span class="tag tag-green">${session.duration}m</span>
+    <div class="focus-history-item">
+      <div class="focus-history-item-dot" aria-hidden="true"></div>
+      <div class="focus-history-item-info">
+        <div class="focus-history-item-title">${escapeHTML(session.missionName)}</div>
+        <div class="focus-history-item-meta">
+          ${session.subject ? `<span class="focus-history-item-subject">${escapeHTML(session.subject)}</span><span class="meta-sep">·</span>` : ''}
+          <span>Completed ${escapeHTML(session.completionTime)}</span>
+        </div>
+      </div>
+      <span class="focus-history-badge">${session.duration}m</span>
     </div>`,
     )
     .join('');
 }
 
 function setFocusHistoryDate(date: string): void {
-  // Date inputs provide ISO values; reject malformed values and future dates safely.
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return;
+  // Strict ISO validation — never trust formatted display text, never crash on invalid.
+  if (!isValidISODate(date)) return;
+  // Allow future dates for empty-state handling, but keep navigation safe.
   focusHistoryDate = date;
   renderFocusHistory();
 }

@@ -1,12 +1,26 @@
 import { data } from './data.ts';
 import { getActiveMission, type ActiveMission } from './mission.ts';
-import { localISODate } from '../utils/date.ts';
+import { isValidISODate, localISODate } from '../utils/date.ts';
 
 function sessionISODate(session: { date: string; time: number }): string {
   // `time` is authoritative and handles midnight/local timezone boundaries safely.
-  if (Number.isFinite(session.time)) return localISODate(new Date(session.time));
+  if (Number.isFinite(session.time)) {
+    const dt = new Date(session.time);
+    if (!Number.isNaN(dt.getTime())) return localISODate(dt);
+  }
   const parsed = new Date(session.date);
   return Number.isNaN(parsed.getTime()) ? '' : localISODate(parsed);
+}
+
+function emptyHistory(forDate: string): DailyFocusHistory {
+  return {
+    date: forDate,
+    sessions: [],
+    totalMinutes: 0,
+    completedBlocks: 0,
+    completedMissions: 0,
+    xpEarned: null,
+  };
 }
 
 export interface FocusHistorySession {
@@ -33,6 +47,9 @@ function missionForSession(mission: ActiveMission | null, sessionTime: number) {
 
 /** Builds a date-scoped view without changing or deleting persisted history. */
 export function getDailyFocusHistory(selectedDate: string): DailyFocusHistory {
+  // Guard against invalid or malformed date inputs — never crash and never corrupt.
+  if (!isValidISODate(selectedDate)) return emptyHistory(selectedDate || '');
+
   const mission = getActiveMission();
   const sessions = data.sessions
     .filter((session) => sessionISODate(session) === selectedDate)

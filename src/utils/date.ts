@@ -14,18 +14,44 @@ export function todayStr(): string {
 
 /** Returns the user's local calendar date in ISO format for safe comparisons. */
 export function localISODate(date: Date = new Date()): string {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
-/** Moves a local ISO calendar date without UTC conversion. */
-export function shiftISODate(isoDate: string, days: number): string {
+/** Validates a local ISO date string YYYY-MM-DD without overflow. */
+export function isValidISODate(isoDate: string): boolean {
+  if (typeof isoDate !== 'string') return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return false;
+  const [y, m, d] = isoDate.split('-').map(Number);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return false;
+  if (m < 1 || m > 12) return false;
+  if (d < 1 || d > 31) return false;
+  const dt = new Date(y, m - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+}
+
+/** Safely parses a local ISO date string to a local Date, or null if invalid. */
+export function parseLocalISODate(isoDate: string): Date | null {
+  if (!isValidISODate(isoDate)) return null;
   const [year, month, day] = isoDate.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  date.setDate(date.getDate() + days);
-  return localISODate(date);
+  return new Date(year, month - 1, day);
+}
+
+/** Moves a local ISO calendar date without UTC conversion. Safe against invalid input. */
+export function shiftISODate(isoDate: string, days: number): string {
+  const parsed = parseLocalISODate(isoDate);
+  if (!parsed) return localISODate();
+  parsed.setDate(parsed.getDate() + days);
+  return localISODate(parsed);
 }
 
 /**

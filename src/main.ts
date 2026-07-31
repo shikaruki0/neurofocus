@@ -267,15 +267,15 @@ function renderRitual() {
   el.innerHTML = RITUAL_STEPS.map((s, i) => {
     const stepLabel = t(`ritual.step${i + 1}` as TranslationKey) || s;
     return `
-    <div class="ritual-step ${r.steps[i] ? 'done' : ''}" data-idx="${i}">
+    <div class="ritual-step ${r.steps[i] ? 'done' : ''}" data-idx="${i}" tabindex="0" role="button" aria-pressed="${r.steps[i]}">
       <div class="ritual-circle">${RITUAL_ICONS[i]}</div>
       <div class="ritual-label">${escapeHTML(stepLabel)}</div>
     </div>`;
   }).join('');
 
-  // Add click handlers
+  // Add click and keyboard handlers
   qsa<HTMLElement>('.ritual-step', el).forEach((step) => {
-    step.addEventListener('click', () => {
+    const handleToggle = () => {
       const idx = parseInt((step as HTMLElement).dataset.idx || '0', 10);
       const result = toggleStep(idx);
       if (result.allDone) {
@@ -283,6 +283,14 @@ function renderRitual() {
       }
       renderRitual();
       checkQuests();
+    };
+
+    step.addEventListener('click', handleToggle);
+    step.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleToggle();
+      }
     });
   });
 
@@ -441,13 +449,13 @@ function renderDailyChecks() {
     el.innerHTML = CHECK_ITEMS.map((item) => {
       const itemLabel = t(`check.${item.id}` as TranslationKey);
       return `
-      <div class="check-row" id="row-${item.id}">
-        <input type="checkbox" id="chk-${item.id}">
+      <div class="check-row" id="row-${item.id}" tabindex="0" role="checkbox" aria-checked="false">
+        <input type="checkbox" id="chk-${item.id}" tabindex="-1">
         <label>${escapeHTML(itemLabel)}</label>
       </div>`;
     }).join('');
 
-    // Add click handlers
+    // Add click and keyboard handlers
     CHECK_ITEMS.forEach((item) => {
       const row = qs<HTMLElement>(`#row-${item.id}`);
       const chk = qs<HTMLInputElement>(`#chk-${item.id}`);
@@ -462,7 +470,15 @@ function renderDailyChecks() {
         dailyChecksBuilt = false; // force re-render of checks state
         renderDailyChecks();
       };
-      if (row) row.addEventListener('click', toggle);
+      if (row) {
+        row.addEventListener('click', toggle);
+        row.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggle();
+          }
+        });
+      }
       if (chk)
         chk.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -479,7 +495,10 @@ function renderDailyChecks() {
     if (checked) doneCount++;
     const row = qs<HTMLElement>(`#row-${item.id}`);
     const chk = qs<HTMLInputElement>(`#chk-${item.id}`);
-    if (row) row.classList.toggle('done', checked);
+    if (row) {
+      row.classList.toggle('done', checked);
+      row.setAttribute('aria-checked', String(checked));
+    }
     if (chk) chk.checked = checked;
   });
 
@@ -1913,6 +1932,8 @@ function updateDashboard() {
     const ht = data.habits.filter((h) => !h.today);
     let html = '';
 
+    dp.classList.remove('next-action-highlight');
+
     if (inc.length > 0 && inc[0]) {
       const remaining = (inc[0].total || 0) - (inc[0].done || 0);
       const remainingText = t('backlog.lectures_remaining', { count: remaining });
@@ -1922,6 +1943,7 @@ function updateDashboard() {
         .filter(Boolean)
         .join(' · ');
       html += `<div class="list-item"><div class="info"><div class="title backlog-chapter-title">${escapeHTML(priorityTitle)}</div><div class="meta">${escapeHTML(priorityMeta)}</div></div><span class="tag tag-red">${escapeHTML(urgentTag)}</span></div>`;
+      dp.classList.add('next-action-highlight');
     }
     if (ht.length > 0 && ht[0]) {
       const anchorText = t('plan.after_anchor', {
@@ -1929,6 +1951,9 @@ function updateDashboard() {
       });
       const nextTag = t('plan.next_tag');
       html += `<div class="list-item"><div class="info"><div class="title">${escapeHTML(ht[0].name)}</div><div class="meta">${anchorText}</div></div><span class="tag tag-blue">${escapeHTML(nextTag)}</span></div>`;
+      if (!dp.classList.contains('next-action-highlight')) {
+        dp.classList.add('next-action-highlight');
+      }
     }
     dp.innerHTML =
       html ||

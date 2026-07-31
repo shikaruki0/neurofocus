@@ -1195,8 +1195,9 @@ function renderMissionConfirmed(): void {
       bannerHTML = `
         <div class="mission-complete-banner">
           <div class="mission-block-complete-title">MISSION COMPLETE</div>
-          <div class="mission-block-complete-line">${mission.completedDuration} minutes completed</div>
-          <div class="mission-block-complete-xp">+ existing XP reward</div>
+          <div class="mission-block-complete-line">${mission.completedDuration} / ${mission.totalDuration} minutes completed</div>
+          ${mission.backlogId ? `<div class="mission-block-complete-backlog">Backlog updated:<br>1 lecture completed</div>` : ''}
+          <div class="mission-block-complete-xp">Rewards:<br>+ focus XP${mission.backlogId ? '<br>+ backlog completion XP' : ''}</div>
         </div>`;
     } else {
       const next = mission.blocks[mission.currentBlock];
@@ -1207,7 +1208,7 @@ function renderMissionConfirmed(): void {
         <div class="mission-complete-banner">
           <div class="mission-block-complete-title">BLOCK COMPLETE</div>
           <div class="mission-block-complete-line">${lastBlockCompletionMinutes} minutes completed</div>
-          <div class="mission-block-complete-xp">+ existing XP reward</div>
+          <div class="mission-block-complete-xp">+ focus XP</div>
           ${nextLine ? `<div class="mission-next-label">Next:</div><div class="mission-next-value">${nextLine}</div>` : ''}
         </div>`;
     }
@@ -1225,10 +1226,18 @@ function renderMissionConfirmed(): void {
   } else if (isComplete) {
     actionsHTML = `
       <div class="mission-actions">
-        <button class="btn" id="mission-finish-btn" type="button">Finish mission</button>
+        <button class="btn" id="mission-finish-btn" type="button">Start another mission</button>
+        <button class="btn btn-ghost" id="mission-view-backlog-btn" type="button">View backlog</button>
+        <button class="btn btn-ghost" id="mission-dashboard-btn" type="button">Return to dashboard</button>
       </div>`;
   } else if (isPaused) {
+    const remainingBlocks = mission.blocks.filter((b) => b.status === 'pending').length;
     actionsHTML = `
+      <div class="mission-paused-info">
+        <div class="mission-paused-blocks">${remainingBlocks} block${remainingBlocks === 1 ? '' : 's'} remaining</div>
+        <div class="mission-paused-backlog">Backlog:<br>${mission.backlogId ? 'Lecture still pending' : 'No backlog linked'}</div>
+        <div class="mission-paused-status">Progress safely saved.</div>
+      </div>
       <div class="mission-actions">
         <button class="btn" id="mission-resume-btn" type="button">Resume mission</button>
         <button class="btn btn-ghost" id="mission-end-btn" type="button">Discard mission</button>
@@ -1278,6 +1287,14 @@ function renderMissionConfirmed(): void {
   });
   qs<HTMLElement>('#mission-finish-btn')?.addEventListener('click', () => {
     clearActiveMission();
+  });
+  qs<HTMLElement>('#mission-view-backlog-btn')?.addEventListener('click', () => {
+    clearActiveMission();
+    switchTab('backlogs');
+  });
+  qs<HTMLElement>('#mission-dashboard-btn')?.addEventListener('click', () => {
+    clearActiveMission();
+    switchTab('home');
   });
   qs<HTMLElement>('#mission-resume-btn')?.addEventListener('click', () => {
     resumeMission();

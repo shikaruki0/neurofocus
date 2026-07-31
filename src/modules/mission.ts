@@ -15,6 +15,7 @@
 
 import { get, remove, set } from './storage.ts';
 import type { MissionSetup } from './missionPlanner.ts';
+import { incrementBacklog } from './backlogs.ts';
 
 export type MissionStatus = 'active' | 'paused' | 'completed' | 'cancelled';
 export type BlockStatus = 'pending' | 'active' | 'completed';
@@ -38,6 +39,8 @@ export interface ActiveMission {
   title: string;
   /** Optional backlog this mission draws from. Never auto-completed by the mission. */
   backlogId: number | null;
+  /** Whether the backlog was already incremented for this mission. */
+  backlogUpdated?: boolean;
   subject: string;
   /** Total planned minutes across all blocks. */
   totalDuration: number;
@@ -243,6 +246,11 @@ export function completeCurrentBlock(options?: {
   const missionComplete = nextIndex === -1;
   if (missionComplete) {
     active.status = 'completed';
+    // Exactly one lecture backlog se reduce karo (Milestone 3)
+    if (active.backlogId && !active.backlogUpdated) {
+      incrementBacklog(active.backlogId);
+      active.backlogUpdated = true;
+    }
     // Leave currentBlock on the last block for display purposes.
   } else {
     active.currentBlock = nextIndex;

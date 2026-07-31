@@ -12,6 +12,22 @@ export function todayStr(): string {
   return new Date().toDateString();
 }
 
+/** Returns the user's local calendar date in ISO format for safe comparisons. */
+export function localISODate(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/** Moves a local ISO calendar date without UTC conversion. */
+export function shiftISODate(isoDate: string, days: number): string {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + days);
+  return localISODate(date);
+}
+
 /**
  * Returns the current day of week (0=Sun ... 6=Sat).
  * @returns {number}

@@ -1,6 +1,12 @@
 /**
- * Theme System — 3 themes (Midnight, Cream, Dusk) + auto-switch by time.
- * Light: 6AM–6PM, Dark: 6PM–6AM
+ * Theme System — 3 themes (Ink, Paper, Forest) + auto-switch by time.
+ *
+ * Internal IDs (midnight/light/dusk) are kept stable for storage & sync
+ * compatibility with existing profiles:
+ *   midnight = Ink    (deep navy dark — default)
+ *   light    = Paper  (warm cream light)
+ *   dusk     = Forest (pine green dark)
+ * Auto: Paper during 6AM–6PM, Ink during 6PM–6AM.
  */
 
 import { set as storageSet, get as storageGet } from './storage.ts';
@@ -15,10 +21,23 @@ export interface ThemeLabel {
 }
 
 export const THEME_LABELS: Record<ThemeName, ThemeLabel> = {
-  midnight: { icon: '🌙', name: 'Midnight' },
-  light: { icon: '☀️', name: 'Cream' },
-  dusk: { icon: '🌅', name: 'Dusk' },
+  midnight: { icon: '🌙', name: 'Ink' },
+  light: { icon: '☀️', name: 'Paper' },
+  dusk: { icon: '🌲', name: 'Forest' },
 };
+
+/** Browser UI color per theme (PWA chrome + splash background). */
+const THEME_META_COLOR: Record<ThemeName, string> = {
+  midnight: '#0a0f1e',
+  light: '#faf6f0',
+  dusk: '#0b1512',
+};
+
+/** Keeps the browser chrome (URL bar, PWA title bar) in sync with the theme. */
+function applyMetaThemeColor(theme: ThemeName): void {
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (meta) meta.content = THEME_META_COLOR[theme];
+}
 
 /**
  * Applies a theme to the document.
@@ -27,6 +46,7 @@ export const THEME_LABELS: Record<ThemeName, ThemeLabel> = {
 export function setTheme(theme: ThemeName): void {
   if (!THEMES.includes(theme)) return;
   document.documentElement.setAttribute('data-theme', theme);
+  applyMetaThemeColor(theme);
   storageSet('theme', theme);
 }
 

@@ -3446,8 +3446,8 @@ try {
   console.error('NeuroFocusX init crashed', e);
   const el = document.createElement('div');
   el.style.cssText =
-    'position:fixed;inset:0;z-index:9999;background:#050810;color:#fff;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;font-family:sans-serif';
-  el.innerHTML = `<div><h2>⚠️ Something went wrong</h2><p>Please refresh. If persists, clear site data from Settings.</p><pre style="font-size:12px;opacity:0.7;margin-top:12px;max-width:90vw;overflow:auto">${escapeHTML(String(e))}</pre><button id="nf-crash-clear-btn" type="button" style="margin-top:16px;padding:10px 20px;background:#00d9ff;color:#000;border:none;border-radius:8px;font-weight:700">Clear Data & Reload</button></div>`;
+    'position:fixed;inset:0;z-index:9999;background:#0a0f1e;color:#fff;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;font-family:sans-serif';
+  el.innerHTML = `<div><h2>⚠️ Something went wrong</h2><p>Please refresh. If persists, clear site data from Settings.</p><pre style="font-size:12px;opacity:0.7;margin-top:12px;max-width:90vw;overflow:auto">${escapeHTML(String(e))}</pre><button id="nf-crash-clear-btn" type="button" style="margin-top:16px;padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-weight:700">Clear Data & Reload</button></div>`;
   el.querySelector<HTMLButtonElement>('#nf-crash-clear-btn')?.addEventListener('click', () => {
     localStorage.clear();
     location.reload();

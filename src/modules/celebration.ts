@@ -119,7 +119,7 @@ export function fireConfetti(canvas: HTMLCanvasElement): void {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  const colors = ['#00d9ff', '#a855f7', '#ffd740', '#00e676', '#ff5252'];
+  const colors = ['#818cf8', '#38bdf8', '#fbbf24', '#34d399', '#f87171'];
   const particles: Particle[] = [];
 
   for (let i = 0; i < 80; i++) {

@@ -1,6 +1,6 @@
 {
   "name": "neurofocusx",
-  "version": "14.0.0",
+  "version": "14.1.0",
   "description": "NeuroFocusX — A gamified productivity & study app with XP, streaks, habits, focus timer, and frictionless local login.",
   "type": "module",
   "engines": {

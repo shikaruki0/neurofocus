@@ -31,7 +31,7 @@ _Level up your brain. Build unbreakable discipline. Track everything that matter
 - 🌍 **In-app languages** — Built-in translation (no browser translator needed): Hinglish, English, हिन्दी, Español, Français, Deutsch — Hinglish is suggested first, switchable anytime in Settings
 - 🔐 **Safe account start** — Continue with email for cross-device sync or skip for a local-only profile
 - 💾 **Progress protection** — Local backups and explicit local/cloud/merge choices prevent silent overwrites
-- 🎨 **3 Themes** — Midnight, Cream, Dusk + auto-switch by time
+- 🎨 **3 Focus Themes** — Ink (deep navy), Paper (warm cream), Forest (pine green) + auto-switch by time
 - 📱 **PWA** — Installable, works offline
 - 🔔 **Haptic Feedback** — Vibration on milestones (mobile)
 

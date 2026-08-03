@@ -98,6 +98,25 @@ import { getDailyQuote } from './modules/quotes.ts';
 import { showCelebrate, hideCelebrate, hideRankUp } from './modules/celebration.ts';
 import { endLocalSession, isSessionStarted, startLocalSession } from './modules/session.ts';
 import {
+  startAlarmLoop,
+  stopAlarmLoop,
+  stopTitleFlash,
+  startTitleFlash,
+  vibrateStrong,
+  vibrateSoft,
+  getSoundSettings,
+  updateSoundSettings,
+  playTestSound,
+  type SoundPack,
+} from './modules/sound.ts';
+import {
+  isNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermission,
+  showFocusCompleteNotification,
+  showUrgeCompleteNotification,
+} from './modules/notification.ts';
+import {
   currentUser,
   isEmailAuthConfigured,
   onAuthChange,
@@ -1746,6 +1765,60 @@ function renderAccountSettings() {
   }
 }
 
+function renderSoundSettings(): void {
+  const settings = getSoundSettings();
+  const enabledToggle = qs<HTMLInputElement>('#sound-enabled-toggle');
+  const volumeSlider = qs<HTMLInputElement>('#sound-volume-slider');
+  const volumeLabel = qs<HTMLElement>('#sound-volume-label');
+  const loopToggle = qs<HTMLInputElement>('#sound-loop-toggle');
+  const vibToggle = qs<HTMLInputElement>('#sound-vibration-toggle');
+  const notifToggle = qs<HTMLInputElement>('#sound-notification-toggle');
+  const hint = qs<HTMLElement>('#notification-permission-hint');
+
+  if (enabledToggle) enabledToggle.checked = settings.enabled;
+  if (volumeSlider) volumeSlider.value = String(Math.round(settings.volume * 100));
+  if (volumeLabel) volumeLabel.textContent = `${Math.round(settings.volume * 100)}%`;
+  if (loopToggle) loopToggle.checked = settings.loop;
+  if (vibToggle) vibToggle.checked = settings.vibration;
+  if (notifToggle) notifToggle.checked = settings.notifications;
+
+  // pack active
+  qsa<HTMLElement>('.sound-pack-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.pack === settings.pack);
+  });
+
+  // permission hint
+  if (hint) {
+    if (!isNotificationSupported()) {
+      hint.textContent = 'Notifications not supported in this browser.';
+      hint.style.display = 'block';
+    } else {
+      const perm = getNotificationPermission();
+      if (settings.notifications && perm === 'denied') {
+        hint.textContent = 'Notifications blocked. Enable in browser settings to get alerts when tab is hidden.';
+        hint.style.display = 'block';
+      } else if (settings.notifications && perm === 'default') {
+        hint.textContent = 'Notifications need permission — toggle will ask for it.';
+        hint.style.display = 'block';
+      } else {
+        hint.style.display = 'none';
+        hint.textContent = '';
+      }
+    }
+  }
+
+  // toggle knob visual
+  const knob = qs<HTMLElement>('#sound-enabled-knob');
+  if (knob && enabledToggle) {
+    knob.style.background = enabledToggle.checked ? 'white' : 'var(--text-tertiary)';
+    knob.style.transform = enabledToggle.checked ? 'translateX(18px)' : 'translateX(0)';
+    const track = enabledToggle.nextElementSibling as HTMLElement | null;
+    if (track) {
+      track.style.background = enabledToggle.checked ? 'var(--accent-start)' : 'var(--surface-2)';
+    }
+  }
+}
+
 function renderAcademicSetupProfile(): void {
   const profile = getStudentProfile();
   const nameInput = qs<HTMLInputElement>('#student-name');
@@ -2176,6 +2249,7 @@ function setupEventListeners() {
     qs<HTMLElement>('#settings-overlay')?.classList.add('show');
     renderProfile();
     renderAccountSettings();
+    renderSoundSettings();
   });
   qs<HTMLElement>('#settings-login-btn')?.addEventListener('click', () => {
     qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
@@ -2878,6 +2952,15 @@ function setupEventListeners() {
 
   // Immersive focus controls
   qs<HTMLElement>('#focus-immersive-pause-btn')?.addEventListener('click', () => {
+    const surface = qs<HTMLElement>('.focus-immersive-surface.timeup-active');
+    if (surface) {
+      // TIME'S UP state — dismiss
+      stopAllAlerts();
+      closeImmersiveFocus();
+      surface.classList.remove('timeup-active');
+      qs<HTMLElement>('#focus-immersive-dismiss-btn')?.remove();
+      return;
+    }
     const state = getTimerState();
     if (state.running) {
       pauseTimer();
@@ -2922,16 +3005,171 @@ function setupEventListeners() {
 
   // Urge timer
   qs<HTMLElement>('#urge-start-btn')?.addEventListener('click', () => {
+    stopAllAlerts();
     startUrge();
     const btn = qs<HTMLElement>('#urge-start-btn');
     if (btn) btn.textContent = t('detox.surfing');
   });
 
   qs<HTMLElement>('#urge-reset-btn')?.addEventListener('click', () => {
+    stopAllAlerts();
     resetUrge();
     const btn = qs<HTMLElement>('#urge-start-btn');
     if (btn) btn.textContent = t('detox.start_surf');
     updateUrgeUI();
+  });
+
+  // Sound & Alerts Settings
+  qs<HTMLInputElement>('#sound-enabled-toggle')?.addEventListener('change', (e) => {
+    const checked = (e.currentTarget as HTMLInputElement).checked;
+    updateSoundSettings({ enabled: checked });
+    renderSoundSettings();
+    if (checked) void playTestSound(getSoundSettings().pack);
+  });
+
+  qs<HTMLInputElement>('#sound-volume-slider')?.addEventListener('input', (e) => {
+    const val = parseInt((e.currentTarget as HTMLInputElement).value, 10);
+    const vol = Math.min(100, Math.max(0, val)) / 100;
+    updateSoundSettings({ volume: vol });
+    const label = qs<HTMLElement>('#sound-volume-label');
+    if (label) label.textContent = `${val}%`;
+  });
+
+  qs<HTMLInputElement>('#sound-volume-slider')?.addEventListener('change', (e) => {
+    const val = parseInt((e.currentTarget as HTMLInputElement).value, 10);
+    const pack = getSoundSettings().pack;
+    void playTestSound(pack);
+    void (e.currentTarget as HTMLInputElement).blur();
+    showCelebrate('Volume', `Set to ${val}%`, '🔊', true);
+  });
+
+  qsa<HTMLElement>('.sound-pack-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const pack = (btn as HTMLElement).dataset.pack as SoundPack;
+      if (!pack) return;
+      updateSoundSettings({ pack });
+      renderSoundSettings();
+      void playTestSound(pack);
+    });
+  });
+
+  qs<HTMLInputElement>('#sound-loop-toggle')?.addEventListener('change', (e) => {
+    const checked = (e.currentTarget as HTMLInputElement).checked;
+    updateSoundSettings({ loop: checked });
+    renderSoundSettings();
+  });
+
+  qs<HTMLInputElement>('#sound-vibration-toggle')?.addEventListener('change', (e) => {
+    const checked = (e.currentTarget as HTMLInputElement).checked;
+    updateSoundSettings({ vibration: checked });
+    renderSoundSettings();
+    if (checked && navigator.vibrate) navigator.vibrate([100, 50, 100]);
+  });
+
+  qs<HTMLInputElement>('#sound-notification-toggle')?.addEventListener('change', async (e) => {
+    const input = e.currentTarget as HTMLInputElement;
+    const checked = input.checked;
+
+    if (checked && isNotificationSupported()) {
+      const perm = getNotificationPermission();
+      if (perm === 'default') {
+        const result = await requestNotificationPermission();
+        if (result !== 'granted') {
+          input.checked = false;
+          updateSoundSettings({ notifications: false });
+          renderSoundSettings();
+          showCelebrate('Notifications Blocked', 'Allow notifications in browser settings', '⚠️', true);
+          return;
+        }
+      } else if (perm === 'denied') {
+        input.checked = false;
+        updateSoundSettings({ notifications: false });
+        renderSoundSettings();
+        showCelebrate('Permission Denied', 'Enable in browser settings', '⚠️', true);
+        return;
+      }
+    }
+
+    updateSoundSettings({ notifications: checked });
+    renderSoundSettings();
+    if (checked) showCelebrate('Notifications ON', 'You will get alerts when tab hidden', '🔔', true);
+  });
+
+  qs<HTMLElement>('#sound-test-btn')?.addEventListener('click', () => {
+    const pack = getSoundSettings().pack;
+    void playTestSound(pack);
+    vibrateStrong();
+    const btn = qs<HTMLElement>('#sound-test-btn');
+    if (btn) {
+      btn.classList.add('btn-alarm-active');
+      setTimeout(() => btn.classList.remove('btn-alarm-active'), 1500);
+    }
+  });
+
+  qs<HTMLElement>('#sound-stop-btn')?.addEventListener('click', () => {
+    stopAllAlerts();
+    showCelebrate('Alarm Stopped', 'All alerts silenced', '🔕', true);
+    // Clear timeup active state
+    const surface = qs<HTMLElement>('.focus-immersive-surface.timeup-active');
+    surface?.classList.remove('timeup-active');
+    const dismiss = qs<HTMLElement>('#focus-immersive-dismiss-btn');
+    dismiss?.remove();
+  });
+
+  // Ensure settings button renders sound settings
+  const settingsBtnOriginal = qs<HTMLElement>('#settings-btn');
+  if (settingsBtnOriginal && !(settingsBtnOriginal as any)._enhanced) {
+    (settingsBtnOriginal as any)._enhanced = true;
+    // We already have listener above, but also render sound settings when opening
+    settingsBtnOriginal.addEventListener('click', () => {
+      renderSoundSettings();
+    });
+  }
+
+  // Celebration overlay click should also stop alarm
+  qs<HTMLElement>('#celebrate')?.addEventListener('click', () => {
+    stopAllAlerts();
+  });
+
+  // Focus buttons should stop previous alarms
+  qs<HTMLElement>('#focus-btn')?.addEventListener('click', () => {
+    // If starting new timer while alarm looping, stop it first
+    const state = getTimerState();
+    if (!state.running) stopAllAlerts();
+  });
+
+  qs<HTMLElement>('#focus-reset-btn')?.addEventListener('click', () => {
+    stopAllAlerts();
+    const surface = qs<HTMLElement>('.focus-immersive-surface.timeup-active');
+    surface?.classList.remove('timeup-active');
+    qs<HTMLElement>('#focus-immersive-dismiss-btn')?.remove();
+  });
+
+  qs<HTMLElement>('#focus-immersive-exit-btn')?.addEventListener('click', () => {
+    stopAllAlerts();
+    const surface = qs<HTMLElement>('.focus-immersive-surface.timeup-active');
+    surface?.classList.remove('timeup-active');
+    qs<HTMLElement>('#focus-immersive-dismiss-btn')?.remove();
+  });
+
+  // Notification click custom event
+  window.addEventListener('neurofocus:notification-click', () => {
+    stopAllAlerts();
+    const surface = qs<HTMLElement>('.focus-immersive-surface.timeup-active');
+    surface?.classList.remove('timeup-active');
+    qs<HTMLElement>('#focus-immersive-dismiss-btn')?.remove();
+    switchTab('focus');
+    window.focus();
+  });
+
+  // Close alarm on visibility return + user interaction
+  document.addEventListener('click', () => {
+    // If title is flashing and user clicked, stop flash after delay? Keep loop until explicit dismiss though
+    // We only stop title flash on manual dismiss, but allow click to focus to stop flash if no loop
+    const settings = getSoundSettings();
+    if (!settings.loop) {
+      stopTitleFlash();
+    }
   });
 }
 
@@ -3226,6 +3464,58 @@ function updateTrophyModal() {
 }
 
 // ===================================================================
+// TIME-UP ALERT SYSTEM (Sound + Notification + Vibration + Title Flash)
+// ===================================================================
+
+function stopAllAlerts(): void {
+  stopAlarmLoop();
+  stopTitleFlash();
+  if (navigator.vibrate) navigator.vibrate(0);
+}
+
+function showTimeUpImmersiveState(modeLabel: string, xp: number): void {
+  const overlay = qs<HTMLElement>('#focus-immersive-overlay');
+  if (!overlay) return;
+  const modeEl = qs<HTMLElement>('#focus-immersive-mode');
+  const statusEl = qs<HTMLElement>('#focus-immersive-status');
+  const timerEl = qs<HTMLElement>('#focus-immersive-timer');
+  const labelEl = qs<HTMLElement>('#focus-immersive-label');
+  const pauseBtn = qs<HTMLButtonElement>('#focus-immersive-pause-btn');
+  const surface = overlay.querySelector('.focus-immersive-surface');
+
+  // If loop is enabled, keep immersive open with TIME'S UP state
+  const settings = getSoundSettings();
+  if (settings.loop && overlay.classList.contains('show')) {
+    if (modeEl) modeEl.textContent = "🔔 TIME'S UP!";
+    if (statusEl) statusEl.textContent = `You earned +${xp} XP`;
+    if (timerEl) timerEl.textContent = '00:00';
+    if (labelEl) labelEl.textContent = modeLabel;
+    if (pauseBtn) pauseBtn.textContent = 'Dismiss & Celebrate';
+    if (surface) {
+      surface.classList.add('timeup-active');
+    }
+    // Add extra dismiss button if not present
+    if (!qs<HTMLElement>('#focus-immersive-dismiss-btn')) {
+      const actions = qs<HTMLElement>('.focus-immersive-actions');
+      if (actions) {
+        const dismiss = document.createElement('button');
+        dismiss.id = 'focus-immersive-dismiss-btn';
+        dismiss.className = 'btn btn-block mt-2';
+        dismiss.textContent = '🔕 Stop Alarm + Close';
+        dismiss.type = 'button';
+        dismiss.addEventListener('click', () => {
+          stopAllAlerts();
+          closeImmersiveFocus();
+          const s = qs<HTMLElement>('.focus-immersive-surface');
+          s?.classList.remove('timeup-active');
+        });
+        actions.appendChild(dismiss);
+      }
+    }
+  }
+}
+
+// ===================================================================
 // TIMER CALLBACKS
 // ===================================================================
 
@@ -3253,21 +3543,20 @@ onTick((state) => {
     if (currentTime !== lastImmersiveTime || runningChanged) {
       lastImmersiveTime = currentTime;
       lastImmersiveRunning = state.running;
-      updateImmersiveFocusUI(state);
+      // Don't overwrite TIME'S UP state if alarm is looping
+      if (!qs<HTMLElement>('#focus-immersive-overlay .timeup-active')) {
+        updateImmersiveFocusUI(state);
+      }
     }
   }
 });
 
 onComplete((mode) => {
   // A running mission credits its current block off the SAME completion event.
-  // XP + session recording already happened inside focus.ts — we only account for it.
   const mission = getActiveMission();
   if (mission && mission.status === 'active') {
-    // Link to the session focus.ts just recorded (most recent), for provenance.
     const sessions = getRecentSessions(1);
     const sessionId = sessions.length ? sessions[0].time : null;
-    // Credit the block's planned duration (defaults inside completeCurrentBlock),
-    // keeping mission math aligned with the plan regardless of preset mode swaps.
     const result = completeCurrentBlock({ sessionId });
     if (result.completed || result.alreadyCompleted) {
       lastBlockCompletionMinutes = result.block ? result.block.completedDuration : mode.minutes;
@@ -3275,15 +3564,39 @@ onComplete((mode) => {
     }
   }
 
-  showCelebrate('Focus Complete', 'Take a real break. No phone.', '⏱️', false, mode.xp);
+  // --- TIME'S UP ALERT: Sound + Vibration + Title Flash + Notification ---
+  const soundSettings = getSoundSettings();
+  try {
+    // Start loud pop alarm loop (respects loop setting internally)
+    startAlarmLoop('focusComplete', soundSettings.loop ? 2200 : 0);
+    startTitleFlash("🔔 Time's Up!");
+    vibrateStrong();
+
+    // Browser notification if enabled and permission granted
+    if (soundSettings.notifications) {
+      showFocusCompleteNotification(mode.label, mode.xp);
+    }
+  } catch (e) {
+    console.debug('Time-up alert error', e);
+  }
+
+  // Show celebration but silent=false so success tone plays too (we already play focusComplete louder)
+  // Use silent=true to avoid double sound when our alarm is already playing
+  showCelebrate('Focus Complete', 'Take a real break. No phone.', '⏱️', true, mode.xp);
+
+  // If looping disabled, close immersive; if looping enabled, show TIME'S UP state inside it
+  if (!soundSettings.loop) {
+    closeImmersiveFocus();
+  } else {
+    showTimeUpImmersiveState(mode.label, mode.xp);
+  }
+
   updateFocusUI();
-  closeImmersiveFocus();
   updateDashboard();
   checkQuests();
   renderFlowBanner();
   recordDailyStat();
   renderWeekly();
-  if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 });
 
 onUrgeTick((state) => {
@@ -3300,9 +3613,26 @@ onUrgeTick((state) => {
 });
 
 onUrgeComplete(() => {
-  showCelebrate('Urge Surfed', 'You are stronger than your impulses.', '🌊');
+  const soundSettings = getSoundSettings();
+  try {
+    startAlarmLoop('urgeComplete', soundSettings.loop ? 3000 : 0);
+    startTitleFlash('🌊 Urge Surfed!');
+    vibrateSoft();
+    if (soundSettings.notifications) {
+      showUrgeCompleteNotification();
+    }
+  } catch (e) {
+    console.debug('Urge alert error', e);
+  }
+
+  showCelebrate('Urge Surfed', 'You are stronger than your impulses.', '🌊', true);
   const btn = qs<HTMLElement>('#urge-start-btn');
   if (btn) btn.textContent = t('detox.start_surf');
+
+  if (!soundSettings.loop) {
+    // auto stop after 6s if not looping
+    setTimeout(() => stopAllAlerts(), 6000);
+  }
 });
 
 // ===================================================================
@@ -3403,6 +3733,7 @@ function init() {
   safe(() => renderMissionPlanner(), 'missionPlanner');
   safe(() => updateFocusUI(), 'focusTimer');
   safe(() => renderHero(), 'hero');
+  safe(() => renderSoundSettings(), 'soundSettings');
 
   // Setup auto-theme checkbox
   const atEl = qs<HTMLInputElement>('#auto-theme');
@@ -3420,6 +3751,7 @@ function init() {
   }
   renderAccountSettings();
   renderSettingsLanguageList();
+  renderSoundSettings();
   window.setInterval(() => {
     try {
       maybeOpenDailyClassCheck();

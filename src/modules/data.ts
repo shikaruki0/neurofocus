@@ -51,6 +51,15 @@ interface StudentProfile {
   updatedAt: number;
 }
 
+export interface SoundSettings {
+  enabled: boolean;
+  volume: number;
+  pack: 'pop' | 'bell' | 'chime' | 'zen';
+  loop: boolean;
+  notifications: boolean;
+  vibration: boolean;
+}
+
 interface DailyClassCheck {
   date: string;
   status: 'complete' | 'skipped';
@@ -176,6 +185,14 @@ export const data = {
   sessions: get<Session[]>('sessions', []),
   autoTheme: get<boolean>('autoTheme', false),
   theme: get<string>('theme', 'midnight'),
+  soundSettings: get<SoundSettings>('soundSettings', {
+    enabled: true,
+    volume: 0.8,
+    pack: 'pop',
+    loop: true,
+    notifications: true,
+    vibration: true,
+  }),
 };
 
 // --- Daily resets ---

@@ -4515,3 +4515,53 @@ body.auth-open {
 #focus-history {
   overflow: hidden;
 }
+
+/* Time's Up Alarm System */
+.focus-immersive-surface.timeup-active {
+  animation: timeUpPulse 1.2s ease-in-out infinite;
+}
+
+.focus-immersive-surface.timeup-active .focus-immersive-mode {
+  color: var(--danger, #ff4d4f);
+  animation: timeUpFlash 0.8s ease-in-out infinite alternate;
+}
+
+.focus-immersive-surface.timeup-active .timer-ring-wrap {
+  animation: ringPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes timeUpPulse {
+  0%, 100% { background-color: var(--bg); }
+  50% { background-color: color-mix(in srgb, var(--danger, #ff4d4f) 8%, var(--bg)); }
+}
+
+@keyframes timeUpFlash {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.sound-pack-btn.active {
+  background: linear-gradient(135deg, var(--accent-start-fade), var(--accent-end-fade)) !important;
+  border-color: var(--accent-start) !important;
+  color: var(--accent-start) !important;
+  box-shadow: 0 0 15px var(--accent-start-fade);
+}
+
+#sound-enabled-toggle:checked + span {
+  background: var(--accent-start) !important;
+}
+
+#sound-enabled-toggle:checked + span + #sound-enabled-knob {
+  transform: translateX(18px);
+  background: white !important;
+}
+
+/* Alarm test button pulse when looping */
+.btn-alarm-active {
+  animation: alarmBtnPulse 1s ease-in-out infinite;
+}
+
+@keyframes alarmBtnPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--danger-fade); }
+  50% { box-shadow: 0 0 0 8px transparent; }
+}

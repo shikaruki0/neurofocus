@@ -1,0 +1,387 @@
+/* ===================================================================
+   NEURAL ATLAS — Precision Study OS (with the Momentum Layer)
+
+   This layer replaces the previous "Crystal Glass" attempt. The prior
+   glass direction made the UI feel muddy because transparency was
+   applied too broadly. Here the rule is inverted:
+
+     · Matte surfaces are the foundation (mostly opaque, readable).
+     · Glass is a small, deliberate accent — the focus timer, the hero
+       "command surface", the immersive focus mode, and modal overlays.
+     · The "focus signal" — a thin indigo/teal progress line + a
+       current-mission marker — is the NeuroFocus visual identity.
+
+   It only styles elements that already exist in the markup and
+   preserves the Midnight/Paper/Forest theme IDs and saved settings.
+   =================================================================== */
+
+:root {
+  /* Neural Atlas tokens (compose on top of the theme palette) */
+  --na-signal: var(--accent-start);
+  --na-signal-2: var(--accent-end);
+  --na-signal-fade: var(--accent-start-fade);
+  --na-route-line: linear-gradient(90deg, var(--na-signal), var(--na-signal-2));
+
+  /* Matte raised surface used for primary/hero cards */
+  --na-surface-raised: var(--surface-2);
+  --na-border-soft: var(--border);
+  --na-border-strong: var(--border-active);
+  --na-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --na-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), 0 10px 30px -18px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme='light'] {
+  --na-surface-raised: #ffffff;
+  --na-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --na-shadow: 0 1px 0 rgba(0, 0, 0, 0.03), 0 12px 28px -20px rgba(60, 40, 20, 0.3);
+}
+
+[data-theme='dusk'] {
+  --na-inner-highlight: inset 0 1px 0 rgba(232, 255, 244, 0.05);
+}
+
+/* ===================================================================
+   1. FOUNDATION — matte surfaces, no full glassmorphism
+   =================================================================== */
+
+.card,
+.stat-card,
+.subject-card,
+.badge-item,
+.trophy-preview,
+.list-item,
+.quest-item,
+.week-metric,
+.week-total,
+.focus-history-item,
+.focus-history-stat,
+.backlog-summary-card,
+.mission-block-item,
+.focus-history-nav,
+.ritual-step,
+.check-row {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--surface);
+  border: 1px solid var(--na-border-soft);
+  box-shadow: var(--na-shadow);
+}
+
+/* Raise the surfaces that carry the primary information on the dashboard. */
+.xp-card,
+.streak-card,
+.mission-planner-card,
+#ritual-card {
+  background: var(--na-surface-raised);
+  border-color: var(--na-border-strong);
+}
+
+/* Subtle inner highlight = "clean elevation" without glass. */
+.card,
+.stat-card,
+.trophy-preview,
+.rank-display {
+  box-shadow: var(--na-shadow), var(--na-inner-highlight);
+}
+
+/* Keep decorative glow only on genuinely "active/featured" moments. */
+.card-featured,
+#checkin-card {
+  border-color: var(--na-signal-fade);
+}
+
+/* ===================================================================
+   2. THE FOCUS SIGNAL — route + current-mission marker
+   "Focus is the route. Progress is the map."
+   =================================================================== */
+
+/* The hero command surface: a thin indigo/teal progress line along its
+   lower edge reads as "today's route". */
+.hero-card::after {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 0;
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--na-route-line);
+  box-shadow: 0 0 12px var(--na-signal-fade);
+  opacity: 0.85;
+  z-index: 1;
+}
+
+/* The "Next Win" priority card becomes a route node: a solid left rail
+   with a small current-mission dot. */
+#dash-priority {
+  border-left: 3px solid var(--na-signal);
+  position: relative;
+}
+#dash-priority.next-action-highlight {
+  background:
+    linear-gradient(90deg, var(--na-signal-fade), transparent 55%), var(--na-surface-raised);
+  border-color: var(--na-border-strong);
+}
+#dash-priority.next-action-highlight::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  transform: translate(-50%, -50%);
+  border-radius: var(--radius-full);
+  background: var(--na-signal);
+  box-shadow: 0 0 0 3px var(--na-signal-fade);
+}
+
+/* The focus timer is the "selected hero surface" — allow a restrained
+   glass accent here and on the immersive focus surface. */
+.timer-ring-wrap {
+  background: radial-gradient(ellipse 60% 60% at 50% 30%, var(--na-signal-fade), transparent 70%);
+}
+.timer-ring-fill {
+  stroke: var(--na-signal);
+}
+.timer-ring-wrap.running {
+  box-shadow:
+    0 0 0 1px var(--na-signal-fade),
+    0 0 28px var(--na-signal-fade);
+}
+
+/* Active focus live badge — a calm pulse, not a rainbow. */
+.focus-live-badge span:first-child {
+  background: var(--success);
+  box-shadow: 0 0 0 0 var(--success-fade);
+  animation: naPulse 2.4s ease-out infinite;
+}
+
+@keyframes naPulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--success-fade);
+  }
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* Weekly activity trace — today's column carries the signal. */
+.week-bar-today .week-bar-fill {
+  background: var(--na-route-line);
+  box-shadow: 0 0 8px var(--na-signal-fade);
+}
+
+/* Subject progress — thin route lines. */
+.subject-bar {
+  background: var(--surface-2);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* ===================================================================
+   3. HIERARCHY — one obvious next action
+   Home should read: Today's context → Next win → Focus → Progress.
+   =================================================================== */
+
+.hero-card {
+  background:
+    linear-gradient(160deg, var(--na-signal-fade), transparent 60%), var(--na-surface-raised);
+  border-color: var(--na-border-strong);
+}
+
+.hero-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  position: relative;
+  z-index: 1;
+  margin-bottom: var(--space-2);
+}
+
+/* Secondary dashboard modules recede quietly. */
+.section-label span {
+  color: var(--text-secondary);
+}
+
+/* ===================================================================
+   4. TROPHY ROOM — an academic achievement atlas, not a game shelf
+   =================================================================== */
+
+.overlay {
+  background: color-mix(in srgb, var(--overlay-bg) 62%, transparent);
+}
+
+.modal {
+  background: var(--na-surface-raised);
+  border: 1px solid var(--na-border-strong);
+  box-shadow:
+    0 24px 70px -20px rgba(0, 0, 0, 0.5),
+    var(--na-inner-highlight);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Rank display — the "map legend" of the atlas. */
+.rank-display {
+  background: var(--surface);
+  border-color: var(--na-border-strong);
+}
+.rank-display::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 40%;
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--na-route-line);
+  opacity: 0.8;
+}
+.rank-icon {
+  background: var(--surface-2);
+  border: 1px solid var(--na-border-strong);
+  box-shadow: var(--na-inner-highlight);
+}
+.rank-name {
+  color: var(--text);
+  -webkit-text-fill-color: initial;
+}
+.rank-tier,
+.rank-next {
+  color: var(--text-secondary);
+}
+
+/* Badge tiles — matte, readable, rarity-driven accents. */
+.badge-item {
+  background: var(--surface);
+  border-color: var(--na-border-soft);
+}
+.badge-item.unlocked {
+  border-color: color-mix(in srgb, var(--na-signal) 34%, var(--na-border-soft));
+  background: linear-gradient(180deg, var(--na-signal-fade), transparent 70%), var(--surface);
+}
+
+/* Locked badges stay readable: desaturate + dim, never blur the name. */
+.badge-item.locked {
+  opacity: 0.55;
+  background: var(--surface);
+}
+.badge-item.locked .badge-icon {
+  filter: grayscale(1);
+  transform: scale(0.9);
+}
+.badge-item.locked .badge-name,
+.badge-item.locked .badge-desc {
+  filter: none;
+}
+.badge-item.locked .badge-name {
+  color: var(--text-secondary);
+}
+
+/* Rarity colour, applied to the ring/edge only — calm, not rainbow. */
+.badge-item::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--common);
+  opacity: 0.55;
+}
+.badge-item.unlocked::after {
+  background: var(--na-signal);
+  opacity: 1;
+  box-shadow: 0 0 6px var(--na-signal-fade);
+}
+
+.badge-rarity {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.category-label {
+  font-size: var(--font-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-top: var(--space-5);
+}
+
+/* Progress rails for locked rank badges (already rendered by JS). */
+.badge-item .progress-track {
+  background: var(--surface-2);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+.badge-item .progress-fill {
+  background: var(--na-route-line);
+}
+
+/* ===================================================================
+   5. FALLBACKS + MOTION DISCIPLINE
+   =================================================================== */
+
+@supports not ((backdrop-filter: blur(1px))) {
+  .modal,
+  .hero-card,
+  .card,
+  .badge-item,
+  .trophy-preview,
+  .stat-card {
+    background: var(--surface);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-card::after,
+  .focus-live-badge span:first-child,
+  .timer-ring-wrap.running,
+  .hero-icon {
+    animation: none !important;
+  }
+
+  .card,
+  .btn,
+  .list-item,
+  .quest-item,
+  .subject-card,
+  .badge-item,
+  .trophy-preview,
+  .week-metric,
+  .focus-history-item,
+  .stat-card {
+    transition: none !important;
+  }
+}
+
+/* ===================================================================
+   6. RESPONSIVE — keep the atlas legible on small and large screens
+   =================================================================== */
+
+@media (max-width: 520px) {
+  .badge-item {
+    padding: var(--space-3) var(--space-2);
+  }
+  .rank-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 1.8rem;
+  }
+}
+
+@media (min-width: 760px) {
+  /* On desktop, centre the trophy modal so the atlas reads clearly. */
+  .modal {
+    border-radius: var(--radius-2xl);
+  }
+  .badge-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

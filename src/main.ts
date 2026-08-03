@@ -17,7 +17,7 @@ import './styles/base.css';
 import './styles/components.css';
 import './styles/animations.css';
 import './styles/onboarding.css';
-import './styles/crystal-glass.css';
+import './styles/neural-atlas.css';
 
 import { data, resetHabitsForNewDay } from './modules/data.ts';
 import { clearAll } from './modules/storage.ts';
@@ -2700,15 +2700,27 @@ function setupEventListeners() {
 
   // Trophy preview
   qs<HTMLElement>('#trophy-preview')?.addEventListener('click', () => {
-    qs<HTMLElement>('#trophy-overlay')?.classList.add('show');
+    const overlay = qs<HTMLElement>('#trophy-overlay');
+    if (!overlay) return;
     updateTrophyModal();
+    overlay.classList.add('show');
+    document.body.classList.add('auth-open');
+    qs<HTMLButtonElement>('#trophy-close-btn')?.focus();
   });
 
   qs<HTMLElement>('#trophy-close-btn')?.addEventListener('click', () => {
-    qs<HTMLElement>('#trophy-overlay')?.classList.remove('show');
+    const overlay = qs<HTMLElement>('#trophy-overlay');
+    overlay?.classList.remove('show');
+    if (!overlay?.classList.contains('show')) document.body.classList.remove('auth-open');
+    qs<HTMLElement>('#trophy-preview')?.focus();
   });
   qs<HTMLElement>('#trophy-overlay')?.addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) qs<HTMLElement>('#trophy-overlay')?.classList.remove('show');
+    const overlay = qs<HTMLElement>('#trophy-overlay');
+    if (e.target === e.currentTarget && overlay) {
+      overlay.classList.remove('show');
+      document.body.classList.remove('auth-open');
+      qs<HTMLElement>('#trophy-preview')?.focus();
+    }
   });
 
   // Rank up close
@@ -2896,6 +2908,14 @@ function setupEventListeners() {
       if (overlay?.classList.contains('show')) {
         e.preventDefault();
         closeImmersiveFocus();
+        return;
+      }
+      const trophy = qs<HTMLElement>('#trophy-overlay');
+      if (trophy?.classList.contains('show')) {
+        e.preventDefault();
+        trophy.classList.remove('show');
+        document.body.classList.remove('auth-open');
+        qs<HTMLElement>('#trophy-preview')?.focus();
       }
     }
   });
@@ -3128,6 +3148,22 @@ function updateThemeButtons() {
 }
 
 function updateTrophyModal() {
+  // Dialog semantics + labelling so the modal is screen-reader friendly.
+  const overlayEl = qs<HTMLElement>('#trophy-overlay');
+  if (overlayEl) {
+    overlayEl.setAttribute('role', 'dialog');
+    overlayEl.setAttribute('aria-modal', 'true');
+    const titleEl = overlayEl.querySelector<HTMLElement>('.modal-title');
+    if (titleEl) {
+      titleEl.id = titleEl.id || 'trophy-modal-title';
+      overlayEl.setAttribute('aria-labelledby', titleEl.id);
+    }
+  }
+  const closeBtn = qs<HTMLElement>('#trophy-close-btn');
+  if (closeBtn && !closeBtn.getAttribute('aria-label')) {
+    closeBtn.setAttribute('aria-label', 'Close trophy room');
+  }
+
   const rank = getCurrentRank(xpLevel(data.xp).level);
   const next = getNextRank(xpLevel(data.xp).level);
   const unlocked = data.badgesUnlocked || [];

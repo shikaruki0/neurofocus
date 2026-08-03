@@ -1746,6 +1746,14 @@ option {
   max-height: 90vh;
 }
 
+/* Plain bottom-sheet overlay (e.g. #trophy-overlay): the base .modal sits at
+   translateY(100%), so .show must reset the transform to bring it on-screen.
+   .overlay.center.show / .overlay.left.show below are more specific, so they
+   still win for centered dialogs and the settings drawer. */
+.overlay.show .modal {
+  transform: translateY(0);
+}
+
 .overlay.center.show .modal {
   transform: translateY(0) scale(1);
 }

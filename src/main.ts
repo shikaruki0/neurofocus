@@ -17,6 +17,7 @@ import './styles/base.css';
 import './styles/components.css';
 import './styles/animations.css';
 import './styles/onboarding.css';
+import './styles/crystal-glass.css';
 
 import { data, resetHabitsForNewDay } from './modules/data.ts';
 import { clearAll } from './modules/storage.ts';

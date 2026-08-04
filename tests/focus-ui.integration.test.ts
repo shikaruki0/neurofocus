@@ -117,7 +117,9 @@ describe('Immersive focus mode', () => {
     const focusBtn = document.querySelector<HTMLButtonElement>('#focus-btn')!;
     const overlay = document.querySelector<HTMLElement>('#focus-immersive-overlay')!;
     const immersiveTimer = document.querySelector<HTMLElement>('#focus-immersive-timer')!;
-    const immersivePauseBtn = document.querySelector<HTMLButtonElement>('#focus-immersive-pause-btn')!;
+    const immersivePauseBtn = document.querySelector<HTMLButtonElement>(
+      '#focus-immersive-pause-btn',
+    )!;
     const immersiveStatus = document.querySelector<HTMLElement>('#focus-immersive-status')!;
 
     // Start timer
@@ -250,5 +252,127 @@ describe('Immersive focus mode', () => {
     document.querySelector<HTMLButtonElement>('#focus-btn')!.click();
     expect(overlay.classList.contains('show')).toBe(true);
     expect(surface.style.overflowX).not.toBe('auto');
+  });
+});
+
+describe('Custom focus duration', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    vi.useRealTimers();
+    document.body.innerHTML = body;
+    localStorage.clear();
+    localStorage.setItem('nf_hasOnboarded', JSON.stringify(true));
+    localStorage.setItem('nf_profileName', JSON.stringify('Aarav'));
+    localStorage.setItem('nf_languageChosen', JSON.stringify(true));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('reveals the manual input row when the Custom chip is clicked', async () => {
+    await loadApp();
+
+    const customChip = document.querySelector<HTMLButtonElement>('#mode-custom')!;
+    const row = document.querySelector<HTMLElement>('#custom-timer-row')!;
+    const timer = document.querySelector<HTMLElement>('#focus-timer')!;
+
+    expect(row.classList.contains('hidden')).toBe(true);
+
+    customChip.click();
+    expect(row.classList.contains('hidden')).toBe(false);
+    // Opening the row alone must not disturb the timer or chip state
+    expect(timer.textContent?.trim()).toBe('25:00');
+    expect(document.querySelector<HTMLElement>('#mode-25')!.classList.contains('active')).toBe(
+      true,
+    );
+  });
+
+  it('applies a manual duration to the focus timer on Set', async () => {
+    await loadApp();
+
+    document.querySelector<HTMLButtonElement>('#mode-custom')!.click();
+    const input = document.querySelector<HTMLInputElement>('#custom-timer-minutes')!;
+    input.value = '45';
+    document.querySelector<HTMLButtonElement>('#custom-timer-set-btn')!.click();
+
+    expect(document.querySelector<HTMLElement>('#focus-timer')!.textContent?.trim()).toBe('45:00');
+    expect(document.querySelector<HTMLElement>('#focus-mode-label')!.textContent?.trim()).toBe(
+      'Custom',
+    );
+    expect(document.querySelector<HTMLElement>('#focus-xp-hint')!.textContent?.trim()).toBe(
+      '+45 XP',
+    );
+    expect(document.querySelector<HTMLElement>('#mode-custom')!.classList.contains('active')).toBe(
+      true,
+    );
+    // No preset chip may stay highlighted while a custom block is selected
+    expect(document.querySelector<HTMLElement>('#mode-25')!.classList.contains('active')).toBe(
+      false,
+    );
+    expect(input.getAttribute('aria-invalid')).toBeNull();
+  });
+
+  it('falls back to the matching preset when the manual duration is 25/52/90', async () => {
+    await loadApp();
+
+    document.querySelector<HTMLButtonElement>('#mode-custom')!.click();
+    const input = document.querySelector<HTMLInputElement>('#custom-timer-minutes')!;
+    input.value = '52';
+    document.querySelector<HTMLButtonElement>('#custom-timer-set-btn')!.click();
+
+    expect(document.querySelector<HTMLElement>('#focus-timer')!.textContent?.trim()).toBe('52:00');
+    expect(document.querySelector<HTMLElement>('#focus-xp-hint')!.textContent?.trim()).toBe(
+      '+60 XP',
+    );
+    expect(document.querySelector<HTMLElement>('#mode-52')!.classList.contains('active')).toBe(
+      true,
+    );
+    expect(document.querySelector<HTMLElement>('#mode-custom')!.classList.contains('active')).toBe(
+      false,
+    );
+    expect(
+      document.querySelector<HTMLElement>('#custom-timer-row')!.classList.contains('hidden'),
+    ).toBe(true);
+  });
+
+  it('rejects out-of-range durations without changing the timer', async () => {
+    await loadApp();
+
+    document.querySelector<HTMLButtonElement>('#mode-custom')!.click();
+    const input = document.querySelector<HTMLInputElement>('#custom-timer-minutes')!;
+    input.value = '500';
+    document.querySelector<HTMLButtonElement>('#custom-timer-set-btn')!.click();
+
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(document.querySelector<HTMLElement>('#focus-timer')!.textContent?.trim()).toBe('25:00');
+    expect(document.querySelector<HTMLElement>('#mode-custom')!.classList.contains('active')).toBe(
+      false,
+    );
+  });
+
+  it('restores a custom duration session after page refresh', async () => {
+    await loadApp();
+
+    document.querySelector<HTMLButtonElement>('#mode-custom')!.click();
+    const input = document.querySelector<HTMLInputElement>('#custom-timer-minutes')!;
+    input.value = '45';
+    document.querySelector<HTMLButtonElement>('#custom-timer-set-btn')!.click();
+
+    // Simulate page refresh: reset modules and reload app
+    vi.resetModules();
+    await import('../src/main.ts');
+
+    expect(document.querySelector<HTMLElement>('#focus-timer')!.textContent?.trim()).toBe('45:00');
+    expect(document.querySelector<HTMLElement>('#focus-mode-label')!.textContent?.trim()).toBe(
+      'Custom',
+    );
+    expect(document.querySelector<HTMLElement>('#mode-custom')!.classList.contains('active')).toBe(
+      true,
+    );
+    expect(
+      document.querySelector<HTMLElement>('#custom-timer-row')!.classList.contains('hidden'),
+    ).toBe(false);
   });
 });

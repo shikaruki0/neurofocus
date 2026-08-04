@@ -795,6 +795,20 @@ option {
   background-size: 200% 100%;
 }
 
+/* Manual custom duration row (revealed by the Custom timer chip) */
+.custom-timer-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.custom-timer-row .input {
+  width: 120px;
+  text-align: center;
+}
+
 /* List Items */
 .list-item {
   display: flex;

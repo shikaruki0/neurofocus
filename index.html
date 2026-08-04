@@ -1149,6 +1149,11 @@
             <button class="timer-chip" data-mode="2" id="mode-90" data-i18n="focus.mode_90">
               90 min
             </button>
+            <button class="timer-chip" id="mode-custom" data-i18n="focus.mode_custom">Custom</button>
+          </div>
+          <div class="custom-timer-row hidden" id="custom-timer-row">
+            <input type="number" class="input" id="custom-timer-minutes" min="1" max="180" step="1" inputmode="numeric" placeholder="e.g. 45" data-i18n-placeholder="focus.custom_ph" aria-label="Custom duration in minutes" data-i18n-aria-label="focus.custom_aria" />
+            <button class="btn btn-sm" id="custom-timer-set-btn" type="button" data-i18n="focus.custom_set">Set</button>
           </div>
           <div class="timer-wrap">
             <div class="timer-ring-wrap">

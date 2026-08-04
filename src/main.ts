@@ -1796,7 +1796,8 @@ function renderSoundSettings(): void {
     } else {
       const perm = getNotificationPermission();
       if (settings.notifications && perm === 'denied') {
-        hint.textContent = 'Notifications blocked. Enable in browser settings to get alerts when tab is hidden.';
+        hint.textContent =
+          'Notifications blocked. Enable in browser settings to get alerts when tab is hidden.';
         hint.style.display = 'block';
       } else if (settings.notifications && perm === 'default') {
         hint.textContent = 'Notifications need permission — toggle will ask for it.';
@@ -2910,12 +2911,31 @@ function setupEventListeners() {
   // Focus timer modes
   qsa<HTMLElement>('.timer-chip').forEach((chip) => {
     chip.addEventListener('click', () => {
-      const mode = parseInt((chip as HTMLElement).dataset.mode || '0', 10);
+      if (chip.id === 'mode-custom') {
+        // The Custom chip only reveals the manual input; the timer updates on Set/Enter.
+        setCustomTimerRowVisible(true);
+        qs<HTMLInputElement>('#custom-timer-minutes')?.focus();
+        return;
+      }
+      setCustomTimerRowVisible(false);
+      const mode = parseInt(chip.dataset.mode || '0', 10);
       setMode(mode);
       qsa<HTMLElement>('.timer-chip').forEach((c) => c.classList.remove('active'));
       chip.classList.add('active');
       updateFocusUI();
     });
+  });
+
+  // Custom focus duration (manual minutes input)
+  qs<HTMLElement>('#custom-timer-set-btn')?.addEventListener('click', applyCustomTimerFromInput);
+  qs<HTMLInputElement>('#custom-timer-minutes')?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      applyCustomTimerFromInput();
+    }
+  });
+  qs<HTMLInputElement>('#custom-timer-minutes')?.addEventListener('input', (event) => {
+    (event.target as HTMLInputElement).removeAttribute('aria-invalid');
   });
 
   // Focus start/pause
@@ -3079,7 +3099,12 @@ function setupEventListeners() {
           input.checked = false;
           updateSoundSettings({ notifications: false });
           renderSoundSettings();
-          showCelebrate('Notifications Blocked', 'Allow notifications in browser settings', '⚠️', true);
+          showCelebrate(
+            'Notifications Blocked',
+            'Allow notifications in browser settings',
+            '⚠️',
+            true,
+          );
           return;
         }
       } else if (perm === 'denied') {
@@ -3093,7 +3118,8 @@ function setupEventListeners() {
 
     updateSoundSettings({ notifications: checked });
     renderSoundSettings();
-    if (checked) showCelebrate('Notifications ON', 'You will get alerts when tab hidden', '🔔', true);
+    if (checked)
+      showCelebrate('Notifications ON', 'You will get alerts when tab hidden', '🔔', true);
   });
 
   qs<HTMLElement>('#sound-test-btn')?.addEventListener('click', () => {
@@ -3178,6 +3204,59 @@ function setupEventListeners() {
 // UI UPDATE FUNCTIONS
 // ===================================================================
 
+/** Label for user-defined custom durations (mission blocks carry their own label). */
+const CUSTOM_TIMER_LABEL = 'Custom';
+/** Allowed range for a manual duration, matching the mission planner's blocks. */
+const CUSTOM_TIMER_MIN_MINUTES = 1;
+const CUSTOM_TIMER_MAX_MINUTES = 180;
+
+/** Shows/hides the manual duration row under the timer preset chips. */
+function setCustomTimerRowVisible(visible: boolean): void {
+  qs<HTMLElement>('#custom-timer-row')?.classList.toggle('hidden', !visible);
+}
+
+/**
+ * Applies a user-entered duration to the SAME timer engine the presets use.
+ * An exact preset match (25/52/90) routes through setMode so XP and labels stay
+ * identical to the standard experience; anything else runs as a custom block.
+ */
+function applyCustomTimerMinutes(minutes: number): void {
+  const presetIndex = TIMER_MODES.findIndex((mode) => mode.minutes === minutes);
+  if (presetIndex !== -1) {
+    setMode(presetIndex);
+    setCustomTimerRowVisible(false);
+  } else {
+    // 1 XP per minute keeps custom sessions fair while presets stay slightly richer.
+    setCustomBlock(minutes, { xp: minutes, label: CUSTOM_TIMER_LABEL });
+  }
+  updateFocusUI();
+}
+
+/** Reads, validates, and applies the manual custom duration input. */
+function applyCustomTimerFromInput(): void {
+  const input = qs<HTMLInputElement>('#custom-timer-minutes');
+  if (!input) return;
+  const minutes = Math.floor(Number(input.value));
+  if (
+    !input.value.trim() ||
+    !Number.isFinite(minutes) ||
+    minutes < CUSTOM_TIMER_MIN_MINUTES ||
+    minutes > CUSTOM_TIMER_MAX_MINUTES
+  ) {
+    input.setAttribute('aria-invalid', 'true');
+    input.focus();
+    showCelebrate(
+      'Invalid duration',
+      `Enter ${CUSTOM_TIMER_MIN_MINUTES}–${CUSTOM_TIMER_MAX_MINUTES} minutes.`,
+      '⚠️',
+      true,
+    );
+    return;
+  }
+  input.removeAttribute('aria-invalid');
+  applyCustomTimerMinutes(minutes);
+}
+
 function updateFocusUI() {
   const state = getTimerState();
   const elTimer = qs<HTMLElement>('#focus-timer');
@@ -3186,14 +3265,27 @@ function updateFocusUI() {
   const button = qs<HTMLElement>('#focus-btn');
   const ringWrap = qs<HTMLElement>('#tab-focus .timer-ring-wrap');
   const sessionState = qs<HTMLElement>('#focus-session-state');
+  const xpHint = qs<HTMLElement>('#focus-xp-hint');
   if (ringWrap) ringWrap.classList.toggle('running', state.running);
   if (sessionState) sessionState.textContent = state.running ? 'In flow' : 'Ready to begin';
 
+  // Keep the header hint truthful for presets AND custom durations.
+  if (xpHint) xpHint.textContent = `+${state.xp} XP`;
+
   // A restored session must also restore its controls, not only the digits.
   if (button) button.textContent = state.running ? t('focus.pause') : t('focus.start');
+  // A user-defined custom block highlights the Custom chip instead of any preset.
+  // Mission blocks keep their own label and leave the active preset chip highlighted.
+  const customActive = state.isCustom && state.modeLabel === CUSTOM_TIMER_LABEL;
   qsa<HTMLElement>('.timer-chip').forEach((chip) => {
-    chip.classList.toggle('active', Number(chip.dataset.mode) === state.mode);
+    const isCustomChip = chip.id === 'mode-custom';
+    chip.classList.toggle(
+      'active',
+      isCustomChip ? customActive : !customActive && Number(chip.dataset.mode) === state.mode,
+    );
   });
+  // A custom block restored from storage must re-open its input row.
+  if (customActive) setCustomTimerRowVisible(true);
 
   if (elTimer) {
     const m = state.minutes.toString().padStart(2, '0');

@@ -38,6 +38,8 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: true,
     port: 5173,
+    // Arena previews use a per-session e2b.app hostname. This applies only to Vite's dev server.
+    allowedHosts: ['.e2b.app'],
   },
   plugins: [
     spaFallbackPlugin(),

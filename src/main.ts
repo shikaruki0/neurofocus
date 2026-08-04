@@ -18,6 +18,7 @@ import './styles/components.css';
 import './styles/animations.css';
 import './styles/onboarding.css';
 import './styles/neural-atlas.css';
+import './styles/desktop.css';
 
 import { data, resetHabitsForNewDay } from './modules/data.ts';
 import { clearAll } from './modules/storage.ts';

@@ -1,0 +1,192 @@
+/* ===================================================================
+   DESKTOP WORKSPACE — intentional wide-screen layout
+   Mobile remains the default. This layer resolves legacy desktop rule
+   conflicts and turns the phone-first interface into a calm PC workspace.
+   =================================================================== */
+
+@media (min-width: 760px) {
+  body {
+    padding-left: 224px;
+    padding-bottom: var(--space-8);
+  }
+
+  .header {
+    min-height: 72px;
+    padding: var(--space-3) clamp(28px, 4vw, 64px);
+  }
+
+  .bottom-nav {
+    width: 224px;
+    padding: 18px 14px;
+    align-items: stretch;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .nav-item {
+    width: 100%;
+    min-height: 52px;
+    padding: 10px 12px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    font-size: var(--font-sm);
+    text-align: left;
+  }
+
+  .nav-item .icon {
+    flex: 0 0 28px;
+    font-size: 1.25rem;
+  }
+
+  .container {
+    max-width: 1320px;
+    padding: clamp(28px, 4vw, 52px) clamp(28px, 5vw, 72px) 64px;
+  }
+
+  .card,
+  .stat-card {
+    transition: transform var(--transition-fast), border-color var(--transition-fast),
+      box-shadow var(--transition-base);
+  }
+
+  .card-interactive:hover,
+  .stat-card:hover,
+  .trophy-preview:hover {
+    transform: translateY(-3px);
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Home: information is grouped by purpose instead of stretched vertically. */
+  #tab-home {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  #tab-home > .hero-card,
+  #tab-home > .home-stats-label,
+  #tab-home > .stats-grid,
+  #tab-home > .home-progress-label {
+    grid-column: 1 / -1;
+  }
+
+  #tab-home > .xp-card,
+  #tab-home > .daily-fuel-card {
+    grid-column: span 6;
+    height: 100%;
+    margin-bottom: 0;
+  }
+
+  #tab-home > .home-quests-label,
+  #tab-home > #daily-quests {
+    grid-column: span 7;
+  }
+
+  #tab-home > .home-ritual-label,
+  #tab-home > #ritual-card {
+    grid-column: span 5;
+  }
+
+  #tab-home > #daily-quests,
+  #tab-home > #ritual-card {
+    align-self: stretch;
+    margin-bottom: 0;
+  }
+
+  #tab-home > .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 0;
+  }
+
+  #tab-home > #streak-card,
+  #tab-home > #weekly-card {
+    grid-column: span 6;
+    margin-bottom: 0;
+  }
+
+  /* Wide forms keep labels and controls easy to scan. */
+  #tab-backlog,
+  #tab-detox,
+  #tab-plan {
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+
+  #tab-plan {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    align-items: start;
+  }
+
+  #tab-plan > .section-label,
+  #tab-plan > [data-i18n='plan.title'],
+  #tab-plan > [data-i18n='plan.subtitle'],
+  #tab-plan > .card:last-child {
+    grid-column: 1 / -1;
+  }
+
+  #tab-plan > .card {
+    margin-bottom: 0;
+  }
+
+  /* Focus is the primary desktop workspace: timer left, planning right. */
+  #tab-focus {
+    grid-template-columns: minmax(440px, 1.25fr) minmax(330px, 0.75fr);
+    gap: 24px;
+    max-width: 1180px;
+  }
+
+  #tab-focus > .section-label,
+  #tab-focus > [data-i18n='focus.title'],
+  #tab-focus > [data-i18n='focus.subtitle'],
+  #tab-focus > .focus-command-strip,
+  #tab-focus > #focus-history-card {
+    grid-column: 1 / -1;
+  }
+
+  #tab-focus > .focus-session-card,
+  #tab-focus > .focus-session-card + .card {
+    grid-column: 1;
+  }
+
+  #tab-focus > .mission-planner-card,
+  #tab-focus > .mission-setup-card,
+  #tab-focus > .mission-confirmed-card {
+    grid-column: 2;
+    margin-bottom: 0;
+  }
+
+  #tab-focus > .focus-session-card {
+    grid-row: span 2;
+  }
+
+  #tab-focus > #focus-history-card {
+    margin-top: 8px;
+  }
+
+  .focus-session-card .timer-ring-wrap {
+    width: min(290px, 100%);
+    height: auto;
+    aspect-ratio: 1;
+  }
+}
+
+@media (min-width: 1440px) {
+  .container {
+    max-width: 1480px;
+  }
+
+  #tab-home {
+    gap: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}

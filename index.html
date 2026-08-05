@@ -643,67 +643,69 @@
     <!-- Main Content -->
     <main class="container">
       <!-- HOME TAB -->
-      <section id="tab-home" class="tab-content">
-        <div class="hero-card" id="hero-card">
-          <div class="hero-orbit hero-orbit-one"></div><div class="hero-orbit hero-orbit-two"></div>
-          <div class="hero-eyebrow"><span></span> YOUR DAILY OPERATING SYSTEM</div>
-          <div class="hero-icon" id="hero-icon">🌱</div>
-          <div class="hero-title" id="hero-title">Initiate</div>
-          <div class="hero-sub" id="hero-sub">Level 1 · Begin your ascent</div>
-          <div class="hero-badge" id="hero-badge">⚡ 0 / 100 XP</div>
+                  <section id="tab-home" class="tab-content tab-home-vertical">
+        <!-- 1. STATUS CARD (replaces old hero + XP cards) -->
+        <div class="v-status" id="hero-card" aria-label="Status">
+          <div class="v-status-avatar">
+            <span class="v-status-sprout" id="hero-icon">🌱</span>
+          </div>
+          <div class="v-status-identity">
+            <div class="v-status-line">
+              <span class="v-status-name" id="hero-title">Initiate</span>
+              <span class="v-status-dot">·</span>
+              <span class="v-status-level" id="hero-badge">Level 1</span>
+            </div>
+            <div class="v-status-xp">
+              <div class="v-status-xp-track">
+                <div class="v-status-xp-fill" id="xp-bar" style="width:0%"></div>
+              </div>
+              <span class="v-status-xp-text" id="xp-next">0 / 100</span>
+            </div>
+          </div>
+          <div class="v-status-chips">
+            <div class="v-chip v-chip-fire" title="Streak">
+              <span>🔥</span><span id="cmd-streak-num">0</span>
+            </div>
+            <div class="v-chip v-chip-freeze" title="Freezes">
+              <span>❄</span><span id="freeze-count-cmd">0</span>
+            </div>
+          </div>
+          <!-- legacy hooks for backward compatibility with existing JS -->
+          <span class="sr-only" id="hero-sub"></span>
+          <span class="sr-only" id="xp-count">0 XP</span>
+          <span class="sr-only" id="xp-badge"></span>
+          <span class="sr-only" id="d-streak">0</span>
+          <span class="sr-only" id="d-backlogs">0</span>
+          <span class="sr-only" id="d-focus">0</span>
+          <span class="sr-only" id="d-habits">0</span>
         </div>
 
-        <div class="card xp-card">
-          <div class="xp-header">
-            <div class="xp-title" data-i18n="home.daily_fuel">🪙 Neurocoins</div>
-            <div class="xp-count" id="xp-count">0 XP</div>
+        <!-- 2. QUOTE -->
+        <p class="v-quote" id="daily-quote" data-i18n="home.daily_fuel_loading">"Loading your daily fuel..."</p>
+
+        <!-- 3. FOCUS NOW (hero) -->
+        <div class="v-focus" id="v-focus-card">
+          <div class="v-focus-left">
+            <div class="v-focus-timer" id="bento-focus-timer">25:00</div>
+            <div class="v-focus-status" id="bento-focus-status" data-i18n="focus.ready">Ready to focus</div>
+            <div class="v-focus-modes" role="tablist" aria-label="Focus mode">
+              <button type="button" class="v-mode-pill is-active" data-mode="pomodoro" data-i18n="focus.pomodoro">Pomodoro</button>
+              <button type="button" class="v-mode-pill" data-mode="deep" data-i18n="focus.deep">Deep</button>
+              <button type="button" class="v-mode-pill" data-mode="flow" data-i18n="focus.flow">Flow</button>
+            </div>
           </div>
-          <div class="xp-track">
-            <div class="xp-fill" id="xp-bar" style="width: 0%"></div>
-          </div>
-          <div
-            style="
-              display: flex;
-              justify-content: space-between;
-              margin-top: 6px;
-              align-items: center;
-            "
-          >
-            <div class="xp-badge" id="xp-badge">Level 1</div>
-            <div class="xp-next" id="xp-next">0 / 100 to next</div>
+          <div class="v-focus-right">
+            <div class="v-focus-chip" id="bento-focus-chip" data-i18n="focus.no_task">📖 No task set</div>
+            <div class="v-focus-task" id="bento-focus-task" data-i18n="focus.pick_task">Pick a task from Backlog or Plan to begin</div>
+            <button type="button" class="v-start-btn" id="bento-start-btn">
+              <span class="v-start-play">▶</span>
+              <span data-i18n="focus.start">Start Focus</span>
+            </button>
           </div>
         </div>
 
-        <div class="card card-accent-left text-center daily-fuel-card">
-          <div
-            style="
-              font-size: var(--font-xs);
-              font-weight: 700;
-              letter-spacing: 0.1em;
-              text-transform: uppercase;
-              color: var(--text-tertiary);
-              margin-bottom: 6px;
-            "
-            data-i18n="home.daily_fuel"
-          >
-            Daily Fuel
-          </div>
-          <div
-            id="daily-quote"
-            style="
-              font-size: var(--font-base);
-              font-weight: 600;
-              color: var(--text);
-              font-style: italic;
-              line-height: var(--line-relaxed);
-            "
-            data-i18n="home.daily_fuel_loading"
-          >
-            "Loading your daily fuel..."
-          </div>
-        </div>
-
-        <div class="flow-banner hidden" id="flow-banner">
+        <!-- Flow banner (conditional) -->
+        <div class="flow-banner v-flow hidden" id="flow-banner">
           <div class="flow-banner-icon">🌊</div>
           <div>
             <div class="flow-banner-text" data-i18n="home.flow_active">FLOW STATE ACTIVE</div>
@@ -711,198 +713,120 @@
           </div>
         </div>
 
-        <div class="section-label home-quests-label">
-          <span data-i18n="home.daily_quests">🎯 Daily Quests</span>
-          <div class="line"></div>
-        </div>
-        <div id="daily-quests"></div>
-
-        <div class="section-label home-ritual-label">
-          <span data-i18n="home.morning_ritual">🌅 Morning Ritual</span>
-          <div class="line"></div>
-        </div>
-        <div class="card card-featured" id="ritual-card">
-          <div
-            style="font-size: var(--font-sm); font-weight: 700; margin-bottom: 4px"
-            data-i18n="home.ritual_prime_title"
-          >
-            Prime Your Brain
-          </div>
-          <div
-            style="
-              font-size: var(--font-sm);
-              color: var(--text-secondary);
-              margin-bottom: var(--space-3);
-            "
-            data-i18n="home.ritual_prime_sub"
-          >
-            Complete before 12 PM for 2x XP all day
-          </div>
-          <div class="ritual-grid" id="ritual-grid"></div>
-          <div class="ritual-boost hidden" id="ritual-boost">
-            <span style="font-size: 1.1rem">⚡</span>
-            <div class="ritual-boost-text" data-i18n="home.ritual_boost_active">
-              2x XP Boost Active
-            </div>
-          </div>
-        </div>
-
-        <div class="section-label home-stats-label">
-          <span data-i18n="home.stats">📊 Stats</span>
-          <div class="line"></div>
-        </div>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-num" id="d-streak">0</div>
-            <div class="stat-label" data-i18n="home.stat_streak">Streak Days</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-num" id="d-backlogs">0</div>
-            <div class="stat-label" data-i18n="home.stat_backlogs">Backlogs Left</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-num" id="d-focus">0</div>
-            <div class="stat-label" data-i18n="home.stat_focus">Focus Hours</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-num" id="d-habits">0</div>
-            <div class="stat-label" data-i18n="home.stat_habits">Habits Done</div>
-          </div>
-        </div>
-
-        <div class="section-label home-progress-label">
-          <span data-i18n="home.streak_title">🔥 Streak</span>
-          <div class="line"></div>
-        </div>
-        <div class="card streak-card">
-          <div class="streak-flame">🔥</div>
-          <div class="streak-info">
-            <div class="streak-num" id="consecutive-streak">0</div>
-            <div class="streak-label" data-i18n="home.consecutive_days">Consecutive Days</div>
-            <div class="freeze-badge" id="freeze-badge">❄️ 0 Freezes</div>
-          </div>
-          <button
-            class="btn btn-ghost btn-sm"
-            id="freeze-btn"
-            style="display: none; width: auto; flex-shrink: 0"
-            data-i18n="home.use_freeze"
-          >
-            Use Freeze
-          </button>
-        </div>
-
-        <div class="section-label">
-          <span data-i18n="home.subject_mastery">📚 Subject Mastery</span>
-          <div class="line"></div>
-        </div>
-        <div class="card">
-          <div class="subject-grid" id="subject-grid"></div>
-        </div>
-
-        <div class="section-label">
-          <span data-i18n="home.trophy_room">🏆 Trophy Room</span>
-          <div class="line"></div>
-        </div>
-        <div class="trophy-preview" id="trophy-preview">
-          <div class="trophy-preview-icon" id="trophy-preview-icon">🌱</div>
-          <div class="trophy-preview-info">
-            <div class="trophy-preview-title" id="trophy-preview-title">Initiate</div>
-            <div class="trophy-preview-sub" id="trophy-preview-sub">0 of 35 badges unlocked</div>
-          </div>
-          <div class="trophy-preview-arrow">›</div>
-        </div>
-
-        <div class="section-label">
-          <span data-i18n="home.daily_verification">✅ Daily Verification</span>
-          <div class="line"></div>
-        </div>
-        <div class="card card-glow" id="checkin-card">
-          <div
-            style="
-              font-size: var(--font-sm);
-              font-weight: 700;
-              margin-bottom: 4px;
-              color: var(--text);
-            "
-            data-i18n="home.focus_protocol"
-          >
-            Focus Protocol
-          </div>
-          <div
-            style="
-              font-size: var(--font-sm);
-              color: var(--text-secondary);
-              margin-bottom: var(--space-3);
-            "
-            data-i18n="home.complete_checks_sub"
-          >
-            Complete all checks to claim your streak
-          </div>
-          <div id="daily-checks"></div>
-          <div
-            id="checkin-status"
-            class="mt-3 text-center font-bold text-sm"
-            style="color: var(--danger)"
-          >
-            0 / 7 checks
-          </div>
-          <button
-            class="btn btn-gold btn-block mt-3"
-            id="claim-btn"
-            data-i18n="home.claim_streak"
-            disabled
-          >
-            🔥 Claim Streak
-          </button>
-        </div>
-
-        <div class="section-label">
-          <span data-i18n="home.priority">⚡ Priority</span>
-          <div class="line"></div>
-        </div>
-        <div class="card card-accent-left" id="dash-priority">
+        <!-- 4. PRIORITY -->
+        <div class="v-card v-priority card-accent-left" id="dash-priority">
+          <div class="v-priority-label" data-i18n="home.priority">⚡ Priority</div>
           <div class="empty">
             <div class="empty-icon">🎯</div>
             <span data-i18n="home.priority_loading">Loading your priorities...</span>
           </div>
         </div>
 
-        <div class="section-label">
-          <span data-i18n="home.weekly_report">📈 Weekly Report</span>
-          <div class="line"></div>
+        <!-- 5. SECTION HEADER: TODAY -->
+        <div class="v-section" data-i18n="home.section_today">Today</div>
+
+        <!-- Daily Quests -->
+        <div class="v-card">
+          <h3 class="v-card-title" data-i18n="home.daily_quests">🎯 Daily Quests</h3>
+          <div id="daily-quests" class="v-quests-host"></div>
         </div>
-        <div class="card" id="weekly-card">
-          <div class="week-summary" id="week-summary">
-            <div class="week-metric">
-              <div class="week-metric-num" id="wk-focus">0</div>
-              <div class="week-metric-label" data-i18n="home.wk_focus">Focus Hrs</div>
+
+        <!-- Morning Ritual -->
+        <div class="v-card" id="ritual-card">
+          <h3 class="v-card-title" data-i18n="home.morning_ritual">🌅 Morning Ritual</h3>
+          <p class="v-card-sub" data-i18n="home.ritual_prime_sub">Complete before 12 PM for 2x XP all day</p>
+          <div class="ritual-grid v-ritual" id="ritual-grid"></div>
+          <div class="ritual-boost hidden" id="ritual-boost">
+            <span style="font-size:1.1rem">⚡</span>
+            <div class="ritual-boost-text" data-i18n="home.ritual_boost_active">2x XP Boost Active</div>
+          </div>
+        </div>
+
+        <!-- Daily Verification -->
+        <div class="v-card card-glow" id="checkin-card">
+          <h3 class="v-card-title" data-i18n="home.daily_verification">✅ Daily Verification</h3>
+          <p class="v-card-sub" data-i18n="home.complete_checks_sub">Complete all checks to claim your streak</p>
+          <div id="daily-checks" class="v-checks"></div>
+          <div id="checkin-status" class="v-checkin-status">0 / 7 checks</div>
+          <button class="btn btn-gold btn-block v-claim-btn" id="claim-btn" data-i18n="home.claim_streak" disabled>
+            🔥 <span data-i18n="home.claim_streak">Claim Streak</span>
+          </button>
+        </div>
+
+        <!-- 6. SECTION HEADER: YOUR STATS -->
+        <div class="v-section" data-i18n="home.section_stats">Your Stats</div>
+
+        <div class="v-card v-stats-card">
+          <div class="v-stats-row">
+            <div class="v-stat">
+              <div class="v-stat-icon v-stat-streak">🔥</div>
+              <div class="v-stat-num" id="bento-stat-streak-num">0</div>
+              <div class="v-stat-label" data-i18n="home.stat_streak_short">Streak</div>
             </div>
-            <div class="week-metric">
-              <div class="week-metric-num" id="wk-backlogs">0</div>
-              <div class="week-metric-label" data-i18n="home.wk_backlogs">Backlogs</div>
+            <div class="v-stat">
+              <div class="v-stat-icon v-stat-focus">⏱</div>
+              <div class="v-stat-num" id="bento-stat-focus-num">0h</div>
+              <div class="v-stat-label" data-i18n="home.stat_focus_short">Focus</div>
             </div>
-            <div class="week-metric">
-              <div class="week-metric-num" id="wk-habits">0</div>
-              <div class="week-metric-label" data-i18n="home.wk_habits">Habits</div>
+            <div class="v-stat">
+              <div class="v-stat-icon v-stat-backlogs">📁</div>
+              <div class="v-stat-num" id="bento-stat-backlogs-num">0</div>
+              <div class="v-stat-label" data-i18n="home.stat_backlogs_short">Backlogs</div>
             </div>
-            <div class="week-metric">
-              <div class="week-metric-num" id="wk-streaks">0</div>
-              <div class="week-metric-label" data-i18n="home.wk_streaks">Streaks</div>
+            <div class="v-stat">
+              <div class="v-stat-icon v-stat-habits">☀</div>
+              <div class="v-stat-num" id="bento-stat-habits-num">0</div>
+              <div class="v-stat-label" data-i18n="home.stat_habits_short">Habits</div>
             </div>
           </div>
-          <div class="week-bar-wrap" id="week-bar-wrap"></div>
-          <div class="week-total">
-            <div class="week-total-text" data-i18n="home.wk_activity_score">
-              This Week's Activity Score
-            </div>
-            <div class="week-total-num" id="week-total-num">0</div>
+        </div>
+
+        <div class="v-streak-highlight" id="v-streak-highlight">
+          <span>🔥</span>
+          <span id="v-streak-highlight-text" data-i18n="home.streak_keep_going">0 day streak — keep it going!</span>
+        </div>
+
+        <!-- 7. SECTION HEADER: YOUR JOURNEY -->
+        <div class="v-section" data-i18n="home.section_journey">Your Journey</div>
+
+        <div class="v-card">
+          <h3 class="v-card-title" data-i18n="home.subject_mastery">📚 Subject Mastery</h3>
+          <div class="subject-grid v-subjects" id="subject-grid"></div>
+        </div>
+
+        <button type="button" class="v-card v-trophy card-interactive" id="trophy-preview" tabindex="0" role="button" aria-label="Trophy Room">
+          <span class="v-trophy-icon" id="trophy-preview-icon">🌱</span>
+          <div class="v-trophy-info">
+            <div class="v-trophy-title" id="trophy-preview-title">Initiate</div>
+            <div class="v-trophy-sub" id="trophy-preview-sub">0 of 35 badges unlocked</div>
           </div>
-          <div class="tip" style="margin-top: 10px">
+          <span class="v-trophy-arrow">›</span>
+        </button>
+
+        <!-- 8. SECTION HEADER: THIS WEEK -->
+        <div class="v-section" data-i18n="home.section_week">This Week</div>
+
+        <div class="v-card" id="weekly-card">
+          <div class="v-weekly-head">
+            <h3 class="v-card-title" data-i18n="home.weekly_report">📈 Weekly Report</h3>
+            <span class="v-weekly-avg" id="bento-weekly-avg">Avg 0h/day</span>
+          </div>
+          <div class="v-weekly-total">
+            <span class="week-total-num v-weekly-num" id="week-total-num">0</span>
+            <span class="v-weekly-total-label" data-i18n="home.wk_hours_unit">hours</span>
+          </div>
+          <div class="sr-only" id="week-summary">
+            <span id="wk-focus">0</span><span id="wk-backlogs">0</span><span id="wk-habits">0</span><span id="wk-streaks">0</span>
+          </div>
+          <div class="week-bar-wrap v-weekly-bars" id="week-bar-wrap"></div>
+          <div class="tip v-tip">
             <strong data-i18n="home.wk_tip_strong">Consistency beats intensity.</strong>
             <span data-i18n="home.wk_tip_body">A little every day rewires your brain.</span>
           </div>
         </div>
       </section>
+
+
 
       <!-- DETOX TAB -->
       <section id="tab-detox" class="tab-content hidden">

@@ -260,41 +260,32 @@ function renderHero() {
   }
 }
 
-/** Premium home — writes progress-focused values into the redesigned Home tab. */
-const HOME_FOCUS_GOAL_MIN = 100; // daily focus target (minutes) for the Focus ring
-
-/** Today's focus progress as a 0–100 percentage (capped at the daily goal). */
-function homeFocusPct(): number {
-  const mins = data.focusMinutes || 0;
-  return Math.max(0, Math.min(100, Math.round((mins / HOME_FOCUS_GOAL_MIN) * 100)));
-}
-
-/** Daily quests completed as a 0–100 percentage. */
-function homeQuestsPct(): number {
-  const quests = data.dailyQuests?.quests;
-  if (!quests || !quests.length) return 0;
-  const done = quests.filter((q) => q.completed).length;
-  return Math.round((done / quests.length) * 100);
-}
-
-/** Morning ritual steps completed as a 0–100 percentage. */
-function homeRitualPct(): number {
-  const steps = getRitual().steps;
-  const total = RITUAL_STEPS.length || 1;
-  const done = steps.filter((s) => !!s).length;
-  return Math.round((done / total) * 100);
-}
-
-/** Sets a single SVG ring's fill from a 0–100 percentage. */
-function setHomePremiumRing(selector: string, pct: number): void {
-  const el = qs<HTMLElement>(selector);
-  if (!el) return;
-  const r = Number(el.getAttribute('r') || '0');
-  if (!r) return;
-  const circumference = 2 * Math.PI * r;
-  const clamped = Math.max(0, Math.min(100, pct));
-  el.style.strokeDasharray = String(circumference);
-  el.style.strokeDashoffset = String(circumference * (1 - clamped / 100));
+/** Draws the Focus trend as a trading-style line/area chart over the last 7 days. */
+function renderHomePremiumTrend(): void {
+  const stats = getWeekStats();
+  const values = stats.map((s) => s.focus || 0);
+  const W = 300, H = 96, padX = 8, padTop = 12, padBot = 12;
+  const n = values.length;
+  const max = Math.max(...values, 0.5);
+  const xAt = (i: number) => padX + (i * (W - 2 * padX)) / Math.max(1, n - 1);
+  const yAt = (v: number) => H - padBot - (v / max) * (H - padTop - padBot);
+  const seg = values
+    .map((v, i) => `${i === 0 ? 'M' : 'L'}${xAt(i).toFixed(1)} ${yAt(v).toFixed(1)}`)
+    .join(' ');
+  const line = qs<HTMLElement>('#p-trend-line');
+  if (line) line.setAttribute('d', seg);
+  const area = qs<HTMLElement>('#p-trend-area');
+  if (area)
+    area.setAttribute('d', `${seg} L ${xAt(n - 1).toFixed(1)} ${H - padBot} L ${xAt(0).toFixed(1)} ${H - padBot} Z`);
+  const last = n - 1;
+  const lx = xAt(last).toFixed(1);
+  const ly = yAt(values[last] || 0).toFixed(1);
+  const dot = qs<HTMLElement>('#p-trend-dot');
+  const halo = qs<HTMLElement>('#p-trend-halo');
+  if (dot) { dot.setAttribute('cx', lx); dot.setAttribute('cy', ly); }
+  if (halo) { halo.setAttribute('cx', lx); halo.setAttribute('cy', ly); }
+  const now = qs<HTMLElement>('#p-trend-now');
+  if (now) now.textContent = `${(values[last] || 0).toFixed(1)}h`;
 }
 
 function renderHomePremium() {
@@ -340,15 +331,11 @@ function renderHomePremium() {
   const weekNum = qs<HTMLElement>('#week-total-num');
   if (weekNum) weekNum.textContent = totals.focus.toFixed(1);
 
-  // Progress rings + level in the center
-  setHomePremiumRing('#p-ring-focus', homeFocusPct());
-  setHomePremiumRing('#p-ring-quests', homeQuestsPct());
-  setHomePremiumRing('#p-ring-ritual', homeRitualPct());
-  const lvlEl = qs<HTMLElement>('#p-rings-lvl');
-  if (lvlEl) lvlEl.textContent = t('home.level_short', { level: info.level });
+  // Focus trend line chart (centerpiece)
+  renderHomePremiumTrend();
 }
 
-/** Keeps the Home progress rings fresh (e.g. during/after a focus session). */
+/** Keeps the Home focus trend fresh (e.g. during/after a focus session). */
 function wireHomePremiumFocus() {
   const root = qs<HTMLElement>('.tab-home-premium');
   if (!root) return;
@@ -356,9 +343,7 @@ function wireHomePremiumFocus() {
   (root as HTMLElement & { __premiumWired?: boolean }).__premiumWired = true;
   window.setInterval(() => {
     if (!qs<HTMLElement>('.tab-home-premium')) return;
-    setHomePremiumRing('#p-ring-focus', homeFocusPct());
-    setHomePremiumRing('#p-ring-quests', homeQuestsPct());
-    setHomePremiumRing('#p-ring-ritual', homeRitualPct());
+    renderHomePremiumTrend();
   }, 30000);
 }
 

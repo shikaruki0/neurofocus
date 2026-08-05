@@ -19,7 +19,7 @@ import './styles/animations.css';
 import './styles/onboarding.css';
 import './styles/neural-atlas.css';
 import './styles/desktop.css';
-import './styles/home-vertical.css';
+import './styles/home-premium.css';
 
 import { data, resetHabitsForNewDay } from './modules/data.ts';
 import { clearAll } from './modules/storage.ts';
@@ -248,9 +248,9 @@ function renderHero() {
       need: info.need,
     });
   if (elBadge) {
-    // In bento layout, #hero-badge shows "Level N" in the command bar
-    const isVertical = !!qs<HTMLElement>('.tab-home-vertical');
-    if (isVertical) {
+    // In premium layout, #hero-badge shows "Level N" beside the rank name
+    const isPremium = !!qs<HTMLElement>('.tab-home-premium');
+    if (isPremium) {
       elBadge.textContent = t('common.level', { level: info.level });
     } else {
       elBadge.textContent = next
@@ -260,123 +260,106 @@ function renderHero() {
   }
 }
 
-/** Populate.v-specific elements (stat tiles, focus card, progress ring). */
-function renderVerticalDashboard() {
-  const vRoot = qs<HTMLElement>('.tab-home-vertical');
-  if (!vRoot) return;
+/** Premium home — writes progress-focused values into the redesigned Home tab. */
+const HOME_FOCUS_GOAL_MIN = 100; // daily focus target (minutes) for the Focus ring
 
-  // Stat tiles (mirror values computed in updateDashboard)
-  const backlogVal = data.backlogs.reduce((a, b) => a + ((b.total || 0) - (b.done || 0)), 0);
-  const focusHours = Math.floor(((data.focusMinutes || 0) / 60) * 10) / 10;
-  const habitsVal = data.habits.filter((h) => h.today).length;
-  const streakInfo = getStreakInfo();
-
-  const setText = (sel: string, v: string) => {
-    const el = qs<HTMLElement>(sel);
-    if (el) el.textContent = v;
-  };
-  setText('#bento-stat-streak-num', String(streakInfo.consecutive));
-  setText('#bento-stat-focus-num', `${focusHours.toFixed(1)}h`);
-  setText('#bento-stat-backlogs-num', String(backlogVal));
-  setText('#bento-stat-habits-num', String(habitsVal));
-
-  // Streak highlight strip
-  const streakHL = qs<HTMLElement>('#v-streak-highlight-text');
-  if (streakHL) {
-    streakHL.textContent = t('home.streak_keep_going', { days: streakInfo.consecutive });
-  }
-
-  // Weekly avg & total hours
-  const weeklyAvg = qs<HTMLElement>('#bento-weekly-avg');
-  const weeklyNum = qs<HTMLElement>('#week-total-num');
-  const totals = getWeekTotals();
-  if (weeklyAvg) {
-    const avg = totals.focus / 7;
-    weeklyAvg.textContent = t('home.wk_avg_per_day', { hours: avg.toFixed(1) });
-  }
-  if (weeklyNum) {
-    const inVCard = !!weeklyNum.closest('.v-weekly-bars') || !!weeklyNum.closest('#weekly-card.v-card');
-    if (inVCard) weeklyNum.textContent = totals.focus.toFixed(1);
-  }
-
-  // Focus hero card — pull current priority/backlog
-  const chip = qs<HTMLElement>('#bento-focus-chip');
-  const task = qs<HTMLElement>('#bento-focus-task');
-  const inc = data.backlogs
-    .filter((b) => (b.done || 0) < (b.total || 0))
-    .sort(
-      (a, b) =>
-        (b.total || 0) - (b.done || 0) - ((a.total || 0) - (a.done || 0)),
-    );
-  if (chip && task) {
-    if (inc.length > 0 && inc[0]) {
-      const subj = inc[0].subjectLabel || inc[0].subject || '';
-      const title = inc[0].chapterName || inc[0].name || '';
-      chip.textContent = subj ? `📖 ${subj}` : '📖 Focus';
-      task.textContent = title;
-    } else {
-      chip.textContent = t('focus.no_task');
-      task.textContent = t('focus.pick_task');
-    }
-  }
+/** Today's focus progress as a 0–100 percentage (capped at the daily goal). */
+function homeFocusPct(): number {
+  const mins = data.focusMinutes || 0;
+  return Math.max(0, Math.min(100, Math.round((mins / HOME_FOCUS_GOAL_MIN) * 100)));
 }
 
-/** Wire up bento "Start Focus" button and mode pills to existing focus system. */
-function wireVerticalFocusCard() {
-  const vRoot = qs<HTMLElement>('.tab-home-vertical');
-  if (!vRoot) return;
+/** Daily quests completed as a 0–100 percentage. */
+function homeQuestsPct(): number {
+  const quests = data.dailyQuests?.quests;
+  if (!quests || !quests.length) return 0;
+  const done = quests.filter((q) => q.completed).length;
+  return Math.round((done / quests.length) * 100);
+}
 
-  const startBtn = qs<HTMLElement>('.v-start-btn');
-  if (startBtn && !startBtn.dataset.wired) {
-    startBtn.dataset.wired = '1';
-    startBtn.addEventListener('click', () => {
-      // Switch to focus tab — existing nav handler will activate it
-      const focusTab = document.querySelector<HTMLElement>('.nav-item[data-tab="focus"]');
-      if (focusTab) focusTab.click();
-    });
+/** Morning ritual steps completed as a 0–100 percentage. */
+function homeRitualPct(): number {
+  const steps = getRitual().steps;
+  const total = RITUAL_STEPS.length || 1;
+  const done = steps.filter((s) => !!s).length;
+  return Math.round((done / total) * 100);
+}
+
+/** Sets a single SVG ring's fill from a 0–100 percentage. */
+function setHomePremiumRing(selector: string, pct: number): void {
+  const el = qs<HTMLElement>(selector);
+  if (!el) return;
+  const r = Number(el.getAttribute('r') || '0');
+  if (!r) return;
+  const circumference = 2 * Math.PI * r;
+  const clamped = Math.max(0, Math.min(100, pct));
+  el.style.strokeDasharray = String(circumference);
+  el.style.strokeDashoffset = String(circumference * (1 - clamped / 100));
+}
+
+function renderHomePremium() {
+  const root = qs<HTMLElement>('.tab-home-premium');
+  if (!root) return;
+
+  const info = xpLevel(data.xp);
+  const next = getNextRank(info.level);
+  const streakInfo = getStreakInfo();
+  const totals = getWeekTotals();
+
+  // Time-aware greeting + profile name
+  const greetEl = qs<HTMLElement>('#p-greeting');
+  if (greetEl) {
+    const h = new Date().getHours();
+    const key: TranslationKey =
+      h < 12 ? 'home.greeting_morning' : h < 17 ? 'home.greeting_afternoon' : 'home.greeting_evening';
+    greetEl.textContent = t(key);
+  }
+  const nameEl = qs<HTMLElement>('#p-name');
+  if (nameEl) nameEl.textContent = data.profileName || 'Warrior';
+
+  // Friendly "N XP to NextRank" label (overrides the raw renderXP value)
+  const xpNext = qs<HTMLElement>('#xp-next');
+  if (xpNext) {
+    xpNext.textContent = next
+      ? t('home.xp_to_next', { xp: info.need, rank: next.name })
+      : t('rank.max_rank');
   }
 
-  const timer = qs<HTMLElement>('.v-focus-timer');
-  const status = qs<HTMLElement>('.v-focus-status');
-  // Live-sync timer display from running focus session (if any)
-  const syncTimer = () => {
-    if (!timer || !status) return;
-    const ft = qs<HTMLElement>('#focus-timer');
-    const fl = qs<HTMLElement>('#focus-mode-label');
-    if (ft && ft.textContent && ft.textContent.trim()) {
-      timer.textContent = ft.textContent.trim();
-    }
-    if (fl && fl.textContent && fl.textContent.trim()) {
-      status.textContent = fl.textContent.trim();
-    }
-  };
-  // Update every second when a timer could be running
-  setInterval(syncTimer, 1000);
+  // Freeze chip number (visible) — #freeze-badge stays populated by renderStreak as sr-only
+  const freezeNum = qs<HTMLElement>('#p-freeze-num');
+  if (freezeNum) freezeNum.textContent = String(streakInfo.freezes);
 
-  // Mode pills — switch focus mode via existing .timer-chip buttons (#mode-25, #mode-52, #mode-90)
-  const modeMap: Record<string, string> = {
-    pomodoro: '#mode-25',
-    deep: '#mode-52',
-    flow: '#mode-90',
-  };
-  const pills = vRoot.querySelectorAll<HTMLElement>('.v-mode-pill');
-  pills.forEach((pill) => {
-    if (pill.dataset.wired) return;
-    pill.dataset.wired = '1';
-    pill.addEventListener('click', () => {
-      pills.forEach((p) => p.classList.remove('is-active'));
-      pill.classList.add('is-active');
-      const mode = pill.dataset.mode || 'pomodoro';
-      const sel = modeMap[mode];
-      const existing = sel ? document.querySelector<HTMLElement>(sel) : null;
-      if (existing) existing.click();
-      // Also update the bento timer display to match the selected mode's default
-      if (timer && mode) {
-        const defaults: Record<string, string> = { pomodoro: '25:00', deep: '52:00', flow: '90:00' };
-        timer.textContent = defaults[mode] || '25:00';
-      }
-    });
-  });
+  // Stat tile: focus hours with unit (overrides raw updateDashboard value)
+  const focusHours = Math.floor(((data.focusMinutes || 0) / 60) * 10) / 10;
+  const focusTile = qs<HTMLElement>('#d-focus');
+  if (focusTile) focusTile.textContent = `${focusHours.toFixed(1)}h`;
+
+  // Weekly average pill + big focus-hours number (overrides renderWeekly's score)
+  const avgEl = qs<HTMLElement>('#p-week-avg');
+  if (avgEl) avgEl.textContent = t('home.wk_avg_per_day', { hours: (totals.focus / 7).toFixed(1) });
+  const weekNum = qs<HTMLElement>('#week-total-num');
+  if (weekNum) weekNum.textContent = totals.focus.toFixed(1);
+
+  // Progress rings + level in the center
+  setHomePremiumRing('#p-ring-focus', homeFocusPct());
+  setHomePremiumRing('#p-ring-quests', homeQuestsPct());
+  setHomePremiumRing('#p-ring-ritual', homeRitualPct());
+  const lvlEl = qs<HTMLElement>('#p-rings-lvl');
+  if (lvlEl) lvlEl.textContent = t('home.level_short', { level: info.level });
+}
+
+/** Keeps the Home progress rings fresh (e.g. during/after a focus session). */
+function wireHomePremiumFocus() {
+  const root = qs<HTMLElement>('.tab-home-premium');
+  if (!root) return;
+  if ((root as HTMLElement & { __premiumWired?: boolean }).__premiumWired) return;
+  (root as HTMLElement & { __premiumWired?: boolean }).__premiumWired = true;
+  window.setInterval(() => {
+    if (!qs<HTMLElement>('.tab-home-premium')) return;
+    setHomePremiumRing('#p-ring-focus', homeFocusPct());
+    setHomePremiumRing('#p-ring-quests', homeQuestsPct());
+    setHomePremiumRing('#p-ring-ritual', homeRitualPct());
+  }, 30000);
 }
 
 function renderQuests() {
@@ -2176,7 +2159,7 @@ function updateDashboard() {
   renderBuddy();
   renderWeekly();
   renderTrophyPreview();
-  renderVerticalDashboard();
+  renderHomePremium();
   recordDailyStat();
   checkQuests();
   checkBadges();
@@ -3973,7 +3956,7 @@ function init() {
   } catch (e) {
     console.error('Failed to setup listeners', e);
   }
-  safe(() => wireVerticalFocusCard(), 'verticalCard');
+  safe(() => wireHomePremiumFocus(), 'homePremium');
   renderAccountSettings();
   renderSettingsLanguageList();
   renderSoundSettings();

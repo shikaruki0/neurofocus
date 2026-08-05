@@ -1,0 +1,900 @@
+/* ===================================================================
+   HOME — PREMIUM (v6)
+   Calm, sophisticated, frosted-glass progress dashboard.
+   Scoped entirely under .tab-home-premium so other tabs are untouched.
+   Ink (default) · Paper [data-theme='light'] · Forest [data-theme='dusk']
+   =================================================================== */
+
+.tab-home-premium {
+  /* premium tokens (overridable per theme) */
+  --p-gap: 14px;
+  --p-pad: 18px;
+  --p-radius: 20px;
+  --p-card-bg: rgba(255, 255, 255, 0.045);
+  --p-card-bg-2: rgba(255, 255, 255, 0.028);
+  --p-border: var(--border-active);
+  --p-shadow: 0 12px 34px -16px rgba(0, 0, 0, 0.6);
+  --p-ring-focus: var(--accent-start);
+  --p-ring-quests: var(--epic);
+  --p-ring-ritual: var(--success);
+
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 4px 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--p-gap);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Paper (light) overrides */
+[data-theme='light'] .tab-home-premium {
+  --p-card-bg: rgba(255, 255, 255, 0.78);
+  --p-card-bg-2: rgba(255, 255, 255, 0.55);
+  --p-border: rgba(0, 0, 0, 0.08);
+  --p-shadow: 0 12px 30px -16px rgba(120, 80, 30, 0.28);
+}
+
+/* Forest (dusk) overrides */
+[data-theme='dusk'] .tab-home-premium {
+  --p-card-bg: rgba(255, 255, 255, 0.05);
+  --p-card-bg-2: rgba(255, 255, 255, 0.03);
+  --p-border: rgba(255, 255, 255, 0.12);
+  --p-shadow: 0 12px 34px -16px rgba(0, 0, 0, 0.55);
+  --p-ring-focus: var(--accent-start);
+  --p-ring-quests: var(--epic);
+  --p-ring-ritual: var(--success);
+}
+
+/* ---- shared card surface ---- */
+.tab-home-premium .p-card,
+.tab-home-premium .p-hero,
+.tab-home-premium .p-stat {
+  background: var(--p-card-bg);
+  border: 1px solid var(--p-border);
+  border-radius: var(--p-radius);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--p-shadow);
+}
+
+.tab-home-premium .p-card { padding: var(--p-pad); }
+
+/* ===================================================================
+   ZONE A — HERO
+   =================================================================== */
+.tab-home-premium .p-hero {
+  position: relative;
+  padding: var(--p-pad);
+  overflow: hidden;
+}
+
+.tab-home-premium .p-hero-glow {
+  position: absolute;
+  top: -45%;
+  right: -25%;
+  width: 70%;
+  height: 120%;
+  background: radial-gradient(closest-side, var(--ambient-1), transparent 70%);
+  filter: blur(22px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.tab-home-premium .p-hero-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.tab-home-premium .p-emblem {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--accent-start-fade), var(--accent-end-fade));
+  border: 1px solid var(--p-border);
+  box-shadow: 0 0 26px -8px var(--shadow);
+}
+
+.tab-home-premium .p-emblem-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.tab-home-premium .p-hero-id {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tab-home-premium .p-greeting {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.tab-home-premium .p-name {
+  font-size: 1.32rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-home-premium .p-rankline {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+.tab-home-premium .p-rankline #hero-title {
+  color: var(--accent-start);
+  font-weight: 700;
+}
+
+.tab-home-premium .p-rankline-sep {
+  margin: 0 5px;
+  opacity: 0.6;
+}
+
+.tab-home-premium .p-hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.tab-home-premium .p-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--p-card-bg-2);
+  border: 1px solid var(--p-border);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.tab-home-premium .p-chip-fire { color: var(--gold); }
+.tab-home-premium .p-chip-freeze { color: var(--accent-end); }
+
+.tab-home-premium .p-flow-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--gold-fade-1);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.tab-home-premium .p-freeze-btn {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--accent-end-fade);
+  border: 1px solid var(--p-border);
+  color: var(--text);
+  min-height: 30px;
+  cursor: pointer;
+}
+
+/* ---- progress rings (centerpiece) ---- */
+.tab-home-premium .p-rings {
+  position: relative;
+  width: 168px;
+  height: 168px;
+  margin: 14px auto 4px;
+}
+
+.tab-home-premium .p-rings-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.tab-home-premium .p-ring-bg {
+  fill: none;
+  stroke: var(--p-card-bg-2);
+  stroke-width: 10;
+}
+
+.tab-home-premium .p-ring {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tab-home-premium .p-ring-focus { stroke: var(--p-ring-focus); }
+.tab-home-premium .p-ring-quests { stroke: var(--p-ring-quests); }
+.tab-home-premium .p-ring-ritual { stroke: var(--p-ring-ritual); }
+
+.tab-home-premium .p-rings-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-home-premium .p-rings-lvl {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.tab-home-premium .p-rings-legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 6px 0 14px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.tab-home-premium .p-rings-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tab-home-premium .p-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.tab-home-premium .p-dot-focus { background: var(--p-ring-focus); }
+.tab-home-premium .p-dot-quests { background: var(--p-ring-quests); }
+.tab-home-premium .p-dot-ritual { background: var(--p-ring-ritual); }
+
+/* ---- XP bar ---- */
+.tab-home-premium .p-xp-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--p-card-bg-2);
+  overflow: hidden;
+}
+
+.tab-home-premium .p-xp-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tab-home-premium .p-xp-meta {
+  margin-top: 6px;
+  text-align: right;
+}
+
+.tab-home-premium #xp-next {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+/* ===================================================================
+   ZONE B — QUOTE
+   =================================================================== */
+.tab-home-premium .p-quote {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  padding: 2px 2px;
+}
+
+.tab-home-premium .p-quote-bar {
+  width: 3px;
+  flex: 0 0 3px;
+  border-radius: 999px;
+  background: linear-gradient(var(--accent-start), var(--accent-end));
+}
+
+.tab-home-premium .p-quote-text {
+  margin: 0;
+  font-style: italic;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* ===================================================================
+   STAT TILES
+   =================================================================== */
+.tab-home-premium .p-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.tab-home-premium .p-stat {
+  padding: 14px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tab-home-premium .p-stat-num {
+  font-size: 1.28rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.tab-home-premium .p-stat-label {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+/* ===================================================================
+   SHARED CARD PARTS
+   =================================================================== */
+.tab-home-premium .p-card-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.tab-home-premium .p-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.tab-home-premium .p-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tab-home-premium .p-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--p-card-bg-2);
+  border: 1px solid var(--p-border);
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.tab-home-premium .p-big {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+
+.tab-home-premium .p-tip {
+  margin-top: 10px;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+/* ===================================================================
+   THIS WEEK
+   =================================================================== */
+.tab-home-premium .p-weekly-total {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.tab-home-premium .p-weekly-unit {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.tab-home-premium .p-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 88px;
+}
+
+.tab-home-premium .week-bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  justify-content: flex-end;
+  margin: 0;
+}
+
+.tab-home-premium .week-bar-track {
+  width: 100%;
+  max-width: 18px;
+  height: 100%;
+  background: var(--p-card-bg-2);
+  border-radius: 999px;
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-home-premium .week-bar-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, var(--accent-start), var(--accent-end));
+  border-radius: 999px;
+  transition: height 0.5s ease;
+}
+
+.tab-home-premium .week-bar-today .week-bar-fill {
+  background: var(--gold);
+}
+
+.tab-home-premium .week-bar-label {
+  font-size: 0.62rem;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+/* ===================================================================
+   TODAY
+   =================================================================== */
+.tab-home-premium .p-subhead {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 12px 0 8px;
+}
+
+.tab-home-premium .p-today .p-subhead:first-of-type {
+  margin-top: 2px;
+}
+
+.tab-home-premium .p-divider {
+  height: 1px;
+  background: var(--p-border);
+  margin: 14px 0;
+}
+
+/* priority (rendered by updateDashboard) */
+.tab-home-premium .p-priority {
+  margin-bottom: 4px;
+}
+
+.tab-home-premium .p-priority .list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: var(--p-card-bg-2);
+  border: 1px solid var(--p-border);
+  margin: 0;
+}
+
+.tab-home-premium .p-priority .info {
+  min-width: 0;
+  flex: 1;
+}
+
+.tab-home-premium .p-priority .title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.tab-home-premium .p-priority .meta {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+.tab-home-premium .p-priority .tag {
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.tab-home-premium .p-priority .tag-red {
+  background: var(--danger-fade);
+  color: var(--danger);
+}
+
+.tab-home-premium .p-priority .tag-blue {
+  background: var(--accent-end-fade);
+  color: var(--accent-end);
+}
+
+.tab-home-premium .p-priority .empty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  padding: 2px 0;
+}
+
+.tab-home-premium .p-priority .empty-icon {
+  font-size: 1rem;
+}
+
+/* quests (rendered by renderQuests) */
+.tab-home-premium .p-quests {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tab-home-premium .quest-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--p-card-bg-2);
+  border: 1px solid var(--p-border);
+  margin: 0;
+  animation: none;
+  overflow: hidden;
+}
+
+.tab-home-premium .quest-item::before {
+  display: none;
+}
+
+.tab-home-premium .quest-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  border-radius: 10px;
+  background: var(--p-card-bg);
+  border: 1px solid var(--p-border);
+}
+
+.tab-home-premium .quest-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tab-home-premium .quest-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.tab-home-premium .quest-reward {
+  font-size: 0.72rem;
+  color: var(--accent-start);
+  font-weight: 700;
+}
+
+.tab-home-premium .quest-btn {
+  min-width: 56px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  border: 1px solid var(--p-border);
+  background: var(--p-card-bg);
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.tab-home-premium .quest-item.done .quest-btn {
+  background: var(--success-fade);
+  color: var(--success);
+  border-color: transparent;
+}
+
+/* morning ritual (written checklist) */
+.tab-home-premium .p-ritual-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tab-home-premium .ritual-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--p-card-bg-2);
+  border: 1px solid var(--p-border);
+  min-height: 50px;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.tab-home-premium .ritual-step:hover {
+  border-color: var(--border-active);
+}
+
+.tab-home-premium .ritual-circle {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  border-radius: 50%;
+  background: var(--p-card-bg);
+  border: 1px solid var(--p-border);
+}
+
+.tab-home-premium .ritual-step.done .ritual-circle {
+  background: var(--gold-fade-1);
+  border-color: var(--gold);
+}
+
+.tab-home-premium .ritual-label {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.tab-home-premium .ritual-step.done .ritual-label {
+  color: var(--text);
+}
+
+.tab-home-premium .p-ritual-boost {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--gold-fade-1);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* ===================================================================
+   DAILY VERIFICATION (gold-accent)
+   =================================================================== */
+.tab-home-premium .p-verify {
+  box-shadow: var(--p-shadow), inset 0 0 0 1px var(--gold-fade-1);
+}
+
+.tab-home-premium .p-verify-head {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.tab-home-premium .p-verify-sub {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+}
+
+.tab-home-premium .p-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tab-home-premium .check-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--p-card-bg-2);
+  border: 1px solid var(--p-border);
+  min-height: 46px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text);
+  margin: 0;
+}
+
+.tab-home-premium .check-row::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  border-radius: 6px;
+  border: 2px solid var(--text-tertiary);
+  background: transparent;
+}
+
+.tab-home-premium .check-row.done::before {
+  background: var(--accent-start);
+  border-color: var(--accent-start);
+}
+
+.tab-home-premium .check-row input[type='checkbox'] {
+  display: none;
+}
+
+.tab-home-premium .check-row label {
+  flex: 1;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.tab-home-premium .p-check-status {
+  margin-top: 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.tab-home-premium .p-claim-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  min-height: 50px;
+  border-radius: 14px;
+  border: none;
+  background: var(--gold);
+  color: #1c1402;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.tab-home-premium .p-claim-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.tab-home-premium .p-claim-btn:not(:disabled):active {
+  transform: scale(0.99);
+}
+
+/* ===================================================================
+   NEXT RANK / TROPHY
+   =================================================================== */
+.tab-home-premium .p-trophy {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+  font: inherit;
+}
+
+.tab-home-premium .p-trophy-icon {
+  font-size: 1.85rem;
+  flex: 0 0 auto;
+}
+
+.tab-home-premium .p-trophy-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tab-home-premium .p-trophy-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tab-home-premium .p-trophy-sub {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.tab-home-premium .p-trophy-arrow {
+  font-size: 1.4rem;
+  color: var(--text-tertiary);
+  flex: 0 0 auto;
+}
+
+/* ===================================================================
+   SUBJECTS
+   =================================================================== */
+.tab-home-premium .p-subject-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.tab-home-premium .subject-card {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.tab-home-premium .subject-card::before {
+  display: none;
+}
+
+.tab-home-premium .subject-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.tab-home-premium .subject-level {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  margin: 2px 0 6px;
+}
+
+.tab-home-premium .subject-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--p-card-bg-2);
+  overflow: hidden;
+}
+
+.tab-home-premium .subject-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+/* ===================================================================
+   RESPONSIVE — give the rings a touch more room on wider screens
+   =================================================================== */
+@media (min-width: 480px) {
+  .tab-home-premium .p-rings {
+    width: 184px;
+    height: 184px;
+  }
+}
+
+@media (min-width: 600px) {
+  .tab-home-premium {
+    --p-gap: 16px;
+    --p-pad: 20px;
+  }
+}
+
+/* respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .tab-home-premium * {
+    transition: none !important;
+  }
+}

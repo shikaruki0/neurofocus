@@ -643,186 +643,148 @@
     <!-- Main Content -->
     <main class="container">
       <!-- HOME TAB -->
-                  <section id="tab-home" class="tab-content tab-home-vertical">
-        <!-- 1. STATUS CARD (replaces old hero + XP cards) -->
-        <div class="v-status" id="hero-card" aria-label="Status">
-          <div class="v-status-avatar">
-            <span class="v-status-sprout" id="hero-icon">🌱</span>
+                  <section id="tab-home" class="tab-content tab-home-premium">
+        <!-- ===== A · HERO ===== -->
+        <div class="p-hero" id="hero-card">
+          <div class="p-hero-glow" aria-hidden="true"></div>
+
+          <div class="p-hero-row">
+            <div class="p-emblem">
+              <span class="p-emblem-icon" id="hero-icon">🌱</span>
+            </div>
+            <div class="p-hero-id">
+              <span class="p-greeting" id="p-greeting">Good evening</span>
+              <span class="p-name" id="p-name">Warrior</span>
+              <span class="p-rankline">
+                <span id="hero-title">Initiate</span>
+                <span class="p-rankline-sep">·</span>
+                <span id="hero-badge">Level 1</span>
+              </span>
+            </div>
+            <div class="p-hero-chips">
+              <span class="p-flow-chip hidden" id="flow-banner"><span aria-hidden="true">🌊</span><span data-i18n="home.flow_active">FLOW</span></span>
+              <span class="p-chip p-chip-fire"><span aria-hidden="true">🔥</span><span id="consecutive-streak">0</span></span>
+              <span class="p-chip p-chip-freeze"><span aria-hidden="true">❄</span><span id="p-freeze-num">0</span></span>
+              <span class="sr-only" id="freeze-badge"></span>
+              <button type="button" class="p-freeze-btn" id="freeze-btn" data-i18n="home.use_freeze" style="display:none">Use Freeze</button>
+            </div>
           </div>
-          <div class="v-status-identity">
-            <div class="v-status-line">
-              <span class="v-status-name" id="hero-title">Initiate</span>
-              <span class="v-status-dot">·</span>
-              <span class="v-status-level" id="hero-badge">Level 1</span>
-            </div>
-            <div class="v-status-xp">
-              <div class="v-status-xp-track">
-                <div class="v-status-xp-fill" id="xp-bar" style="width:0%"></div>
-              </div>
-              <span class="v-status-xp-text" id="xp-next">0 / 100</span>
-            </div>
-          </div>
-          <div class="v-status-chips">
-            <div class="v-chip v-chip-fire" title="Streak">
-              <span>🔥</span><span id="cmd-streak-num">0</span>
-            </div>
-            <div class="v-chip v-chip-freeze" title="Freezes">
-              <span>❄</span><span id="freeze-count-cmd">0</span>
+
+          <!-- progress rings (centerpiece) -->
+          <div class="p-rings">
+            <svg class="p-rings-svg" viewBox="0 0 140 140" aria-hidden="true" focusable="false">
+              <circle class="p-ring-bg" cx="70" cy="70" r="60"></circle>
+              <circle class="p-ring p-ring-focus" id="p-ring-focus" cx="70" cy="70" r="60"></circle>
+              <circle class="p-ring-bg" cx="70" cy="70" r="46"></circle>
+              <circle class="p-ring p-ring-quests" id="p-ring-quests" cx="70" cy="70" r="46"></circle>
+              <circle class="p-ring-bg" cx="70" cy="70" r="32"></circle>
+              <circle class="p-ring p-ring-ritual" id="p-ring-ritual" cx="70" cy="70" r="32"></circle>
+            </svg>
+            <div class="p-rings-center">
+              <span class="p-rings-lvl" id="p-rings-lvl">Lvl 1</span>
             </div>
           </div>
-          <!-- legacy hooks for backward compatibility with existing JS -->
+          <div class="p-rings-legend">
+            <span><i class="p-dot p-dot-focus"></i><span data-i18n="home.legend_focus">Focus</span></span>
+            <span><i class="p-dot p-dot-quests"></i><span data-i18n="home.legend_quests">Quests</span></span>
+            <span><i class="p-dot p-dot-ritual"></i><span data-i18n="home.legend_ritual">Ritual</span></span>
+          </div>
+
+          <!-- XP bar -->
+          <div class="p-xp">
+            <div class="p-xp-track"><div class="p-xp-fill" id="xp-bar" style="width:0%"></div></div>
+            <div class="p-xp-meta"><span id="xp-next">0 / 100 to next</span></div>
+          </div>
+
+          <!-- legacy sr-only hooks (required IDs, kept for existing JS) -->
           <span class="sr-only" id="hero-sub"></span>
           <span class="sr-only" id="xp-count">0 XP</span>
           <span class="sr-only" id="xp-badge"></span>
           <span class="sr-only" id="d-streak">0</span>
-          <span class="sr-only" id="d-backlogs">0</span>
-          <span class="sr-only" id="d-focus">0</span>
-          <span class="sr-only" id="d-habits">0</span>
         </div>
 
-        <!-- 2. QUOTE -->
-        <p class="v-quote" id="daily-quote" data-i18n="home.daily_fuel_loading">"Loading your daily fuel..."</p>
+        <!-- ===== B · QUOTE ===== -->
+        <div class="p-quote">
+          <span class="p-quote-bar" aria-hidden="true"></span>
+          <p class="p-quote-text" id="daily-quote" data-i18n="home.daily_fuel_loading">"Loading your daily fuel..."</p>
+        </div>
 
-        <!-- 3. FOCUS NOW (hero) -->
-        <div class="v-focus" id="v-focus-card">
-          <div class="v-focus-left">
-            <div class="v-focus-timer" id="bento-focus-timer">25:00</div>
-            <div class="v-focus-status" id="bento-focus-status" data-i18n="focus.ready">Ready to focus</div>
-            <div class="v-focus-modes" role="tablist" aria-label="Focus mode">
-              <button type="button" class="v-mode-pill is-active" data-mode="pomodoro" data-i18n="focus.pomodoro">Pomodoro</button>
-              <button type="button" class="v-mode-pill" data-mode="deep" data-i18n="focus.deep">Deep</button>
-              <button type="button" class="v-mode-pill" data-mode="flow" data-i18n="focus.flow">Flow</button>
-            </div>
+        <!-- ===== STAT TILES ===== -->
+        <div class="p-stats">
+          <div class="p-stat">
+            <span class="p-stat-num" id="d-focus">0</span>
+            <span class="p-stat-label" data-i18n="home.stat_focus_short">Focus</span>
           </div>
-          <div class="v-focus-right">
-            <div class="v-focus-chip" id="bento-focus-chip" data-i18n="focus.no_task">📖 No task set</div>
-            <div class="v-focus-task" id="bento-focus-task" data-i18n="focus.pick_task">Pick a task from Backlog or Plan to begin</div>
-            <button type="button" class="v-start-btn" id="bento-start-btn">
-              <span class="v-start-play">▶</span>
-              <span data-i18n="focus.start">Start Focus</span>
-            </button>
+          <div class="p-stat">
+            <span class="p-stat-num" id="d-backlogs">0</span>
+            <span class="p-stat-label" data-i18n="home.stat_backlogs_short">Backlogs</span>
+          </div>
+          <div class="p-stat">
+            <span class="p-stat-num" id="d-habits">0</span>
+            <span class="p-stat-label" data-i18n="home.stat_habits_short">Habits</span>
           </div>
         </div>
 
-        <!-- Flow banner (conditional) -->
-        <div class="flow-banner v-flow hidden" id="flow-banner">
-          <div class="flow-banner-icon">🌊</div>
-          <div>
-            <div class="flow-banner-text" data-i18n="home.flow_active">FLOW STATE ACTIVE</div>
-            <div class="flow-banner-sub" data-i18n="home.flow_sub">1.5x XP on all actions</div>
+        <!-- ===== THIS WEEK ===== -->
+        <div class="p-card p-weekly" id="weekly-card">
+          <div class="p-card-head">
+            <span class="p-card-title" data-i18n="home.this_week">This Week</span>
+            <span class="p-pill" id="p-week-avg">Avg 0h/day</span>
           </div>
-        </div>
-
-        <!-- 4. PRIORITY -->
-        <div class="v-card v-priority card-accent-left" id="dash-priority">
-          <div class="v-priority-label" data-i18n="home.priority">⚡ Priority</div>
-          <div class="empty">
-            <div class="empty-icon">🎯</div>
-            <span data-i18n="home.priority_loading">Loading your priorities...</span>
-          </div>
-        </div>
-
-        <!-- 5. SECTION HEADER: TODAY -->
-        <div class="v-section" data-i18n="home.section_today">Today</div>
-
-        <!-- Daily Quests -->
-        <div class="v-card">
-          <h3 class="v-card-title" data-i18n="home.daily_quests">🎯 Daily Quests</h3>
-          <div id="daily-quests" class="v-quests-host"></div>
-        </div>
-
-        <!-- Morning Ritual -->
-        <div class="v-card" id="ritual-card">
-          <h3 class="v-card-title" data-i18n="home.morning_ritual">🌅 Morning Ritual</h3>
-          <p class="v-card-sub" data-i18n="home.ritual_prime_sub">Complete before 12 PM for 2x XP all day</p>
-          <div class="ritual-grid v-ritual" id="ritual-grid"></div>
-          <div class="ritual-boost hidden" id="ritual-boost">
-            <span style="font-size:1.1rem">⚡</span>
-            <div class="ritual-boost-text" data-i18n="home.ritual_boost_active">2x XP Boost Active</div>
-          </div>
-        </div>
-
-        <!-- Daily Verification -->
-        <div class="v-card card-glow" id="checkin-card">
-          <h3 class="v-card-title" data-i18n="home.daily_verification">✅ Daily Verification</h3>
-          <p class="v-card-sub" data-i18n="home.complete_checks_sub">Complete all checks to claim your streak</p>
-          <div id="daily-checks" class="v-checks"></div>
-          <div id="checkin-status" class="v-checkin-status">0 / 7 checks</div>
-          <button class="btn btn-gold btn-block v-claim-btn" id="claim-btn" data-i18n="home.claim_streak" disabled>
-            🔥 <span data-i18n="home.claim_streak">Claim Streak</span>
-          </button>
-        </div>
-
-        <!-- 6. SECTION HEADER: YOUR STATS -->
-        <div class="v-section" data-i18n="home.section_stats">Your Stats</div>
-
-        <div class="v-card v-stats-card">
-          <div class="v-stats-row">
-            <div class="v-stat">
-              <div class="v-stat-icon v-stat-streak">🔥</div>
-              <div class="v-stat-num" id="bento-stat-streak-num">0</div>
-              <div class="v-stat-label" data-i18n="home.stat_streak_short">Streak</div>
-            </div>
-            <div class="v-stat">
-              <div class="v-stat-icon v-stat-focus">⏱</div>
-              <div class="v-stat-num" id="bento-stat-focus-num">0h</div>
-              <div class="v-stat-label" data-i18n="home.stat_focus_short">Focus</div>
-            </div>
-            <div class="v-stat">
-              <div class="v-stat-icon v-stat-backlogs">📁</div>
-              <div class="v-stat-num" id="bento-stat-backlogs-num">0</div>
-              <div class="v-stat-label" data-i18n="home.stat_backlogs_short">Backlogs</div>
-            </div>
-            <div class="v-stat">
-              <div class="v-stat-icon v-stat-habits">☀</div>
-              <div class="v-stat-num" id="bento-stat-habits-num">0</div>
-              <div class="v-stat-label" data-i18n="home.stat_habits_short">Habits</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="v-streak-highlight" id="v-streak-highlight">
-          <span>🔥</span>
-          <span id="v-streak-highlight-text" data-i18n="home.streak_keep_going">0 day streak — keep it going!</span>
-        </div>
-
-        <!-- 7. SECTION HEADER: YOUR JOURNEY -->
-        <div class="v-section" data-i18n="home.section_journey">Your Journey</div>
-
-        <div class="v-card">
-          <h3 class="v-card-title" data-i18n="home.subject_mastery">📚 Subject Mastery</h3>
-          <div class="subject-grid v-subjects" id="subject-grid"></div>
-        </div>
-
-        <button type="button" class="v-card v-trophy card-interactive" id="trophy-preview" tabindex="0" role="button" aria-label="Trophy Room">
-          <span class="v-trophy-icon" id="trophy-preview-icon">🌱</span>
-          <div class="v-trophy-info">
-            <div class="v-trophy-title" id="trophy-preview-title">Initiate</div>
-            <div class="v-trophy-sub" id="trophy-preview-sub">0 of 35 badges unlocked</div>
-          </div>
-          <span class="v-trophy-arrow">›</span>
-        </button>
-
-        <!-- 8. SECTION HEADER: THIS WEEK -->
-        <div class="v-section" data-i18n="home.section_week">This Week</div>
-
-        <div class="v-card" id="weekly-card">
-          <div class="v-weekly-head">
-            <h3 class="v-card-title" data-i18n="home.weekly_report">📈 Weekly Report</h3>
-            <span class="v-weekly-avg" id="bento-weekly-avg">Avg 0h/day</span>
-          </div>
-          <div class="v-weekly-total">
-            <span class="week-total-num v-weekly-num" id="week-total-num">0</span>
-            <span class="v-weekly-total-label" data-i18n="home.wk_hours_unit">hours</span>
+          <div class="p-weekly-total">
+            <span class="p-big" id="week-total-num">0</span>
+            <span class="p-weekly-unit" data-i18n="home.wk_hours_unit">hours</span>
           </div>
           <div class="sr-only" id="week-summary">
             <span id="wk-focus">0</span><span id="wk-backlogs">0</span><span id="wk-habits">0</span><span id="wk-streaks">0</span>
           </div>
-          <div class="week-bar-wrap v-weekly-bars" id="week-bar-wrap"></div>
-          <div class="tip v-tip">
-            <strong data-i18n="home.wk_tip_strong">Consistency beats intensity.</strong>
-            <span data-i18n="home.wk_tip_body">A little every day rewires your brain.</span>
+          <div class="p-bars" id="week-bar-wrap"></div>
+          <div class="p-tip"><strong data-i18n="home.wk_tip_strong">Consistency beats intensity.</strong></div>
+        </div>
+
+        <!-- ===== TODAY ===== -->
+        <div class="p-card p-today">
+          <div class="p-card-label" data-i18n="home.today">TODAY</div>
+
+          <div class="p-priority" id="dash-priority"></div>
+
+          <div class="p-subhead" data-i18n="home.daily_quests">🎯 Daily Quests</div>
+          <div class="p-quests" id="daily-quests"></div>
+
+          <div class="p-divider"></div>
+
+          <div class="p-subhead" data-i18n="home.morning_ritual">🌅 Morning Ritual</div>
+          <div class="p-ritual-grid" id="ritual-grid"></div>
+          <div class="p-ritual-boost hidden" id="ritual-boost">
+            <span aria-hidden="true">⚡</span><span data-i18n="home.ritual_boost_active">2x XP Boost Active</span>
           </div>
+        </div>
+
+        <!-- ===== DAILY VERIFICATION ===== -->
+        <div class="p-card p-verify">
+          <div class="p-verify-head">
+            <span data-i18n="home.daily_verification">✅ Daily Verification</span>
+          </div>
+          <p class="p-verify-sub" data-i18n="home.complete_checks_sub">Complete all checks to claim your streak</p>
+          <div class="p-checks" id="daily-checks"></div>
+          <div class="p-check-status" id="checkin-status">0 / 7 checks</div>
+          <button type="button" class="p-claim-btn" id="claim-btn" data-i18n="home.claim_streak" disabled>🔥 Claim Streak</button>
+        </div>
+
+        <!-- ===== NEXT RANK / TROPHY ===== -->
+        <button type="button" class="p-card p-trophy" id="trophy-preview" aria-label="Trophy Room">
+          <span class="p-trophy-icon" id="trophy-preview-icon">🌱</span>
+          <span class="p-trophy-body">
+            <span class="p-trophy-title" id="trophy-preview-title">Initiate</span>
+            <span class="p-trophy-sub" id="trophy-preview-sub">0 of 35 badges unlocked</span>
+          </span>
+          <span class="p-trophy-arrow" aria-hidden="true">›</span>
+        </button>
+
+        <!-- ===== SUBJECTS ===== -->
+        <div class="p-card p-subjects">
+          <div class="p-card-label" data-i18n="home.subjects">📚 Subjects</div>
+          <div class="p-subject-grid" id="subject-grid"></div>
         </div>
       </section>
 

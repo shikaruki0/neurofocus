@@ -39,6 +39,7 @@ import {
   getTimerState,
   getRecentSessions,
   isFlowActive,
+  isPausedMidSession,
   onTick,
   onComplete,
   consumePendingCompletion,
@@ -53,6 +54,7 @@ import {
   getState as getUrgeState,
   onTick as onUrgeTick,
   onComplete as onUrgeComplete,
+  consumePendingCompletion as consumePendingUrgeCompletion,
 } from './modules/urge.ts';
 import {
   addBacklog,
@@ -105,6 +107,7 @@ import { endLocalSession, isSessionStarted, startLocalSession } from './modules/
 import {
   startAlarmLoop,
   stopAlarmLoop,
+  isAlarmLooping,
   stopTitleFlash,
   startTitleFlash,
   vibrateStrong,
@@ -1418,7 +1421,7 @@ function renderMissionConfirmed(): void {
       </div>
       <div class="mission-actions">
         <button class="btn" id="mission-resume-btn" type="button">Resume mission</button>
-        <button class="btn btn-ghost" id="mission-end-btn" type="button">Discard mission</button>
+        <button class="btn btn-ghost" id="mission-discard-btn" type="button">Discard mission</button>
       </div>`;
   } else {
     // Active with a running/idle block — always allow ending the mission early.
@@ -1463,6 +1466,9 @@ function renderMissionConfirmed(): void {
   qs<HTMLElement>('#mission-end-btn')?.addEventListener('click', () => {
     onMissionEnd();
   });
+  qs<HTMLElement>('#mission-discard-btn')?.addEventListener('click', () => {
+    onMissionDiscard();
+  });
   qs<HTMLElement>('#mission-finish-btn')?.addEventListener('click', () => {
     clearActiveMission();
   });
@@ -1475,8 +1481,12 @@ function renderMissionConfirmed(): void {
     switchTab('home');
   });
   qs<HTMLElement>('#mission-resume-btn')?.addEventListener('click', () => {
-    resumeMission();
+    const resumed = resumeMission();
     lastBlockCompletionMinutes = null;
+    if (resumed) {
+      const block = getCurrentBlock();
+      if (block) prepareTimerForBlock(block.plannedDuration);
+    }
     renderMissionPlanner();
     updateFocusUI();
   });
@@ -1508,6 +1518,17 @@ function onMissionEnd(): void {
   endMission();
   lastBlockCompletionMinutes = null;
   stopTimer();
+  setMode(getTimerState().mode);
+  renderMissionPlanner();
+  updateFocusUI();
+}
+
+/** Truly discard the mission: clear state, reset timer to preset, return to planner. */
+function onMissionDiscard(): void {
+  clearMission();
+  lastBlockCompletionMinutes = null;
+  qs<HTMLElement>('#mission-confirmed-card')?.classList.add('hidden');
+  setMode(getTimerState().mode);
   renderMissionPlanner();
   updateFocusUI();
 }
@@ -1516,6 +1537,7 @@ function clearActiveMission(): void {
   clearMission();
   lastBlockCompletionMinutes = null;
   qs<HTMLElement>('#mission-confirmed-card')?.classList.add('hidden');
+  setMode(getTimerState().mode);
   renderMissionPlanner();
   updateFocusUI();
 }
@@ -3144,6 +3166,12 @@ function setupEventListeners() {
         closeImmersiveFocus();
         return;
       }
+      // Escape also kills a looping alarm (e.g. urge timer) from anywhere.
+      if (isAlarmLooping()) {
+        e.preventDefault();
+        stopAllAlerts();
+        return;
+      }
       const trophy = qs<HTMLElement>('#trophy-overlay');
       if (trophy?.classList.contains('show')) {
         e.preventDefault();
@@ -3391,7 +3419,12 @@ function updateFocusUI() {
   const sessionState = qs<HTMLElement>('#focus-session-state');
   const xpHint = qs<HTMLElement>('#focus-xp-hint');
   if (ringWrap) ringWrap.classList.toggle('running', state.running);
-  if (sessionState) sessionState.textContent = state.running ? 'In flow' : 'Ready to begin';
+  if (sessionState)
+    sessionState.textContent = state.running
+      ? 'In flow'
+      : isPausedMidSession()
+        ? 'Paused'
+        : 'Ready to begin';
 
   // Keep the header hint truthful for presets AND custom durations.
   if (xpHint) xpHint.textContent = `+${state.xp} XP`;
@@ -3908,6 +3941,13 @@ onUrgeComplete(() => {
     setTimeout(() => stopAllAlerts(), 6000);
   }
 });
+
+// Replay an urge completion that fired while the app was closed.
+const earlyUrgeCompletion = consumePendingUrgeCompletion();
+if (earlyUrgeCompletion) {
+  // Silently consumed — the timer already reset to 20:00.
+  updateUrgeUI();
+}
 
 // ===================================================================
 // INITIALIZATION

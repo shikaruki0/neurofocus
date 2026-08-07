@@ -69,6 +69,8 @@ let intervalId: ReturnType<typeof setInterval> | null = null;
 let isRunning = false;
 let endTimestamp = 0;
 let isCompleting = false;
+/** True when the timer was paused mid-session (not reset/stopped). */
+let wasPaused = false;
 
 // When set, the SAME timer runs a custom-length block instead of the preset mode.
 // This is not a second timer — it reuses all countdown/start/pause/complete machinery.
@@ -176,6 +178,7 @@ function restoreTimerState(): void {
 export function setMode(modeIndex: number): void {
   if (!isValidMode(modeIndex)) return;
   stopTimer();
+  wasPaused = false;
   customMinutes = null;
   customXp = null;
   customLabel = null;
@@ -194,6 +197,7 @@ export function setMode(modeIndex: number): void {
 export function setCustomBlock(minutes: number, options?: { xp?: number; label?: string }): void {
   if (!Number.isFinite(minutes) || minutes <= 0) return;
   stopTimer();
+  wasPaused = false;
   const mins = Math.floor(minutes);
   const preset = TIMER_MODES.findIndex((m) => m.minutes === mins);
   if (preset !== -1 && options?.xp === undefined && options?.label === undefined) {
@@ -219,6 +223,11 @@ export function isCustomBlock(): boolean {
   return customMinutes !== null;
 }
 
+/** True when the timer was paused mid-session (not stopped/reset). */
+export function isPausedMidSession(): boolean {
+  return wasPaused;
+}
+
 /** Starts or resumes the timer. */
 export function startTimer(): void {
   if (isRunning) return;
@@ -236,6 +245,7 @@ export function pauseTimer(): void {
   }
   isRunning = false;
   endTimestamp = 0;
+  wasPaused = true;
   clearTimerInterval();
   saveTimerState();
 }
@@ -244,6 +254,7 @@ export function pauseTimer(): void {
 export function stopTimer(): void {
   isRunning = false;
   endTimestamp = 0;
+  wasPaused = false;
   clearTimerInterval();
   remainingSeconds = activeMinutes() * 60;
   totalSeconds = remainingSeconds;
@@ -254,8 +265,27 @@ export function stopTimer(): void {
 function completeSession(): void {
   if (isCompleting) return;
   isCompleting = true;
+
+  // Double-completion guard (multi-tab): if another browser tab already consumed
+  // this session, the persisted timer state will have changed or been removed.
+  // Skip awarding and resync this tab to idle instead of double-crediting XP.
+  const ourEndTimestamp = endTimestamp;
+  const savedState = get<Partial<PersistedTimerState> | null>(TIMER_STORAGE_KEY, null);
+  if (!savedState || savedState.running !== true || savedState.endTimestamp !== ourEndTimestamp) {
+    isRunning = false;
+    endTimestamp = 0;
+    wasPaused = false;
+    clearTimerInterval();
+    remainingSeconds = activeMinutes() * 60;
+    totalSeconds = remainingSeconds;
+    saveTimerState();
+    isCompleting = false;
+    return;
+  }
+
   isRunning = false;
   endTimestamp = 0;
+  wasPaused = false;
   clearTimerInterval();
   remove(TIMER_STORAGE_KEY);
 
@@ -270,17 +300,19 @@ function completeSession(): void {
   data.focusDate = today;
   // Record XP + label per session so Focus History can show exact daily XP and
   // keep mission/custom names even after the mission is cleared.
+  if (data.flowState.date !== today) data.flowState = { date: today, sessions: 0 };
+  data.flowState.sessions = (data.flowState.sessions || 0) + 1;
+  data.dailyChecks.dc6 = true;
+
+  const credited = addXP(mode.xp, 'Deep Work XP');
+
   data.sessions.push({
     date: today,
     time: Date.now(),
     duration: mode.minutes,
-    xp: mode.xp,
+    xp: credited,
     label: mode.label,
   });
-
-  if (data.flowState.date !== today) data.flowState = { date: today, sessions: 0 };
-  data.flowState.sessions = (data.flowState.sessions || 0) + 1;
-  data.dailyChecks.dc6 = true;
 
   persist('focusMinutes');
   persist('totalFocusMinutes');
@@ -288,7 +320,6 @@ function completeSession(): void {
   persist('sessions');
   persist('flowState');
   persist('dailyChecks');
-  addXP(mode.xp, 'Deep Work XP');
 
   remainingSeconds = mode.minutes * 60;
   totalSeconds = remainingSeconds;

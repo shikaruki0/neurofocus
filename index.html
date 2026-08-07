@@ -699,6 +699,38 @@
             <div class="p-xp-meta"><span id="xp-next">0 / 100 to next</span></div>
           </div>
 
+          <!-- Desktop-only shortcuts: mobile keeps the calmer, single-column flow. -->
+          <div class="p-desktop-actions" aria-label="Home shortcuts">
+            <button
+              class="p-action p-action-primary"
+              id="home-focus-action"
+              type="button"
+              data-home-tab="focus"
+              data-i18n-aria-label="nav.focus"
+            >
+              <span class="p-action-icon" aria-hidden="true">◉</span>
+              <span class="p-action-copy">
+                <strong data-i18n="focus.title">Deep Work</strong>
+                <span data-i18n="focus.choose_focus">Pick a task to start your focus session</span>
+              </span>
+              <span class="p-action-arrow" aria-hidden="true">→</span>
+            </button>
+            <button
+              class="p-action"
+              id="home-backlog-action"
+              type="button"
+              data-home-tab="backlog"
+              data-i18n-aria-label="nav.backlog"
+            >
+              <span class="p-action-icon" aria-hidden="true">▤</span>
+              <span class="p-action-copy">
+                <strong data-i18n="backlog.title">Backlog Blaster</strong>
+                <span data-i18n="backlog.subtitle">Micro-modules. Small wins. Big dopamine.</span>
+              </span>
+              <span class="p-action-arrow" aria-hidden="true">→</span>
+            </button>
+          </div>
+
           <!-- legacy sr-only hooks (required IDs, kept for existing JS) -->
           <span class="sr-only" id="hero-sub"></span>
           <span class="sr-only" id="xp-count">0 XP</span>

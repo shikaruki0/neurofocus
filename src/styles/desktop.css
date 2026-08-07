@@ -1,10 +1,73 @@
 /* ===================================================================
-   DESKTOP WORKSPACE — intentional wide-screen layout
-   Mobile remains the default. This layer resolves legacy desktop rule
-   conflicts and turns the phone-first interface into a calm PC workspace.
+   DESKTOP WORKSPACE
+   The shell adapts its navigation density to the available PC width.
+   Home-specific composition lives in home-desktop.css.
    =================================================================== */
 
-@media (min-width: 760px) {
+/* Laptop / compact desktop: keep the rail useful without stealing the
+   horizontal space the dashboard needs. */
+@media (min-width: 760px) and (max-width: 1199px) {
+  body {
+    padding-left: 92px;
+    padding-bottom: 30px;
+  }
+
+  .header {
+    min-height: 72px;
+    padding: var(--space-3) 28px;
+  }
+
+  .bottom-nav {
+    top: 0;
+    right: auto;
+    bottom: 0;
+    left: 0;
+    width: 92px;
+    height: 100vh;
+    padding: 24px 10px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border: 0;
+    border-right: 1px solid var(--border);
+    border-radius: 0;
+  }
+
+  .nav-item {
+    width: 72px;
+    max-width: none;
+    min-height: 58px;
+    flex: 0 0 auto;
+    padding: 10px 6px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    border-radius: 14px;
+    text-align: center;
+  }
+
+  .nav-item .icon {
+    flex: 0 0 24px;
+    height: 24px;
+  }
+
+  .nav-item.active {
+    background: linear-gradient(135deg, var(--accent-start-fade), var(--accent-end-fade));
+  }
+
+  .nav-item.active::after {
+    display: none;
+  }
+
+  .container {
+    max-width: 1320px;
+    padding: clamp(28px, 4vw, 52px) clamp(28px, 5vw, 72px) 50px;
+  }
+}
+
+/* Larger desktop: labels become a comfortable navigation rail. */
+@media (min-width: 1200px) {
   body {
     padding-left: 224px;
     padding-bottom: var(--space-8);
@@ -16,95 +79,53 @@
   }
 
   .bottom-nav {
+    top: 0;
+    right: auto;
+    bottom: 0;
+    left: 0;
     width: 224px;
+    height: 100vh;
     padding: 18px 14px;
+    flex-direction: column;
     align-items: stretch;
     justify-content: center;
     gap: 6px;
+    border: 0;
+    border-right: 1px solid var(--border);
+    border-radius: 0;
   }
 
   .nav-item {
     width: 100%;
+    max-width: none;
     min-height: 52px;
+    flex: 0 0 auto;
     padding: 10px 12px;
     flex-direction: row;
     justify-content: flex-start;
     gap: 12px;
-    font-size: var(--font-sm);
+    border-radius: 14px;
     text-align: left;
+    font-size: var(--font-sm);
   }
 
   .nav-item .icon {
     flex: 0 0 28px;
+    height: 28px;
     font-size: 1.25rem;
   }
 
+  .nav-item.active::after {
+    display: none;
+  }
+
   .container {
-    max-width: 1320px;
+    max-width: 1440px;
     padding: clamp(28px, 4vw, 52px) clamp(28px, 5vw, 72px) 64px;
-  }
-
-  .card,
-  .stat-card {
-    transition: transform var(--transition-fast), border-color var(--transition-fast),
-      box-shadow var(--transition-base);
-  }
-
-  .card-interactive:hover,
-  .stat-card:hover,
-  .trophy-preview:hover {
-    transform: translateY(-3px);
   }
 }
 
 @media (min-width: 1024px) {
-  /* Home: information is grouped by purpose instead of stretched vertically. */
-  #tab-home {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 24px;
-  }
-
-  #tab-home > .hero-card,
-  #tab-home > .home-stats-label,
-  #tab-home > .stats-grid,
-  #tab-home > .home-progress-label {
-    grid-column: 1 / -1;
-  }
-
-  #tab-home > .xp-card,
-  #tab-home > .daily-fuel-card {
-    grid-column: span 6;
-    height: 100%;
-    margin-bottom: 0;
-  }
-
-  #tab-home > .home-quests-label,
-  #tab-home > #daily-quests {
-    grid-column: span 7;
-  }
-
-  #tab-home > .home-ritual-label,
-  #tab-home > #ritual-card {
-    grid-column: span 5;
-  }
-
-  #tab-home > #daily-quests,
-  #tab-home > #ritual-card {
-    align-self: stretch;
-    margin-bottom: 0;
-  }
-
-  #tab-home > .stats-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    margin-bottom: 0;
-  }
-
-  #tab-home > #streak-card,
-  #tab-home > #weekly-card {
-    grid-column: span 6;
-    margin-bottom: 0;
-  }
-
   /* Wide forms keep labels and controls easy to scan. */
   #tab-backlog,
   #tab-detox,
@@ -133,9 +154,11 @@
 
   /* Focus is the primary desktop workspace: timer left, planning right. */
   #tab-focus {
+    display: grid;
     grid-template-columns: minmax(440px, 1.25fr) minmax(330px, 0.75fr);
     gap: 24px;
     max-width: 1180px;
+    align-items: start;
   }
 
   #tab-focus > .section-label,
@@ -176,10 +199,6 @@
 @media (min-width: 1440px) {
   .container {
     max-width: 1480px;
-  }
-
-  #tab-home {
-    gap: 28px;
   }
 }
 

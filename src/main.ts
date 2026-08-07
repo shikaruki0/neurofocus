@@ -20,6 +20,7 @@ import './styles/onboarding.css';
 import './styles/neural-atlas.css';
 import './styles/desktop.css';
 import './styles/home-premium.css';
+import './styles/home-desktop.css';
 
 import { data, resetHabitsForNewDay } from './modules/data.ts';
 import { clearAll } from './modules/storage.ts';
@@ -2391,6 +2392,14 @@ function setupEventListeners() {
   qsa<HTMLElement>('.nav-item').forEach((btn) => {
     btn.addEventListener('click', () => {
       const tab = (btn as HTMLElement).dataset.tab;
+      if (tab) switchTab(tab);
+    });
+  });
+
+  // Home desktop shortcuts use the same guarded tab switch as the main nav.
+  qsa<HTMLElement>('[data-home-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const tab = (button as HTMLElement).dataset.homeTab;
       if (tab) switchTab(tab);
     });
   });

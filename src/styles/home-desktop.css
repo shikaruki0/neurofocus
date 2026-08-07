@@ -1,0 +1,524 @@
+/* ===================================================================
+   HOME — DESKTOP COMMAND CENTER
+   Intentional wide-screen composition for PC and laptop viewports.
+
+   This file is deliberately scoped to the Home tab and only activates at
+   1024px. The mobile Home remains the existing single-column experience.
+   =================================================================== */
+
+/* The shortcuts exist in the DOM for progressive enhancement, but remain
+   completely absent from the mobile layout. */
+.tab-home-premium .p-desktop-actions {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .tab-home-premium {
+    --p-gap: clamp(20px, 2vw, 28px);
+    --p-pad: clamp(20px, 2vw, 30px);
+    --p-radius: 24px;
+
+    width: 100%;
+    max-width: 1360px;
+    margin: 4px auto 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1.28fr) minmax(320px, 0.72fr);
+    grid-template-areas:
+      'hero hero'
+      'quote stats'
+      'today weekly'
+      'today verify'
+      'subjects trophy';
+    column-gap: var(--p-gap);
+    row-gap: var(--p-gap);
+    align-items: stretch;
+    overflow: visible;
+  }
+
+  .tab-home-premium > * {
+    min-width: 0;
+  }
+
+  /* -----------------------------------------------------------------
+     Hero: identity, a clear next action, XP, and the trend all live in
+     one visual anchor instead of competing as separate widgets.
+     ----------------------------------------------------------------- */
+  .tab-home-premium > .p-hero {
+    grid-area: hero;
+    min-height: 372px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.12fr) minmax(280px, 0.88fr);
+    grid-template-areas:
+      'identity trend'
+      'actions trend'
+      'xp trend';
+    grid-template-rows: auto auto auto;
+    gap: 18px 26px;
+    padding: clamp(24px, 2.5vw, 34px);
+    border-radius: 28px;
+  }
+
+  .tab-home-premium .p-hero-row {
+    grid-area: identity;
+    align-self: start;
+    min-width: 0;
+    gap: 16px;
+  }
+
+  .tab-home-premium .p-emblem {
+    width: 62px;
+    height: 62px;
+    flex-basis: 62px;
+    border-radius: 19px;
+  }
+
+  .tab-home-premium .p-emblem-icon {
+    font-size: 1.9rem;
+  }
+
+  .tab-home-premium .p-greeting {
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+  }
+
+  .tab-home-premium .p-name {
+    max-width: 22ch;
+    font-size: clamp(1.9rem, 3vw, 2.7rem);
+    line-height: 1.04;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .tab-home-premium .p-rankline {
+    margin-top: 5px;
+    font-size: 0.94rem;
+  }
+
+  .tab-home-premium .p-hero-chips {
+    flex: 0 0 auto;
+    max-width: 250px;
+    justify-content: flex-start;
+    align-content: flex-start;
+    gap: 8px;
+  }
+
+  .tab-home-premium .p-chip,
+  .tab-home-premium .p-flow-chip,
+  .tab-home-premium .p-freeze-btn {
+    min-height: 34px;
+    padding: 6px 11px;
+    font-size: 0.75rem;
+  }
+
+  .tab-home-premium .p-trend {
+    grid-area: trend;
+    min-width: 0;
+    min-height: 100%;
+    margin: 0;
+    padding: 20px 22px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    border: 1px solid var(--p-border);
+    border-radius: 24px;
+    background: linear-gradient(180deg, var(--p-card-bg), var(--p-card-bg-2));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .tab-home-premium .p-trend-head {
+    margin-bottom: 12px;
+  }
+
+  .tab-home-premium .p-trend-label {
+    font-size: 0.8rem;
+  }
+
+  .tab-home-premium .p-trend-svg {
+    width: 100%;
+    height: 148px;
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+
+  .tab-home-premium .p-trend-foot {
+    margin-top: auto;
+    padding-top: 12px;
+  }
+
+  .tab-home-premium .p-trend-now {
+    font-size: 1.25rem;
+  }
+
+  /* Desktop-only quick actions. They are not rendered visually on phones. */
+  .tab-home-premium .p-desktop-actions {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-self: stretch;
+  }
+
+  .tab-home-premium .p-action {
+    min-width: 0;
+    min-height: 68px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--p-border);
+    border-radius: 17px;
+    background: var(--p-card-bg-2);
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      transform var(--transition-fast),
+      border-color var(--transition-fast),
+      box-shadow var(--transition-base),
+      background var(--transition-base);
+  }
+
+  .tab-home-premium .p-action:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-active);
+    background: var(--p-card-bg);
+    box-shadow: 0 12px 26px -16px var(--shadow);
+  }
+
+  .tab-home-premium .p-action:active {
+    transform: translateY(0);
+  }
+
+  .tab-home-premium .p-action-primary {
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+    color: #fff;
+    box-shadow: 0 12px 24px -16px var(--accent-start);
+  }
+
+  .tab-home-premium .p-action-primary:hover {
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+    box-shadow: 0 16px 30px -15px var(--accent-start);
+  }
+
+  .tab-home-premium .p-action-icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: var(--accent-start-fade);
+    color: var(--accent-start);
+    font-size: 1rem;
+  }
+
+  .tab-home-premium .p-action-primary .p-action-icon {
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+  }
+
+  .tab-home-premium .p-action-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .tab-home-premium .p-action-copy strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.86rem;
+    font-weight: 800;
+  }
+
+  .tab-home-premium .p-action-copy span {
+    overflow: hidden;
+    display: -webkit-box;
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    line-height: 1.25;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .tab-home-premium .p-action-primary .p-action-copy span {
+    color: rgba(255, 255, 255, 0.82);
+  }
+
+  .tab-home-premium .p-action-arrow {
+    margin-left: auto;
+    flex: 0 0 auto;
+    color: var(--text-tertiary);
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+
+  .tab-home-premium .p-action-primary .p-action-arrow {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .tab-home-premium .p-xp {
+    grid-area: xp;
+    align-self: end;
+    padding: 16px 18px 14px;
+    border: 1px solid var(--p-border);
+    border-radius: 18px;
+    background: var(--p-card-bg-2);
+  }
+
+  .tab-home-premium .p-xp-meta {
+    margin-top: 7px;
+  }
+
+  /* -----------------------------------------------------------------
+     Overview row
+     ----------------------------------------------------------------- */
+  .tab-home-premium > .p-quote {
+    grid-area: quote;
+    min-height: 100%;
+    align-items: center;
+    padding: 20px 24px;
+    border: 1px solid var(--p-border);
+    border-radius: 22px;
+    background: var(--p-card-bg);
+    box-shadow: var(--p-shadow);
+  }
+
+  .tab-home-premium .p-quote-text {
+    max-width: 58ch;
+    font-size: 0.94rem;
+    line-height: 1.6;
+  }
+
+  .tab-home-premium > .p-stats {
+    grid-area: stats;
+    align-self: stretch;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .tab-home-premium .p-stat {
+    min-height: 116px;
+    justify-content: center;
+    padding: 16px 8px;
+    border-radius: 20px;
+  }
+
+  .tab-home-premium .p-stat-num {
+    font-size: clamp(1.45rem, 2.2vw, 1.9rem);
+  }
+
+  .tab-home-premium .p-stat-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.07em;
+  }
+
+  /* -----------------------------------------------------------------
+     Main work surface and right-side progress rail
+     ----------------------------------------------------------------- */
+  .tab-home-premium > .p-today {
+    grid-area: today;
+    height: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1.06fr) minmax(240px, 0.94fr);
+    gap: 14px 20px;
+    align-content: start;
+  }
+
+  .tab-home-premium .p-today > .p-card-label,
+  .tab-home-premium .p-today > .p-priority {
+    grid-column: 1 / -1;
+  }
+
+  .tab-home-premium .p-today > .p-subhead-quests,
+  .tab-home-premium .p-today > #daily-quests {
+    grid-column: 1;
+  }
+
+  .tab-home-premium .p-today > .p-subhead-ritual,
+  .tab-home-premium .p-today > #ritual-grid,
+  .tab-home-premium .p-today > #ritual-boost {
+    grid-column: 2;
+  }
+
+  .tab-home-premium .p-today > .p-divider-ritual {
+    display: none;
+  }
+
+  .tab-home-premium .p-priority {
+    margin-bottom: 1px;
+    padding: 14px 16px 16px;
+    border: 1px solid var(--p-border);
+    border-radius: 18px;
+    background:
+      linear-gradient(180deg, var(--accent-start-fade), transparent 74%), var(--p-card-bg-2);
+  }
+
+  .tab-home-premium .p-subhead {
+    margin: 4px 0 6px;
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .tab-home-premium .p-quests,
+  .tab-home-premium .p-ritual-grid {
+    align-self: start;
+  }
+
+  .tab-home-premium .quest-item {
+    min-height: 58px;
+    padding: 11px 12px;
+    border-radius: 15px;
+  }
+
+  .tab-home-premium .ritual-step {
+    min-height: 57px;
+    padding: 10px 12px;
+    border-radius: 15px;
+  }
+
+  .tab-home-premium > .p-weekly,
+  .tab-home-premium > .p-verify {
+    align-self: stretch;
+    height: 100%;
+  }
+
+  .tab-home-premium > .p-weekly {
+    grid-area: weekly;
+    min-height: 284px;
+  }
+
+  .tab-home-premium .p-weekly-total {
+    margin-bottom: 18px;
+  }
+
+  .tab-home-premium .p-big {
+    font-size: 2.2rem;
+  }
+
+  .tab-home-premium .p-bars {
+    height: 132px;
+    gap: 8px;
+  }
+
+  .tab-home-premium .week-bar-track {
+    max-width: 22px;
+  }
+
+  .tab-home-premium > .p-verify {
+    grid-area: verify;
+  }
+
+  .tab-home-premium .p-verify {
+    box-shadow:
+      var(--p-shadow),
+      inset 0 0 0 1px var(--gold-fade-1);
+  }
+
+  .tab-home-premium .p-checks {
+    gap: 7px;
+  }
+
+  .tab-home-premium .check-row {
+    min-height: 43px;
+    padding: 9px 12px;
+  }
+
+  .tab-home-premium .check-row.done::before {
+    content: '✓';
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 0.76rem;
+    font-weight: 900;
+  }
+
+  /* -----------------------------------------------------------------
+     Closing row
+     ----------------------------------------------------------------- */
+  .tab-home-premium > .p-subjects {
+    grid-area: subjects;
+    height: 100%;
+  }
+
+  .tab-home-premium .p-subject-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px;
+  }
+
+  .tab-home-premium .subject-card {
+    min-width: 0;
+    padding: 14px 16px;
+    border: 1px solid var(--p-border);
+    border-radius: 16px;
+    background: var(--p-card-bg-2);
+  }
+
+  .tab-home-premium .subject-name {
+    font-size: 0.86rem;
+  }
+
+  .tab-home-premium .subject-level {
+    margin: 4px 0 9px;
+  }
+
+  .tab-home-premium .subject-bar {
+    height: 7px;
+  }
+
+  .tab-home-premium > .p-trophy {
+    grid-area: trophy;
+    height: 100%;
+    min-height: 116px;
+    padding: 22px 24px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, var(--gold-fade-1), transparent 62%), var(--p-card-bg);
+  }
+
+  .tab-home-premium .p-trophy-icon {
+    font-size: 2.15rem;
+  }
+
+  .tab-home-premium .p-trophy-title {
+    font-size: 1rem;
+  }
+
+  .tab-home-premium .p-trophy-sub {
+    max-width: 28ch;
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+
+  /* Keep hover feedback tasteful on desktop without changing touch layouts. */
+  @media (hover: hover) {
+    .tab-home-premium .p-card:hover,
+    .tab-home-premium .p-stat:hover,
+    .tab-home-premium .p-trophy:hover {
+      transform: translateY(-2px);
+    }
+  }
+}
+
+@media (min-width: 1440px) {
+  .tab-home-premium {
+    max-width: 1440px;
+    grid-template-columns: minmax(0, 1.32fr) minmax(360px, 0.68fr);
+  }
+
+  .tab-home-premium > .p-hero {
+    min-height: 400px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-home-premium .p-action {
+    transition: none;
+  }
+}

@@ -311,4 +311,114 @@ describe('Mission ↔ Focus timer integration', () => {
     const { getActiveMission } = await import('../src/modules/mission.ts');
     expect(getActiveMission()).toBeNull();
   });
+
+  // Regression: XP must come from the block length, not the selected preset chip.
+  it('pays block-fair XP even when another preset chip was selected', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T13:00:00Z'));
+    await loadApp();
+
+    document.querySelector<HTMLButtonElement>('#mode-90')!.click(); // Flow State (100 XP) selected
+    confirmMission({ title: 'Ray Optics', total: 60, block: 25 });
+
+    // The XP hint must promise the fair 40 XP, not 100 XP.
+    expect(document.querySelector('#focus-xp-hint')?.textContent?.trim()).toBe('+40 XP');
+    // No preset chip may glow while a custom mission block is prepared.
+    expect(document.querySelector('#mode-25')!.classList.contains('active')).toBe(false);
+    expect(document.querySelector('#mode-52')!.classList.contains('active')).toBe(false);
+    expect(document.querySelector('#mode-90')!.classList.contains('active')).toBe(false);
+    expect(document.querySelector('#mode-custom')!.classList.contains('active')).toBe(false);
+
+    const { data } = await import('../src/modules/data.ts');
+    document.querySelector<HTMLButtonElement>('#focus-btn')!.click();
+    document.querySelector<HTMLButtonElement>('#focus-immersive-exit-btn')!.click();
+    vi.advanceTimersByTime(25 * 60 * 1000);
+
+    // The regression assertion: the session itself must record 40 XP, not 100.
+    // (Total XP may be higher — the daily focus quest also pays out once.)
+    const session = data.sessions[data.sessions.length - 1];
+    expect(session).toMatchObject({ duration: 25, xp: 40 });
+    expect(data.xp).toBeGreaterThanOrEqual(40);
+    expect(data.xp).toBeLessThan(100);
+  }, 15000);
+
+  // Regression: "View backlog" used to blank the app (wrong tab id 'backlogs').
+  it('"View backlog" after mission completion navigates to the backlog tab', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T13:00:00Z'));
+    await loadApp();
+    confirmMission({ title: 'Ray Optics', total: 25, block: 25 });
+
+    document.querySelector<HTMLButtonElement>('#focus-btn')!.click();
+    document.querySelector<HTMLButtonElement>('#focus-immersive-exit-btn')!.click();
+    vi.advanceTimersByTime(25 * 60 * 1000); // completes the only block
+
+    const viewBacklog = document.querySelector<HTMLButtonElement>('#mission-view-backlog-btn');
+    expect(viewBacklog).not.toBeNull();
+    viewBacklog!.click();
+
+    const backlogTab = document.querySelector<HTMLElement>('#tab-backlog')!;
+    expect(backlogTab.classList.contains('hidden')).toBe(false);
+    // Exactly one tab visible — no blank screen.
+    const visibleTabs = [...document.querySelectorAll<HTMLElement>('.tab-content')].filter(
+      (tab) => !tab.classList.contains('hidden'),
+    );
+    expect(visibleTabs).toHaveLength(1);
+    expect(visibleTabs[0].id).toBe('tab-backlog');
+    expect(
+      document
+        .querySelector<HTMLElement>('.nav-item[data-tab="backlog"]')!
+        .classList.contains('active'),
+    ).toBe(true);
+  }, 15000);
+
+  // Regression: after the final block, the timer must return to its preset chip.
+  it('returns the timer to the preset after the whole mission completes', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T13:00:00Z'));
+    await loadApp();
+    confirmMission({ title: 'Ray Optics', total: 25, block: 25 });
+
+    document.querySelector<HTMLButtonElement>('#focus-btn')!.click();
+    document.querySelector<HTMLButtonElement>('#focus-immersive-exit-btn')!.click();
+    vi.advanceTimersByTime(25 * 60 * 1000);
+
+    expect(document.querySelector('#mission-confirmed-blocks')?.textContent).toContain(
+      'MISSION COMPLETE',
+    );
+    // No stale "Mission Block" label — the preset chip is back.
+    expect(document.querySelector('#focus-mode-label')?.textContent?.trim()).toBe('Pomodoro');
+    expect(document.querySelector('#focus-xp-hint')?.textContent?.trim()).toBe('+40 XP');
+    expect(document.querySelector('#mode-25')!.classList.contains('active')).toBe(true);
+  }, 15000);
+
+  // Regression: mission completing while the app is closed must still credit the block.
+  it('credits the mission block when the session finishes while the app is closed', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T13:00:00Z'));
+    await loadApp();
+    confirmMission({ title: 'Ray Optics', total: 50, block: 25 });
+
+    document.querySelector<HTMLButtonElement>('#focus-btn')!.click();
+    document.querySelector<HTMLButtonElement>('#focus-immersive-exit-btn')!.click();
+    vi.advanceTimersByTime(60_000); // 1 minute in, 24 to go
+
+    // Simulate refresh long after the block's deadline passed.
+    vi.resetModules();
+    vi.setSystemTime(new Date('2026-07-30T14:00:00Z'));
+    await import('../src/main.ts');
+
+    const { getActiveMission } = await import('../src/modules/mission.ts');
+    const mission = getActiveMission()!;
+    expect(mission.blocks[0].status).toBe('completed');
+    expect(mission.blocks[0].completedDuration).toBe(25);
+    expect(mission.completedDuration).toBe(25);
+    // Block-complete banner is visible with the next-block choice.
+    const blocks = document.querySelector<HTMLElement>('#mission-confirmed-blocks')!;
+    expect(blocks.textContent).toContain('BLOCK COMPLETE');
+    expect(document.querySelector('#mission-next-block-btn')).not.toBeNull();
+    // The session, XP and celebration were replayed, not lost.
+    expect(document.querySelector('#cel-title')?.textContent).toBe('Focus Complete');
+    expect(document.querySelector('#focus-history-blocks')?.textContent?.trim()).toBe('1');
+  }, 15000);
 });

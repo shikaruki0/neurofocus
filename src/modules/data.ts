@@ -79,10 +79,14 @@ interface WeeklyStat {
   score: number;
 }
 
-interface Session {
+export interface Session {
   date: string;
   time: number;
   duration: number;
+  /** XP this session awarded (recorded at completion; absent on legacy entries). */
+  xp?: number;
+  /** Timer label at completion (e.g. "Pomodoro", "Mission Block", "Custom"). */
+  label?: string;
 }
 
 interface Backlog {

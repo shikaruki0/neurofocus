@@ -4,6 +4,7 @@
  */
 
 import { data, persist } from './data.ts';
+import type { Session } from './data.ts';
 import { get, remove, set } from './storage.ts';
 import { todayStr } from '../utils/date.ts';
 import { addXP } from './xp.ts';
@@ -19,6 +20,20 @@ export const TIMER_MODES: TimerMode[] = [
   { minutes: 52, label: 'Deep Work', xp: 60 },
   { minutes: 90, label: 'Flow State', xp: 100 },
 ];
+
+/** Label used for custom blocks created by the mission planner. */
+export const MISSION_BLOCK_LABEL = 'Mission Block';
+
+/**
+ * XP a focus block of `minutes` earns by default: preset XP for preset lengths
+ * (25→40, 52→60, 90→100), otherwise 1 XP per minute — the same rule the manual
+ * custom-duration flow uses. This keeps mission blocks fair no matter which
+ * preset chip the user last tapped.
+ */
+export function xpForSessionMinutes(minutes: number): number {
+  const preset = TIMER_MODES.find((mode) => mode.minutes === minutes);
+  return preset ? preset.xp : Math.floor(minutes);
+}
 
 export interface TimerState {
   minutes: number;
@@ -131,7 +146,7 @@ function restoreTimerState(): void {
     customXp =
       typeof saved.customXp === 'number' && Number.isFinite(saved.customXp)
         ? saved.customXp
-        : TIMER_MODES[mode].xp;
+        : xpForSessionMinutes(customMinutes);
     customLabel = typeof saved.customLabel === 'string' ? saved.customLabel : null;
   } else {
     customMinutes = null;
@@ -189,7 +204,9 @@ export function setCustomBlock(minutes: number, options?: { xp?: number; label?:
     currentMode = preset;
   } else {
     customMinutes = mins;
-    customXp = typeof options?.xp === 'number' ? options.xp : TIMER_MODES[currentMode].xp;
+    // Default XP derives from the block length itself — never from whichever preset
+    // chip happens to be selected (that made a 25-min mission block pay out 100 XP).
+    customXp = typeof options?.xp === 'number' ? options.xp : xpForSessionMinutes(mins);
     customLabel = typeof options?.label === 'string' ? options.label : null;
   }
   remainingSeconds = activeMinutes() * 60;
@@ -251,7 +268,15 @@ function completeSession(): void {
   data.focusMinutes = (data.focusMinutes || 0) + mode.minutes;
   data.totalFocusMinutes = (data.totalFocusMinutes || 0) + mode.minutes;
   data.focusDate = today;
-  data.sessions.push({ date: today, time: Date.now(), duration: mode.minutes });
+  // Record XP + label per session so Focus History can show exact daily XP and
+  // keep mission/custom names even after the mission is cleared.
+  data.sessions.push({
+    date: today,
+    time: Date.now(),
+    duration: mode.minutes,
+    xp: mode.xp,
+    label: mode.label,
+  });
 
   if (data.flowState.date !== today) data.flowState = { date: today, sessions: 0 };
   data.flowState.sessions = (data.flowState.sessions || 0) + 1;
@@ -286,9 +311,7 @@ export function getTimerState(): TimerState {
   };
 }
 
-export function getRecentSessions(
-  limit = 10,
-): Array<{ date: string; time: number; duration: number }> {
+export function getRecentSessions(limit = 10): Session[] {
   return data.sessions.slice().reverse().slice(0, limit);
 }
 
@@ -298,18 +321,41 @@ export function isFlowActive(): boolean {
 
 let onTickCallback: (state: TimerState) => void = () => {};
 let onCompleteCallback: (mode: TimerMode) => void = () => {};
+let completionListenerRegistered = false;
+/**
+ * A session may complete while the app is closed (deadline passed during restore,
+ * before any UI listener is wired). We queue that completion exactly once so the
+ * UI can replay it — crediting the mission block and refreshing the dashboard —
+ * instead of silently losing it.
+ */
+let pendingCompletion: TimerMode | null = null;
 
 export function onTick(fn: (state: TimerState) => void): void {
   onTickCallback = fn;
 }
 export function onComplete(fn: (mode: TimerMode) => void): void {
+  completionListenerRegistered = true;
   onCompleteCallback = fn;
 }
 function notifyTick(): void {
   onTickCallback(getTimerState());
 }
 function notifyComplete(mode: TimerMode): void {
+  if (!completionListenerRegistered) {
+    pendingCompletion = mode;
+    return;
+  }
   onCompleteCallback(mode);
+}
+
+/**
+ * Returns (once) a completion that fired before the UI registered its listener,
+ * or null. Call right after onComplete() during app init.
+ */
+export function consumePendingCompletion(): TimerMode | null {
+  const mode = pendingCompletion;
+  pendingCompletion = null;
+  return mode;
 }
 
 // Restore immediately when the module loads. This is local-only and works offline.

@@ -285,7 +285,11 @@ describe('First-run onboarding flow', () => {
     await loadApp();
     expect(welcomeVisible()).toBe(true);
     expect(overlayVisible()).toBe(false);
-    expect(document.querySelector('#welcome-title')?.textContent).toContain('game');
+    // Title matches the active dictionary copy (source of truth), whatever it is.
+    const { dictionaries } = await import('../src/modules/locales.ts');
+    expect(document.querySelector('#welcome-title')?.textContent).toBe(
+      dictionaries.en['welcome.title'],
+    );
     expect(document.querySelector('#app-header')?.hasAttribute('inert')).toBe(true);
   });
 

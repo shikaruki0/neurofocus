@@ -84,7 +84,8 @@ describe('Urge surfing timer', () => {
     expect(getUrgeState().running).toBe(true);
 
     vi.advanceTimersByTime(1000);
-    expect(tick).toHaveBeenCalledTimes(1);
+    // 500ms interval: 1 immediate tick + 2 interval ticks = 3 calls
+    expect(tick).toHaveBeenCalledTimes(3);
     expect(getUrgeState()).toMatchObject({ minutes: 19, seconds: 59, running: true });
 
     vi.advanceTimersByTime(20 * 60 * 1000);

@@ -421,4 +421,69 @@ describe('Mission ↔ Focus timer integration', () => {
     expect(document.querySelector('#cel-title')?.textContent).toBe('Focus Complete');
     expect(document.querySelector('#focus-history-blocks')?.textContent?.trim()).toBe('1');
   }, 15000);
+
+  // FIX A: Discard mission button truly discards the paused mission
+  it('Discard mission button clears the mission and resets the timer to preset', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T13:00:00Z'));
+    await loadApp();
+    confirmMission({ title: 'Ray Optics', total: 50, block: 25 });
+
+    const focusBtn = document.querySelector<HTMLButtonElement>('#focus-btn')!;
+    focusBtn.click();
+    document.querySelector<HTMLButtonElement>('#focus-immersive-exit-btn')!.click();
+    vi.advanceTimersByTime(25 * 60 * 1000); // finish block 1
+
+    // Click "End mission" from the block-complete choice → mission becomes paused
+    document.querySelector<HTMLButtonElement>('#mission-end-btn')!.click();
+
+    const { getActiveMission } = await import('../src/modules/mission.ts');
+    expect(getActiveMission()?.status).toBe('paused');
+    expect(document.querySelector('#mission-discard-btn')).not.toBeNull();
+
+    // Click "Discard mission" — must truly discard, not just re-pause
+    document.querySelector<HTMLButtonElement>('#mission-discard-btn')!.click();
+
+    expect(getActiveMission()).toBeNull();
+    expect(
+      document.querySelector<HTMLElement>('#mission-confirmed-card')!.classList.contains('hidden'),
+    ).toBe(true);
+    // Timer returned to preset chip
+    expect(document.querySelector('#focus-mode-label')?.textContent?.trim()).toBe('Pomodoro');
+    expect(document.querySelector('#mode-25')!.classList.contains('active')).toBe(true);
+  }, 15000);
+
+  // FIX D: ending an active mission resets the timer to the preset chip
+  it('ending an active mission resets the timer label and chip to the preset', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T13:00:00Z'));
+    await loadApp();
+    confirmMission({ title: 'Ray Optics', total: 50, block: 25 });
+
+    // Timer was set to mission block 25:00 with Mission Block label
+    expect(document.querySelector('#focus-timer')?.textContent?.trim()).toBe('25:00');
+
+    // Click "End mission" on the active mission (not from block-complete)
+    document.querySelector<HTMLButtonElement>('#mission-end-btn')!.click();
+
+    // Timer must return to preset: label = Pomodoro, chip active, XP hint = +40
+    expect(document.querySelector('#focus-mode-label')?.textContent?.trim()).toBe('Pomodoro');
+    expect(document.querySelector('#mode-25')!.classList.contains('active')).toBe(true);
+    expect(document.querySelector('#focus-xp-hint')?.textContent?.trim()).toBe('+40 XP');
+  });
+
+  // FIX D: clearing (Change) mission also resets timer to preset
+  it('clearing a mission via Change resets the timer label and chip to the preset', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T13:00:00Z'));
+    await loadApp();
+    confirmMission({ title: 'Ray Optics', total: 50, block: 25 });
+
+    // Clear via the #mission-clear-btn (Change button in planner)
+    document.querySelector<HTMLButtonElement>('#mission-clear-btn')!.click();
+
+    expect(document.querySelector('#focus-mode-label')?.textContent?.trim()).toBe('Pomodoro');
+    expect(document.querySelector('#mode-25')!.classList.contains('active')).toBe(true);
+    expect(document.querySelector('#focus-xp-hint')?.textContent?.trim()).toBe('+40 XP');
+  });
 });

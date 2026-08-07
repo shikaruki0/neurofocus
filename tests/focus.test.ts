@@ -207,4 +207,62 @@ describe('Focus Timer', () => {
     expect(data.xp).toBe(40); // not 100
     expect(data.sessions[0]).toMatchObject({ duration: 25, xp: 40, label: MISSION_BLOCK_LABEL });
   });
+
+  // FIX B: session XP records the credited (multiplied) amount, not just base XP
+  it('records the credited XP (with multiplier) on the session entry', () => {
+    vi.useFakeTimers();
+    // Set time to 08:00 so morning ritual 2x applies (hour <= 12)
+    vi.setSystemTime(new Date('2026-07-24T08:00:00'));
+
+    // Mark morning ritual as completed today
+    const today = new Date('2026-07-24T08:00:00').toDateString();
+    data.morningRitual = {
+      date: today,
+      completed: true,
+      steps: [true, true, true, true, true],
+    };
+
+    const complete = vi.fn();
+    onComplete(complete);
+
+    setMode(0); // Pomodoro 25 min → base 40 XP, ×2 = 80 credited
+    startTimer();
+    vi.advanceTimersByTime(25 * 60 * 1000);
+
+    expect(complete).toHaveBeenCalled();
+    expect(data.sessions[0].xp).toBe(80); // credited, not base 40
+    expect(data.xp).toBe(80); // total XP also reflects the 2x multiplier
+
+    // Clean up ritual state
+    data.morningRitual = {
+      date: '',
+      completed: false,
+      steps: [false, false, false, false, false],
+    };
+  });
+
+  // FIX E: double-completion guard — another tab consuming the session first
+  it('skips awarding if the persisted timer was already consumed by another tab', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-24T08:00:00'));
+
+    const complete = vi.fn();
+    onComplete(complete);
+
+    const xpBefore = data.xp;
+    const sessionsBefore = data.sessions.length;
+
+    startTimer();
+
+    // Simulate another tab completing first by removing the persisted timer
+    localStorage.removeItem('nf_focusTimer');
+
+    // Advance past the deadline
+    vi.advanceTimersByTime(TIMER_MODES[0].minutes * 60 * 1000);
+
+    // No session added, no XP awarded, timer returned to idle
+    expect(data.sessions.length).toBe(sessionsBefore);
+    expect(data.xp).toBe(xpBefore);
+    expect(getTimerState()).toMatchObject({ minutes: 25, seconds: 0, running: false });
+  });
 });

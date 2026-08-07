@@ -68,7 +68,7 @@ describe('Focus mode UI wiring', () => {
 
     focusBtn.click();
     expect(focusBtn.textContent?.trim()).toBe('Start');
-    expect(state.textContent?.trim()).toBe('Ready to begin');
+    expect(state.textContent?.trim()).toBe('Paused');
     expect(ringWrap.classList.contains('running')).toBe(false);
   });
 

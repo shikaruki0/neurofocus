@@ -75,8 +75,12 @@ describe('locale ordering', () => {
 describe('t() translation', () => {
   it('translates into the active locale', async () => {
     const { setLocale, t } = await loadI18n();
+    const { dictionaries } = await loadLocales();
     setLocale('hi-Latn');
-    expect(t('welcome.title')).toBe('Padhai ko game bana do');
+    // Must equal the dictionary entry (source of truth) and actually be translated,
+    // not silently fall back to English.
+    expect(t('welcome.title')).toBe(dictionaries['hi-Latn']['welcome.title']);
+    expect(t('welcome.title')).not.toBe(dictionaries.en['welcome.title']);
   });
 
   it('falls back to English when a key is missing in the active locale', async () => {
@@ -169,8 +173,11 @@ describe('applyTranslations', () => {
       <input data-i18n-placeholder="auth.local_name_ph" />
       <button data-i18n-aria-label="auth.show_password" data-i18n="auth.show"></button>
     `;
+    const { dictionaries } = await loadLocales();
     i18n.setLocale('hi-Latn');
-    expect(document.querySelector('h1')?.textContent).toBe('Padhai ko game bana do');
+    expect(document.querySelector('h1')?.textContent).toBe(
+      dictionaries['hi-Latn']['welcome.title'],
+    );
     expect(document.querySelector('input')?.getAttribute('placeholder')).toBe('Tumhara naam');
     const button = document.querySelector('button');
     expect(button?.textContent).toBe('Dikhao');

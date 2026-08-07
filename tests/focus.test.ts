@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   setMode,
+  setCustomBlock,
   getTimerState,
   getRecentSessions,
   isFlowActive,
   TIMER_MODES,
+  MISSION_BLOCK_LABEL,
+  xpForSessionMinutes,
   startTimer,
   pauseTimer,
   stopTimer,
@@ -149,5 +152,59 @@ describe('Focus Timer', () => {
     expect(data.xp).toBe(40);
     expect(getTimerState()).toMatchObject({ minutes: 25, seconds: 0, running: false });
     expect(getRecentSessions(1)).toHaveLength(1);
+  });
+
+  it('records XP and label on the session entry for exact history stats', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-24T08:00:00'));
+
+    startTimer();
+    vi.advanceTimersByTime(TIMER_MODES[0].minutes * 60 * 1000);
+
+    expect(data.sessions[0]).toMatchObject({ duration: 25, xp: 40, label: 'Pomodoro' });
+  });
+
+  it('derives default custom-block XP from the block length, not the selected preset chip', () => {
+    // Regression: with Flow State (100 XP) selected, a 25-min mission block paid 100 XP.
+    setMode(2); // Flow State selected — must NOT leak into custom block XP
+    setCustomBlock(25, { label: MISSION_BLOCK_LABEL });
+    expect(getTimerState()).toMatchObject({ isCustom: true, xp: 40, minutes: 25 });
+
+    // Non-preset lengths earn 1 XP per minute (the manual custom rule).
+    setCustomBlock(45, { label: MISSION_BLOCK_LABEL });
+    expect(getTimerState()).toMatchObject({ isCustom: true, xp: 45 });
+
+    // An explicit XP override still wins.
+    setCustomBlock(30, { xp: 120, label: MISSION_BLOCK_LABEL });
+    expect(getTimerState()).toMatchObject({ isCustom: true, xp: 120 });
+
+    // Preset chip XP is untouched for actual preset runs.
+    setMode(2);
+    expect(getTimerState()).toMatchObject({ isCustom: false, xp: 100 });
+  });
+
+  it('xpForSessionMinutes maps preset lengths to preset XP and others to 1/min', () => {
+    expect(xpForSessionMinutes(25)).toBe(40);
+    expect(xpForSessionMinutes(52)).toBe(60);
+    expect(xpForSessionMinutes(90)).toBe(100);
+    expect(xpForSessionMinutes(10)).toBe(10);
+    expect(xpForSessionMinutes(45)).toBe(45);
+  });
+
+  it('a mission block completion awards block-fair XP even with another preset selected', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-24T08:00:00'));
+
+    const complete = vi.fn();
+    onComplete(complete);
+
+    setMode(2); // user previously selected Flow State
+    setCustomBlock(25, { label: MISSION_BLOCK_LABEL });
+    startTimer();
+    vi.advanceTimersByTime(25 * 60 * 1000);
+
+    expect(complete).toHaveBeenCalled();
+    expect(data.xp).toBe(40); // not 100
+    expect(data.sessions[0]).toMatchObject({ duration: 25, xp: 40, label: MISSION_BLOCK_LABEL });
   });
 });

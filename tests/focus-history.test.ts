@@ -299,13 +299,55 @@ describe('date-scoped focus history - core filtering', () => {
     expect(() => getDailyFocusHistory('invalid')).not.toThrow();
   });
 
-  it('XP earned is null (no invented historical XP) and does not affect global XP', () => {
+  it('sums exact stored XP per session and never mutates global XP', () => {
     const xpBefore = data.xp;
     const t = new Date(2026, 6, 30, 12, 0, 0).getTime();
-    data.sessions = [{ date: new Date(t).toDateString(), time: t, duration: 25 }];
+    data.sessions = [
+      { date: new Date(t).toDateString(), time: t, duration: 45, xp: 45, label: 'Custom' },
+      {
+        date: new Date(t + 3_600_000).toDateString(),
+        time: t + 3_600_000,
+        duration: 25,
+        xp: 40,
+        label: 'Pomodoro',
+      },
+    ];
     const res = getDailyFocusHistory('2026-07-30');
-    expect(res.xpEarned).toBeNull();
+    expect(res.xpEarned).toBe(85);
     expect(data.xp).toBe(xpBefore);
+  });
+
+  it('derives daily XP from the earning rule for legacy sessions without stored XP', () => {
+    const t = new Date(2026, 6, 30, 12, 0, 0).getTime();
+    data.sessions = [
+      // Legacy preset sessions earn their preset XP (25→40, 52→60, 90→100)…
+      { date: new Date(t).toDateString(), time: t, duration: 25 },
+      { date: new Date(t + 3_600_000).toDateString(), time: t + 3_600_000, duration: 52 },
+      // …and legacy non-preset lengths earn 1 XP per minute (the custom rule).
+      { date: new Date(t + 7_200_000).toDateString(), time: t + 7_200_000, duration: 10 },
+    ];
+    const res = getDailyFocusHistory('2026-07-30');
+    expect(res.xpEarned).toBe(40 + 60 + 10);
+  });
+
+  it('keeps mission names and mission counts after the mission is cleared', () => {
+    const t = new Date(2026, 6, 30, 9, 0, 0).getTime();
+    data.sessions = [
+      {
+        date: new Date(t).toDateString(),
+        time: t,
+        duration: 25,
+        xp: 40,
+        label: 'Mission Block',
+      },
+      { date: new Date(t + 3_600_000).toDateString(), time: t + 3_600_000, duration: 25 },
+    ];
+    clearMission(); // no active mission — history must still call it a mission block
+    const res = getDailyFocusHistory('2026-07-30');
+    expect(res.completedMissions).toBe(1);
+    expect(res.completedBlocks).toBe(2);
+    expect(res.sessions.find((s) => s.time === t)?.missionName).toBe('Mission block');
+    expect(res.sessions.find((s) => s.time === t + 3_600_000)?.missionName).toBe('Focus session');
   });
 
   it('locale-change rerendering safe: date label uses localISODate, not display text', () => {

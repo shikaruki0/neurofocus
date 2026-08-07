@@ -376,3 +376,108 @@ describe('Custom focus duration', () => {
     ).toBe(false);
   });
 });
+
+describe('Focus tab — bug-fix regressions', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    vi.useRealTimers();
+    document.body.innerHTML = body;
+    localStorage.clear();
+    localStorage.setItem('nf_hasOnboarded', JSON.stringify(true));
+    localStorage.setItem('nf_profileName', JSON.stringify('Aarav'));
+    localStorage.setItem('nf_languageChosen', JSON.stringify(true));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('shows the mode NAME (Pomodoro), not the redundant chip text, under the timer', async () => {
+    await loadApp();
+    expect(document.querySelector('#focus-mode-label')?.textContent?.trim()).toBe('Pomodoro');
+
+    document.querySelector<HTMLButtonElement>('#mode-90')!.click();
+    expect(document.querySelector('#focus-mode-label')?.textContent?.trim()).toBe('Flow State');
+    expect(document.querySelector('#focus-timer')?.textContent?.trim()).toBe('90:00');
+  });
+
+  it('shows exact XP earned in Focus History after a session completes', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T13:00:00Z'));
+    await loadApp();
+
+    expect(document.querySelector('#focus-history-xp')?.textContent?.trim()).toBe('0 XP');
+
+    document.querySelector<HTMLButtonElement>('#focus-btn')!.click();
+    document.querySelector<HTMLButtonElement>('#focus-immersive-exit-btn')!.click();
+    vi.advanceTimersByTime(25 * 60 * 1000);
+
+    expect(document.querySelector('#focus-history-xp')?.textContent?.trim()).toBe('40 XP');
+    expect(document.querySelector('#focus-history-blocks')?.textContent?.trim()).toBe('1');
+    expect(document.querySelector('#focus-history-total')?.textContent?.trim()).toBe('25 min');
+  }, 15000);
+
+  it("Escape during TIME'S UP dismisses the alarm completely and the next session opens clean", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T13:00:00Z'));
+    await loadApp();
+
+    // Start and let the session finish — loop alarm defaults to ON → TIME'S UP state.
+    document.querySelector<HTMLButtonElement>('#focus-btn')!.click();
+    vi.advanceTimersByTime(25 * 60 * 1000);
+
+    const surface = document.querySelector<HTMLElement>('.focus-immersive-surface')!;
+    expect(surface.classList.contains('timeup-active')).toBe(true);
+    expect(document.querySelector('#focus-immersive-dismiss-btn')).not.toBeNull();
+
+    // Escape used to leave the alarm looping with no visible way to stop it.
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    const overlay = document.querySelector<HTMLElement>('#focus-immersive-overlay')!;
+    expect(overlay.classList.contains('show')).toBe(false);
+    expect(surface.classList.contains('timeup-active')).toBe(false);
+    expect(document.querySelector('#focus-immersive-dismiss-btn')).toBeNull();
+
+    // Starting again must open a clean overlay whose Pause button actually pauses.
+    document.querySelector<HTMLButtonElement>('#focus-btn')!.click();
+    const pauseBtn = document.querySelector<HTMLButtonElement>('#focus-immersive-pause-btn')!;
+    expect(overlay.classList.contains('show')).toBe(true);
+    expect(surface.classList.contains('timeup-active')).toBe(false);
+    expect(pauseBtn.textContent?.trim()).toBe('Pause');
+
+    pauseBtn.click();
+    expect(pauseBtn.textContent?.trim()).toBe('Start');
+  }, 15000);
+
+  it('credits a session that finished while the app was closed', async () => {
+    // A running 25-min session whose deadline passed before this "page load".
+    localStorage.setItem(
+      'nf_focusTimer',
+      JSON.stringify({
+        version: 1,
+        mode: 0,
+        remainingSeconds: 120,
+        running: true,
+        endTimestamp: Date.now() - 60_000,
+        customMinutes: null,
+        customXp: null,
+        customLabel: null,
+      }),
+    );
+
+    await loadApp();
+
+    const { data } = await import('../src/modules/data.ts');
+    expect(data.sessions).toHaveLength(1);
+    // The session itself records exactly its 40 XP; total XP may be higher because
+    // finishing a session also completes the daily focus quest (correct behavior).
+    expect(data.sessions[0].xp).toBe(40);
+    expect(data.xp).toBeGreaterThanOrEqual(40);
+    expect(data.dailyChecks.dc6).toBe(true);
+    // The completion is replayed visibly: celebration + history stats update.
+    expect(document.querySelector('#cel-title')?.textContent).toBe('Focus Complete');
+    expect(document.querySelector('#focus-history-xp')?.textContent?.trim()).toBe('40 XP');
+    expect(document.querySelector('#focus-history-blocks')?.textContent?.trim()).toBe('1');
+  });
+});

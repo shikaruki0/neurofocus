@@ -41,7 +41,10 @@ import {
   isFlowActive,
   onTick,
   onComplete,
+  consumePendingCompletion,
   TIMER_MODES,
+  MISSION_BLOCK_LABEL,
+  type TimerMode,
   type TimerState,
 } from './modules/focus.ts';
 import {
@@ -191,15 +194,16 @@ let focusHistoryDate = localISODate();
 // ===================================================================
 
 function switchTab(tabId: string) {
+  // Guard: an unknown tab must never blank the app (all tabs hidden, none shown).
+  const target = qs<HTMLElement>(`#tab-${tabId}`);
+  if (!target) return;
+
   // Hide all tabs
   qsa<HTMLElement>('.tab-content').forEach((el) => el.classList.add('hidden'));
 
   // Show target tab
-  const target = qs<HTMLElement>(`#tab-${tabId}`);
-  if (target) {
-    target.classList.remove('hidden');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+  target.classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Update nav active state
   qsa<HTMLElement>('.nav-item').forEach((btn) => {
@@ -264,7 +268,11 @@ function renderHero() {
 function renderHomePremiumTrend(): void {
   const stats = getWeekStats();
   const values = stats.map((s) => s.focus || 0);
-  const W = 300, H = 96, padX = 8, padTop = 12, padBot = 12;
+  const W = 300,
+    H = 96,
+    padX = 8,
+    padTop = 12,
+    padBot = 12;
   const n = values.length;
   const max = Math.max(...values, 0.5);
   const xAt = (i: number) => padX + (i * (W - 2 * padX)) / Math.max(1, n - 1);
@@ -276,14 +284,23 @@ function renderHomePremiumTrend(): void {
   if (line) line.setAttribute('d', seg);
   const area = qs<HTMLElement>('#p-trend-area');
   if (area)
-    area.setAttribute('d', `${seg} L ${xAt(n - 1).toFixed(1)} ${H - padBot} L ${xAt(0).toFixed(1)} ${H - padBot} Z`);
+    area.setAttribute(
+      'd',
+      `${seg} L ${xAt(n - 1).toFixed(1)} ${H - padBot} L ${xAt(0).toFixed(1)} ${H - padBot} Z`,
+    );
   const last = n - 1;
   const lx = xAt(last).toFixed(1);
   const ly = yAt(values[last] || 0).toFixed(1);
   const dot = qs<HTMLElement>('#p-trend-dot');
   const halo = qs<HTMLElement>('#p-trend-halo');
-  if (dot) { dot.setAttribute('cx', lx); dot.setAttribute('cy', ly); }
-  if (halo) { halo.setAttribute('cx', lx); halo.setAttribute('cy', ly); }
+  if (dot) {
+    dot.setAttribute('cx', lx);
+    dot.setAttribute('cy', ly);
+  }
+  if (halo) {
+    halo.setAttribute('cx', lx);
+    halo.setAttribute('cy', ly);
+  }
   const now = qs<HTMLElement>('#p-trend-now');
   if (now) now.textContent = `${(values[last] || 0).toFixed(1)}h`;
 }
@@ -302,7 +319,11 @@ function renderHomePremium() {
   if (greetEl) {
     const h = new Date().getHours();
     const key: TranslationKey =
-      h < 12 ? 'home.greeting_morning' : h < 17 ? 'home.greeting_afternoon' : 'home.greeting_evening';
+      h < 12
+        ? 'home.greeting_morning'
+        : h < 17
+          ? 'home.greeting_afternoon'
+          : 'home.greeting_evening';
     greetEl.textContent = t(key);
   }
   const nameEl = qs<HTMLElement>('#p-name');
@@ -1159,6 +1180,40 @@ function renderMissionPlanner(): void {
   });
 }
 
+/** Whether the mission-setup inputs already have their (one-time) listeners. */
+let missionSetupWired = false;
+
+/** Live block preview for the mission setup form. Reads current DOM values. */
+function updateMissionBlockPreview(): void {
+  const preview = qs<HTMLElement>('#mission-blocks-preview');
+  const totalInput = qs<HTMLInputElement>('#mission-total');
+  const blockInput = qs<HTMLInputElement>('#mission-block');
+  if (!preview || !totalInput || !blockInput) return;
+  const total = parseInt(totalInput.value, 10);
+  const block = parseInt(blockInput.value, 10);
+  if (!total || total <= 0 || !block || block <= 0) {
+    preview.innerHTML = '';
+    return;
+  }
+  const blocks = calculateBlocks(total, block);
+  if (!blocks.length) {
+    preview.innerHTML = '';
+    return;
+  }
+  preview.innerHTML = `
+    <div class="mission-blocks-preview-title">Blocks preview (${blocks.length} block${blocks.length === 1 ? '' : 's'})</div>
+    <div class="mission-blocks-list">
+      ${blocks
+        .map(
+          (b) => `<div class="mission-block-item">
+            <span class="mission-block-item-label">Block ${b.index}</span>
+            <span class="mission-block-item-time">${b.minutes} min</span>
+          </div>`,
+        )
+        .join('')}
+    </div>`;
+}
+
 function openMissionSetup(backlog: Backlog | null): void {
   const card = qs<HTMLElement>('#mission-setup-card');
   if (!card) return;
@@ -1183,40 +1238,16 @@ function openMissionSetup(backlog: Backlog | null): void {
   if (message) message.textContent = '';
   if (preview) preview.innerHTML = '';
 
+  // Live block preview on input change — wired exactly once, not on every open.
+  if (!missionSetupWired) {
+    missionSetupWired = true;
+    totalInput?.addEventListener('input', updateMissionBlockPreview);
+    blockInput?.addEventListener('input', updateMissionBlockPreview);
+  }
+  updateMissionBlockPreview();
+
   // Auto-focus title
   titleInput?.focus();
-
-  // Live block preview on input change
-  const updatePreview = () => {
-    if (!preview || !totalInput || !blockInput) return;
-    const total = parseInt(totalInput.value, 10);
-    const block = parseInt(blockInput.value, 10);
-    if (!total || total <= 0 || !block || block <= 0) {
-      preview.innerHTML = '';
-      return;
-    }
-    const blocks = calculateBlocks(total, block);
-    if (!blocks.length) {
-      preview.innerHTML = '';
-      return;
-    }
-    preview.innerHTML = `
-      <div class="mission-blocks-preview-title">Blocks preview (${blocks.length} block${blocks.length === 1 ? '' : 's'})</div>
-      <div class="mission-blocks-list">
-        ${blocks
-          .map(
-            (b) => `<div class="mission-block-item">
-              <span class="mission-block-item-label">Block ${b.index}</span>
-              <span class="mission-block-item-time">${b.minutes} min</span>
-            </div>`,
-          )
-          .join('')}
-      </div>`;
-  };
-
-  totalInput?.addEventListener('input', updatePreview);
-  blockInput?.addEventListener('input', updatePreview);
-  updatePreview();
 }
 
 function closeMissionSetup(): void {
@@ -1437,7 +1468,7 @@ function renderMissionConfirmed(): void {
   });
   qs<HTMLElement>('#mission-view-backlog-btn')?.addEventListener('click', () => {
     clearActiveMission();
-    switchTab('backlogs');
+    switchTab('backlog');
   });
   qs<HTMLElement>('#mission-dashboard-btn')?.addEventListener('click', () => {
     clearActiveMission();
@@ -1495,7 +1526,7 @@ function clearActiveMission(): void {
  * (e.g. the 10-min tail of a 60/25 plan) runs on the same countdown as the presets.
  */
 function prepareTimerForBlock(minutes: number): void {
-  setCustomBlock(minutes, { label: 'Mission Block' });
+  setCustomBlock(minutes, { label: MISSION_BLOCK_LABEL });
 }
 
 function renderFocusHistory() {
@@ -1511,15 +1542,12 @@ function renderFocusHistory() {
   const today = localISODate();
   const selected = getDailyFocusHistory(focusHistoryDate);
 
-  // Date input: initialize safely, set max to today to guide native picker, but still allow future via code.
+  // Date input: keep it in sync with the selected date. No `max` clamp — future
+  // dates are intentionally allowed and render the designed 🔮 future state;
+  // the Prev/Next buttons already guard casual navigation at today.
   const dateInput = qs<HTMLInputElement>('#focus-history-date');
   if (dateInput) {
     dateInput.value = focusHistoryDate;
-    try {
-      dateInput.max = today;
-    } catch {
-      // ignore if browser doesn't support max
-    }
   }
 
   // Prominent selected date label + relative hint (Today/Yesterday/Tomorrow/Future)
@@ -1580,7 +1608,7 @@ function renderFocusHistory() {
   if (missionsEl) missionsEl.textContent = String(selected.completedMissions);
 
   const xpEl = qs<HTMLElement>('#focus-history-xp');
-  if (xpEl) xpEl.textContent = selected.xpEarned === null ? '—' : `${selected.xpEarned} XP`;
+  if (xpEl) xpEl.textContent = `${selected.xpEarned} XP`;
 
   // Highlight total minutes when there is data — premium emphasis.
   const statsWrap = qs<HTMLElement>('#focus-history-card .focus-history-stats');
@@ -3076,9 +3104,8 @@ function setupEventListeners() {
     if (surface) {
       // TIME'S UP state — dismiss
       stopAllAlerts();
+      clearTimeUpState();
       closeImmersiveFocus();
-      surface.classList.remove('timeup-active');
-      qs<HTMLElement>('#focus-immersive-dismiss-btn')?.remove();
       return;
     }
     const state = getTimerState();
@@ -3110,6 +3137,10 @@ function setupEventListeners() {
       const overlay = qs<HTMLElement>('#focus-immersive-overlay');
       if (overlay?.classList.contains('show')) {
         e.preventDefault();
+        // If the TIME'S UP alarm is showing, Escape dismisses it fully — leaving
+        // the loop running with the overlay closed gives no way to stop it.
+        stopAllAlerts();
+        clearTimeUpState();
         closeImmersiveFocus();
         return;
       }
@@ -3234,12 +3265,8 @@ function setupEventListeners() {
 
   qs<HTMLElement>('#sound-stop-btn')?.addEventListener('click', () => {
     stopAllAlerts();
+    clearTimeUpState();
     showCelebrate('Alarm Stopped', 'All alerts silenced', '🔕', true);
-    // Clear timeup active state
-    const surface = qs<HTMLElement>('.focus-immersive-surface.timeup-active');
-    surface?.classList.remove('timeup-active');
-    const dismiss = qs<HTMLElement>('#focus-immersive-dismiss-btn');
-    dismiss?.remove();
   });
 
   // Ensure settings button renders sound settings
@@ -3259,31 +3286,29 @@ function setupEventListeners() {
 
   // Focus buttons should stop previous alarms
   qs<HTMLElement>('#focus-btn')?.addEventListener('click', () => {
-    // If starting new timer while alarm looping, stop it first
+    // If starting new timer while alarm looping, stop it first and clear any
+    // stale TIME'S UP visuals so the next session opens clean.
     const state = getTimerState();
-    if (!state.running) stopAllAlerts();
+    if (!state.running) {
+      stopAllAlerts();
+      clearTimeUpState();
+    }
   });
 
   qs<HTMLElement>('#focus-reset-btn')?.addEventListener('click', () => {
     stopAllAlerts();
-    const surface = qs<HTMLElement>('.focus-immersive-surface.timeup-active');
-    surface?.classList.remove('timeup-active');
-    qs<HTMLElement>('#focus-immersive-dismiss-btn')?.remove();
+    clearTimeUpState();
   });
 
   qs<HTMLElement>('#focus-immersive-exit-btn')?.addEventListener('click', () => {
     stopAllAlerts();
-    const surface = qs<HTMLElement>('.focus-immersive-surface.timeup-active');
-    surface?.classList.remove('timeup-active');
-    qs<HTMLElement>('#focus-immersive-dismiss-btn')?.remove();
+    clearTimeUpState();
   });
 
   // Notification click custom event
   window.addEventListener('neurofocus:notification-click', () => {
     stopAllAlerts();
-    const surface = qs<HTMLElement>('.focus-immersive-surface.timeup-active');
-    surface?.classList.remove('timeup-active');
-    qs<HTMLElement>('#focus-immersive-dismiss-btn')?.remove();
+    clearTimeUpState();
     switchTab('focus');
     window.focus();
   });
@@ -3373,14 +3398,15 @@ function updateFocusUI() {
 
   // A restored session must also restore its controls, not only the digits.
   if (button) button.textContent = state.running ? t('focus.pause') : t('focus.start');
-  // A user-defined custom block highlights the Custom chip instead of any preset.
-  // Mission blocks keep their own label and leave the active preset chip highlighted.
+  // Chip highlight honesty: while ANY custom block runs (user custom or mission
+  // block), no preset chip may glow — the timer is not running that preset length.
+  // The Custom chip lights up only for the user's own manual custom duration.
   const customActive = state.isCustom && state.modeLabel === CUSTOM_TIMER_LABEL;
   qsa<HTMLElement>('.timer-chip').forEach((chip) => {
     const isCustomChip = chip.id === 'mode-custom';
     chip.classList.toggle(
       'active',
-      isCustomChip ? customActive : !customActive && Number(chip.dataset.mode) === state.mode,
+      isCustomChip ? customActive : !state.isCustom && Number(chip.dataset.mode) === state.mode,
     );
   });
   // A custom block restored from storage must re-open its input row.
@@ -3395,8 +3421,14 @@ function updateFocusUI() {
     if (state.isCustom) {
       elLabel.textContent = state.modeLabel;
     } else {
-      const modeKeys: TranslationKey[] = ['focus.mode_25', 'focus.mode_52', 'focus.mode_90'];
-      elLabel.textContent = t(modeKeys[state.mode] || 'focus.mode_25');
+      // Show the mode NAME (Pomodoro / Deep Work / Flow State), not the chip
+      // text — "25 min" under a "25:00" timer is redundant and hides the brand.
+      const modeKeys: TranslationKey[] = [
+        'focus.mode_name_25',
+        'focus.mode_name_52',
+        'focus.mode_name_90',
+      ];
+      elLabel.textContent = t(modeKeys[state.mode] || 'focus.mode_name_25');
     }
   }
   if (elRing) {
@@ -3412,6 +3444,8 @@ function updateFocusUI() {
 function openImmersiveFocus(): void {
   const overlay = qs<HTMLElement>('#focus-immersive-overlay');
   if (!overlay) return;
+  // Never open over stale TIME'S UP visuals (e.g. user escaped the alarm earlier).
+  clearTimeUpState();
   overlay.classList.remove('hidden');
   overlay.classList.add('show');
   document.body.classList.add('immersive-open');
@@ -3489,8 +3523,12 @@ function updateImmersiveFocusUI(state: TimerState): void {
     if (state.isCustom) {
       els.label.textContent = state.modeLabel;
     } else {
-      const modeKeys: TranslationKey[] = ['focus.mode_25', 'focus.mode_52', 'focus.mode_90'];
-      els.label.textContent = t(modeKeys[state.mode] || 'focus.mode_25');
+      const modeKeys: TranslationKey[] = [
+        'focus.mode_name_25',
+        'focus.mode_name_52',
+        'focus.mode_name_90',
+      ];
+      els.label.textContent = t(modeKeys[state.mode] || 'focus.mode_name_25');
     }
   }
   if (els.mode) {
@@ -3665,6 +3703,17 @@ function stopAllAlerts(): void {
   if (navigator.vibrate) navigator.vibrate(0);
 }
 
+/**
+ * Removes the TIME'S UP visuals from the immersive overlay (loop-alarm class and
+ * the extra dismiss button). Must run whenever the alarm is dismissed — otherwise
+ * the next session opens showing a stale "Dismiss & Celebrate" state.
+ */
+function clearTimeUpState(): void {
+  const surface = qs<HTMLElement>('.focus-immersive-surface.timeup-active');
+  surface?.classList.remove('timeup-active');
+  qs<HTMLElement>('#focus-immersive-dismiss-btn')?.remove();
+}
+
 function showTimeUpImmersiveState(modeLabel: string, xp: number): void {
   const overlay = qs<HTMLElement>('#focus-immersive-overlay');
   if (!overlay) return;
@@ -3697,9 +3746,8 @@ function showTimeUpImmersiveState(modeLabel: string, xp: number): void {
         dismiss.type = 'button';
         dismiss.addEventListener('click', () => {
           stopAllAlerts();
+          clearTimeUpState();
           closeImmersiveFocus();
-          const s = qs<HTMLElement>('.focus-immersive-surface');
-          s?.classList.remove('timeup-active');
         });
         actions.appendChild(dismiss);
       }
@@ -3743,7 +3791,17 @@ onTick((state) => {
   }
 });
 
-onComplete((mode) => {
+/**
+ * Completion pipeline for a finished focus session.
+ * @param mode  The finished session (preset or custom block).
+ * @param options.alert  Play the real-time alarm stack (sound loop, title flash,
+ *                       vibration, notification). False when replaying a session
+ *                       that expired while the app was closed — credit silently
+ *                       instead of blaring an alarm for something finished hours ago.
+ */
+function handleFocusComplete(mode: TimerMode, options?: { alert?: boolean }): void {
+  const alert = options?.alert !== false;
+
   // A running mission credits its current block off the SAME completion event.
   const mission = getActiveMission();
   if (mission && mission.status === 'active') {
@@ -3752,35 +3810,51 @@ onComplete((mode) => {
     const result = completeCurrentBlock({ sessionId });
     if (result.completed || result.alreadyCompleted) {
       lastBlockCompletionMinutes = result.block ? result.block.completedDuration : mode.minutes;
+      if (result.missionComplete) {
+        // Mission done — return the Focus tab to its preset chip instead of leaving
+        // the finished mission's custom block (stale label/XP hint) behind.
+        setMode(getTimerState().mode);
+      }
       renderMissionPlanner();
     }
   }
 
-  // --- TIME'S UP ALERT: Sound + Vibration + Title Flash + Notification ---
-  const soundSettings = getSoundSettings();
-  try {
-    // Start loud pop alarm loop (respects loop setting internally)
-    startAlarmLoop('focusComplete', soundSettings.loop ? 2200 : 0);
-    startTitleFlash("🔔 Time's Up!");
-    vibrateStrong();
+  if (alert) {
+    // --- TIME'S UP ALERT: Sound + Vibration + Title Flash + Notification ---
+    const soundSettings = getSoundSettings();
+    try {
+      // Start loud pop alarm loop (respects loop setting internally)
+      startAlarmLoop('focusComplete', soundSettings.loop ? 2200 : 0);
+      startTitleFlash("🔔 Time's Up!");
+      vibrateStrong();
 
-    // Browser notification if enabled and permission granted
-    if (soundSettings.notifications) {
-      showFocusCompleteNotification(mode.label, mode.xp);
+      // Browser notification if enabled and permission granted
+      if (soundSettings.notifications) {
+        showFocusCompleteNotification(mode.label, mode.xp);
+      }
+    } catch (e) {
+      console.debug('Time-up alert error', e);
     }
-  } catch (e) {
-    console.debug('Time-up alert error', e);
-  }
 
-  // Show celebration but silent=false so success tone plays too (we already play focusComplete louder)
-  // Use silent=true to avoid double sound when our alarm is already playing
-  showCelebrate('Focus Complete', 'Take a real break. No phone.', '⏱️', true, mode.xp);
+    // Show celebration but silent=false so success tone plays too (we already play focusComplete louder)
+    // Use silent=true to avoid double sound when our alarm is already playing
+    showCelebrate('Focus Complete', 'Take a real break. No phone.', '⏱️', true, mode.xp);
 
-  // If looping disabled, close immersive; if looping enabled, show TIME'S UP state inside it
-  if (!soundSettings.loop) {
-    closeImmersiveFocus();
+    // If looping disabled, close immersive; if looping enabled, show TIME'S UP state inside it
+    if (!soundSettings.loop) {
+      closeImmersiveFocus();
+    } else {
+      showTimeUpImmersiveState(mode.label, mode.xp);
+    }
   } else {
-    showTimeUpImmersiveState(mode.label, mode.xp);
+    // Silent replay: the celebration tells the user their away-session counted.
+    showCelebrate(
+      'Focus Complete',
+      'Your session finished while you were away.',
+      '⏱️',
+      true,
+      mode.xp,
+    );
   }
 
   updateFocusUI();
@@ -3789,7 +3863,15 @@ onComplete((mode) => {
   renderFlowBanner();
   recordDailyStat();
   renderWeekly();
-});
+}
+
+onComplete((mode) => handleFocusComplete(mode));
+
+// Replay a session that completed while the app was closed (deadline passed
+// before this wiring existed). Credits the mission block and shows the record —
+// without this, the XP recorded but the mission stayed stuck and the user saw nothing.
+const earlyCompletion = consumePendingCompletion();
+if (earlyCompletion) handleFocusComplete(earlyCompletion, { alert: false });
 
 onUrgeTick((state) => {
   const elTimer = qs<HTMLElement>('#urge-timer');

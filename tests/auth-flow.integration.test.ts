@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const hoisted = vi.hoisted(() => {
   const listeners: Array<(event: string, session: unknown) => void> = [];
-  const fakeUser = { id: 'u1', email: 'person@example.com' } as never;
+  const fakeUser = {
+    id: 'u1',
+    email: 'person@example.com',
+    email_confirmed_at: '2026-01-01T00:00:00Z',
+    confirmed_at: '2026-01-01T00:00:00Z',
+  } as never;
   const fakeSession = { user: fakeUser, access_token: 'tok' } as never;
   const fire = (event: string, session: unknown) => {
     for (const cb of [...listeners]) cb(event, session);
@@ -31,6 +36,8 @@ const hoisted = vi.hoisted(() => {
       }),
       getUser: vi.fn(async () => ({ data: { user: null }, error: null })),
       resend: vi.fn(async () => ({ data: {}, error: null })),
+      resetPasswordForEmail: vi.fn(async () => ({ data: {}, error: null })),
+      updateUser: vi.fn(async () => ({ data: { user: fakeUser }, error: null })),
       signOut: vi.fn(async () => {
         fire('SIGNED_OUT', null);
         return { error: null };
@@ -179,7 +186,7 @@ describe('Production auth/import flows', () => {
     expect(document.activeElement).toBe(email);
   });
 
-  it('surfaces unconfirmed email sign-in failures and resends confirmation email', async () => {
+  it('surfaces wrong-password failures and still allows resending confirmation', async () => {
     await loadApp();
     document.querySelector<HTMLElement>('#email-login-btn')?.click();
     const email = document.querySelector<HTMLInputElement>('#login-email')!;
@@ -192,7 +199,8 @@ describe('Production auth/import flows', () => {
     document.querySelector<HTMLElement>('#send-login-btn')?.click();
     await new Promise((r) => setTimeout(r, 50));
 
-    expect(msg.textContent).toMatch(/email not confirmed/i);
+    // Wrong password is no longer disguised only as "confirm email".
+    expect(msg.textContent).toMatch(/incorrect/i);
     expect(resend.classList.contains('hidden')).toBe(false);
 
     resend.click();
@@ -203,6 +211,27 @@ describe('Production auth/import flows', () => {
       email: 'person@example.com',
     });
     expect(msg.textContent).toMatch(/confirmation email sent/i);
+  });
+
+  it('opens forgot-password form from sign-in and sends a reset email', async () => {
+    await loadApp();
+    document.querySelector<HTMLElement>('#email-login-btn')?.click();
+    const forgot = document.querySelector<HTMLButtonElement>('#forgot-password-btn')!;
+    expect(forgot.classList.contains('hidden')).toBe(false);
+    forgot.click();
+
+    const form = document.querySelector<HTMLElement>('#forgot-password-form')!;
+    expect(form.classList.contains('hidden')).toBe(false);
+    const email = document.querySelector<HTMLInputElement>('#forgot-email')!;
+    email.value = 'person@example.com';
+    document.querySelector<HTMLFormElement>('#forgot-password-form')?.dispatchEvent(
+      new Event('submit', { bubbles: true, cancelable: true }),
+    );
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(hoisted.fakeSupabase.auth.resetPasswordForEmail).toHaveBeenCalled();
+    const msg = document.querySelector<HTMLElement>('#forgot-message')!;
+    expect(msg.textContent).toMatch(/password reset email sent/i);
   });
 
   it('toggles password visibility for the email/password form', async () => {

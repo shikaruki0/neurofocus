@@ -2689,6 +2689,29 @@ body.auth-open {
   line-height: var(--line-normal);
 }
 
+.auth-link-btn {
+  display: inline-flex;
+  margin-top: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-start);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-link-btn:hover {
+  color: var(--text);
+}
+
+.auth-link-btn.hidden {
+  display: none;
+}
+
 .auth-submit {
   margin-top: var(--space-1);
 }

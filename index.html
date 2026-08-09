@@ -364,8 +364,16 @@
               </button>
             </div>
             <p class="auth-hint hidden" id="password-hint" data-i18n="auth.password_hint">
-              Use at least 6 characters.
+              At least 8 characters, with a letter and a number.
             </p>
+            <button
+              class="auth-link-btn"
+              id="forgot-password-btn"
+              type="button"
+              data-i18n="auth.forgot_password"
+            >
+              Forgot password?
+            </button>
           </div>
 
           <button
@@ -385,6 +393,87 @@
             Resend confirmation email
           </button>
           <p id="login-message" class="auth-message" role="status" aria-live="polite"></p>
+        </form>
+
+        <!-- Forgot password: send reset link -->
+        <form id="forgot-password-form" class="hidden" novalidate>
+          <button class="auth-back" id="back-forgot-btn" type="button">
+            <span aria-hidden="true">←</span> <span data-i18n="auth.back_to_signin">Back to sign in</span>
+          </button>
+          <div class="auth-field">
+            <label class="auth-label" for="forgot-email" data-i18n="auth.email_label">Email address</label>
+            <input
+              type="email"
+              class="input"
+              id="forgot-email"
+              placeholder="you@example.com"
+              autocomplete="email"
+              inputmode="email"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="254"
+              aria-describedby="forgot-message"
+              required
+            />
+            <p class="auth-hint" data-i18n="auth.forgot_hint">
+              We will email you a secure link to choose a new password.
+            </p>
+          </div>
+          <button
+            class="btn btn-block auth-submit"
+            id="send-reset-btn"
+            type="submit"
+            data-i18n="auth.send_reset"
+          >
+            Send reset link
+          </button>
+          <p id="forgot-message" class="auth-message" role="status" aria-live="polite"></p>
+        </form>
+
+        <!-- After opening the email link: set a new password -->
+        <form id="reset-password-form" class="hidden" novalidate>
+          <div class="auth-field">
+            <label class="auth-label" for="new-password" data-i18n="auth.new_password_label"
+              >New password</label
+            >
+            <div class="password-field">
+              <input
+                type="password"
+                class="input"
+                id="new-password"
+                placeholder="Create a new password"
+                data-i18n-placeholder="auth.password_ph_signup"
+                autocomplete="new-password"
+                maxlength="200"
+                aria-describedby="new-password-hint reset-message"
+                required
+              />
+              <button
+                class="password-toggle"
+                id="toggle-new-password"
+                type="button"
+                aria-label="Show password"
+                data-i18n="auth.show"
+                data-i18n-aria-label="auth.show_password"
+                aria-controls="new-password"
+                aria-pressed="false"
+              >
+                Show
+              </button>
+            </div>
+            <p class="auth-hint" id="new-password-hint" data-i18n="auth.password_hint">
+              At least 8 characters, with a letter and a number.
+            </p>
+          </div>
+          <button
+            class="btn btn-block auth-submit"
+            id="save-new-password-btn"
+            type="submit"
+            data-i18n="auth.save_new_password"
+          >
+            Save new password
+          </button>
+          <p id="reset-message" class="auth-message" role="status" aria-live="polite"></p>
         </form>
 
         <form id="local-login-form" class="hidden" novalidate>

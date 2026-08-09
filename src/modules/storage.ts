@@ -38,6 +38,19 @@ export function get<T = unknown>(key: string, fallback: T = null as T): T {
   }
 }
 
+/** Keys that are meta / auth and must not trigger a cloud push. */
+const NO_CLOUD_PUSH_KEYS = new Set([
+  'authUser',
+  'backupSnapshots',
+  'lastCloudSyncAt',
+  'lastCloudPushAt',
+  'boundUserId',
+  'cloudRevision',
+  'welcomeSeen',
+  'locale',
+  'languageChosen',
+]);
+
 /**
  * Sets a value in storage.
  * @param key - Storage key (without prefix)
@@ -52,6 +65,20 @@ export function set(key: string, value: unknown): void {
     }
   } catch {
     // Storage full or unavailable — keep in memory only
+  }
+
+  // Keep signed-in accounts in sync across devices after every real progress write.
+  // Lazy import avoids a circular dependency (cloudSync → storage).
+  if (!NO_CLOUD_PUSH_KEYS.has(key) && !key.startsWith('accountCache:')) {
+    try {
+      void import('./cloudSync.ts')
+        .then((mod) => {
+          if (typeof mod.scheduleCloudPush === 'function') mod.scheduleCloudPush();
+        })
+        .catch(() => undefined);
+    } catch {
+      // ignore
+    }
   }
 }
 

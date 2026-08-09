@@ -1,19 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const hoisted = vi.hoisted(() => {
-  const fakeUser = { id: 'u1', email: 'person@example.com' };
+  const fakeUser = {
+    id: 'u1',
+    email: 'person@example.com',
+    email_confirmed_at: '2026-01-01T00:00:00Z',
+    confirmed_at: '2026-01-01T00:00:00Z',
+  };
+  const unconfirmedUser = {
+    id: 'u2',
+    email: 'new@example.com',
+    email_confirmed_at: null,
+    confirmed_at: null,
+  };
   const fakeSession = { user: fakeUser, access_token: 'token' };
   const fakeSupabase = {
     auth: {
       signUp: vi.fn(),
       signInWithPassword: vi.fn(),
       resend: vi.fn(),
+      resetPasswordForEmail: vi.fn(),
+      updateUser: vi.fn(),
       getUser: vi.fn(),
       signOut: vi.fn(),
       onAuthStateChange: vi.fn(),
     },
   };
-  return { fakeUser, fakeSession, fakeSupabase };
+  return { fakeUser, unconfirmedUser, fakeSession, fakeSupabase };
 });
 
 vi.mock('@supabase/supabase-js', () => ({ createClient: vi.fn(() => hoisted.fakeSupabase) }));
@@ -39,6 +52,11 @@ describe('configured email/password auth module', () => {
       error: null,
     });
     hoisted.fakeSupabase.auth.resend.mockResolvedValue({ data: {}, error: null });
+    hoisted.fakeSupabase.auth.resetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
+    hoisted.fakeSupabase.auth.updateUser.mockResolvedValue({
+      data: { user: hoisted.fakeUser },
+      error: null,
+    });
     hoisted.fakeSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
     hoisted.fakeSupabase.auth.signOut.mockResolvedValue({ error: null });
     hoisted.fakeSupabase.auth.onAuthStateChange.mockImplementation(() => ({
@@ -69,12 +87,12 @@ describe('configured email/password auth module', () => {
     const result = await signUpWithEmailPassword('person@example.com', 'password123');
 
     expect(result.ok).toBe(false);
-    expect(result.message).toMatch(/email not confirmed/i);
+    expect(result.message).toMatch(/confirm/i);
     expect(result.canResendConfirmation).toBe(true);
     expect(currentUser()).toBeNull();
   });
 
-  it('sign-in maps Supabase invalid credentials to a safe confirmation-resend path', async () => {
+  it('sign-in maps wrong password to a clear incorrect-credentials message', async () => {
     hoisted.fakeSupabase.auth.signInWithPassword.mockResolvedValueOnce({
       data: null,
       error: { message: 'Invalid login credentials', status: 400 },
@@ -84,10 +102,27 @@ describe('configured email/password auth module', () => {
     const result = await signInWithEmailPassword('person@example.com', 'password123');
 
     expect(result.ok).toBe(false);
-    expect(result.message).toMatch(/email not confirmed/i);
+    expect(result.message).toMatch(/incorrect/i);
     expect(result.message).not.toContain('Invalid login credentials');
+    // Resend still available in case Supabase collapsed unconfirmed into invalid-creds.
     expect(result.canResendConfirmation).toBe(true);
     expect(result.email).toBe('person@example.com');
+  });
+
+  it('rejects unconfirmed sessions instead of faking a login', async () => {
+    hoisted.fakeSupabase.auth.signInWithPassword.mockResolvedValueOnce({
+      data: { user: hoisted.unconfirmedUser, session: { user: hoisted.unconfirmedUser } },
+      error: null,
+    });
+    const { signInWithEmailPassword, currentUser } = await authModule();
+
+    const result = await signInWithEmailPassword('new@example.com', 'password123');
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toMatch(/confirm/i);
+    expect(result.canResendConfirmation).toBe(true);
+    expect(currentUser()).toBeNull();
+    expect(hoisted.fakeSupabase.auth.signOut).toHaveBeenCalled();
   });
 
   it('resends signup confirmation emails without exposing raw Supabase errors', async () => {
@@ -105,11 +140,31 @@ describe('configured email/password auth module', () => {
     });
   });
 
+  it('sends password reset emails without revealing whether the account exists', async () => {
+    const { requestPasswordReset } = await authModule();
+
+    const result = await requestPasswordReset('person@example.com');
+
+    expect(result.ok).toBe(true);
+    expect(result.message).toMatch(/password reset email sent/i);
+    expect(hoisted.fakeSupabase.auth.resetPasswordForEmail).toHaveBeenCalled();
+  });
+
+  it('updates password after recovery and stores the signed-in user', async () => {
+    const { updatePasswordAfterReset, currentUser } = await authModule();
+
+    const result = await updatePasswordAfterReset('newpass99');
+
+    expect(result.ok).toBe(true);
+    expect(result.message).toMatch(/password updated/i);
+    expect(currentUser()?.email).toBe('person@example.com');
+  });
+
   it('friendlyAuthError does not expose raw auth error strings', async () => {
     const { friendlyAuthError } = await authModule();
 
     expect(friendlyAuthError({ message: 'Email not confirmed', status: 400 })).toMatch(
-      /email not confirmed/i,
+      /confirm your email/i,
     );
     expect(friendlyAuthError({ message: 'Invalid login credentials', status: 400 })).not.toContain(
       'Invalid login credentials',

@@ -1,6 +1,13 @@
 /**
  * Authentication Module — Email/password auth via Supabase.
  * No OTP, no email links, no Firebase. Only email+password.
+ *
+ * Security rules:
+ *  - Only real email formats are accepted (client-side gate).
+ *  - Passwords must meet a minimum strength policy.
+ *  - Unconfirmed accounts cannot use the app (sign out immediately).
+ *  - Wrong password never silently "logs you in".
+ *  - Errors never expose raw Supabase internals.
  */
 
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
@@ -14,8 +21,8 @@ export const supabase: SupabaseClient | null = isEmailAuthConfigured
   ? createClient(url!, anonKey!, { auth: { persistSession: true, autoRefreshToken: true } })
   : null;
 
-/** Minimum password length matching Supabase default policy. */
-export const MIN_PASSWORD_LENGTH = 6;
+/** Minimum password length (stronger than Supabase's bare minimum of 6). */
+export const MIN_PASSWORD_LENGTH = 8;
 /** Maximum password length to avoid abuse. */
 export const MAX_PASSWORD_LENGTH = 200;
 
@@ -23,10 +30,10 @@ const ACCOUNTS_UNAVAILABLE_MESSAGE =
   'Online accounts are not available right now. You can continue locally.';
 const GENERIC_AUTH_MESSAGE = 'Something went wrong. Please try again.';
 const EMAIL_NOT_CONFIRMED_MESSAGE =
-  'Email not confirmed. Please confirm your email before signing in. If the message is missing, use Resend confirmation email.';
-const POSSIBLE_EMAIL_NOT_CONFIRMED_MESSAGE =
-  'Email not confirmed yet? Please confirm your email or use Resend confirmation email. If you already confirmed it, check the email/password and try again.';
-const CONFIRMATION_SENT_MESSAGE = 'Confirmation email sent. Check your inbox, then sign in.';
+  'Please confirm your email before signing in. Open the link we sent, then try again. Missing the email? Use Resend confirmation email.';
+const CONFIRMATION_SENT_MESSAGE = 'Confirmation email sent. Check your inbox (and spam), then sign in.';
+const INVALID_CREDENTIALS_MESSAGE =
+  'The email or password is incorrect. Create an account first if you are new, or double-check your password.';
 
 export type AuthActionResult = {
   ok: boolean;
@@ -52,6 +59,8 @@ export function rememberUser(user: User | null): void {
 
 /**
  * Validates a password for account creation.
+ * Requires length + at least one letter and one number so random short
+ * junk passwords are rejected before they ever hit Supabase.
  */
 export function validatePassword(password: string): { valid: boolean; error?: string } {
   if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
@@ -63,15 +72,75 @@ export function validatePassword(password: string): { valid: boolean; error?: st
   if (password.length > MAX_PASSWORD_LENGTH) {
     return { valid: false, error: 'Password is too long.' };
   }
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+    return {
+      valid: false,
+      error: 'Password must include at least one letter and one number.',
+    };
+  }
+  // Reject passwords that are only the same character repeated.
+  if (/^(.)\1+$/.test(password)) {
+    return { valid: false, error: 'Choose a stronger password.' };
+  }
   return { valid: true };
 }
 
 /**
- * Validates an email string.
+ * Validates an email string. Rejects empty, malformed, and obviously fake values.
+ * Exported so the UI and tests share one rule.
  */
-function validateEmail(email: string): { valid: boolean; error?: string; email?: string } {
-  const clean = (email || '').trim();
-  if (!/^\S+@\S+\.\S+$/.test(clean)) {
+export function validateEmail(email: string): { valid: boolean; error?: string; email?: string } {
+  const clean = (email || '').trim().toLowerCase();
+  if (!clean) {
+    return { valid: false, error: 'Enter a valid email address.' };
+  }
+  // Basic structure: local@domain.tld
+  if (clean.length > 254) {
+    return { valid: false, error: 'Enter a valid email address.' };
+  }
+  // Reject spaces and consecutive dots; require a real-looking domain with a 2+ letter TLD.
+  const emailPattern =
+    /^[a-z0-9](?:[a-z0-9._%+-]{0,62}[a-z0-9])?@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i;
+  if (!emailPattern.test(clean)) {
+    return { valid: false, error: 'Enter a valid email address.' };
+  }
+  const [local, domain] = clean.split('@');
+  if (!local || !domain || local.length > 64) {
+    return { valid: false, error: 'Enter a valid email address.' };
+  }
+  // Block clearly placeholder / test junk that beginners type while "trying random stuff".
+  const blockedLocals = new Set([
+    'test',
+    'testing',
+    'asdf',
+    'asdfgh',
+    'qwerty',
+    'abc',
+    'abcd',
+    'user',
+    'email',
+    'name',
+    'xxx',
+    'aaaa',
+    'bbbb',
+    'admin',
+    'fake',
+    'sample',
+    'demo',
+    'none',
+    'null',
+    'undefined',
+  ]);
+  const localBase = local.replace(/[.+].*$/, ''); // ignore +tag / .dots for blocklist
+  if (blockedLocals.has(localBase) || /^(.)\1{3,}$/.test(localBase)) {
+    return {
+      valid: false,
+      error: 'Please use your real email address so you can recover this account.',
+    };
+  }
+  // Domain must have a real TLD (e.g. .com) — already enforced by pattern.
+  const tld = domain.split('.').pop() || '';
+  if (tld.length < 2) {
     return { valid: false, error: 'Enter a valid email address.' };
   }
   return { valid: true, email: clean };
@@ -101,8 +170,7 @@ function isEmailNotConfirmedError(err: AuthErrorLike): boolean {
   return (
     code.includes('email_not_confirmed') ||
     msg.includes('email not confirmed') ||
-    msg.includes('email is not confirmed') ||
-    (msg.includes('confirm') && msg.includes('email') && !msg.includes('already'))
+    msg.includes('email is not confirmed')
   );
 }
 
@@ -157,6 +225,25 @@ function emailConfirmationResult(
   };
 }
 
+/**
+ * Returns true when Supabase has marked the email as confirmed.
+ * When Confirm Email is OFF, Supabase sets email_confirmed_at immediately.
+ * When the field is missing entirely (some older payloads), a valid session
+ * is treated as confirmed. Explicit null/empty means "not confirmed yet".
+ */
+export function isEmailConfirmed(user: User | null | undefined): boolean {
+  if (!user) return false;
+  const record = user as User & {
+    email_confirmed_at?: string | null;
+    confirmed_at?: string | null;
+  };
+  const hasConfirmField =
+    Object.prototype.hasOwnProperty.call(record, 'email_confirmed_at') ||
+    Object.prototype.hasOwnProperty.call(record, 'confirmed_at');
+  if (!hasConfirmField) return true;
+  return Boolean(record.email_confirmed_at || record.confirmed_at);
+}
+
 function signUpLooksLikeExistingAccount(
   data: { user?: User | null; session?: unknown } | null,
 ): boolean {
@@ -174,18 +261,16 @@ export function friendlyAuthError(err: AuthErrorLike): string {
   const msg = authMessage(err);
 
   if (isEmailNotConfirmedError(err)) return EMAIL_NOT_CONFIRMED_MESSAGE;
-  if (isInvalidCredentialsError(err)) {
-    return 'The email or password is incorrect. If this is a new account, confirm your email or resend confirmation.';
-  }
+  if (isInvalidCredentialsError(err)) return INVALID_CREDENTIALS_MESSAGE;
   if (isAlreadyRegisteredError(err)) {
     return 'This account already exists. Try signing in instead.';
   }
   if (
     msg.includes('password should be at least') ||
     msg.includes('password is too weak') ||
-    msg.includes('password')
+    (msg.includes('password') && msg.includes('characters'))
   ) {
-    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters and include a letter and a number.`;
   }
   if (isRateLimitError(err)) {
     return 'Too many attempts. Please wait a moment and try again.';
@@ -200,10 +285,34 @@ export function friendlyAuthError(err: AuthErrorLike): string {
 }
 
 /**
+ * After a successful Supabase auth response, ensure we only keep confirmed sessions.
+ * If the project has Confirm Email ON and the user is not confirmed, sign out and guide them.
+ */
+async function acceptAuthenticatedUser(
+  user: User,
+  cleanEmail: string,
+): Promise<AuthActionResult> {
+  // Some Supabase projects return a user object before confirmation. Never treat
+  // an unconfirmed user as signed-in — that is the "random email works" loophole
+  // when combined with confusing client state.
+  if (!isEmailConfirmed(user)) {
+    try {
+      if (supabase) await supabase.auth.signOut();
+    } catch {
+      // ignore
+    }
+    rememberUser(null);
+    return emailConfirmationResult(cleanEmail);
+  }
+  rememberUser(user);
+  return { ok: true, message: 'Signed in successfully.' };
+}
+
+/**
  * Create a new account with email and password.
- * When Confirm Email is OFF, Supabase returns a usable session immediately.
- * When Confirm Email is ON, no session exists yet, so the UI must keep the
- * user on the email/password form with a confirmation-resend path.
+ * When Confirm Email is OFF, Supabase returns a usable session immediately
+ * (and marks the email confirmed). When Confirm Email is ON, no session
+ * exists yet, so the UI must keep the user on the form with a resend path.
  */
 export async function signUpWithEmailPassword(
   email: string,
@@ -230,6 +339,9 @@ export async function signUpWithEmailPassword(
 
     if (error) {
       if (isEmailNotConfirmedError(error)) return emailConfirmationResult(cleanEmail);
+      if (isAlreadyRegisteredError(error)) {
+        return { ok: false, message: 'This account already exists. Try signing in instead.' };
+      }
       return { ok: false, message: friendlyAuthError(error) };
     }
 
@@ -237,18 +349,17 @@ export async function signUpWithEmailPassword(
       return { ok: false, message: 'This account already exists. Try signing in instead.' };
     }
 
-    // Confirm-email OFF: signUp returns a session. Store it immediately so the
-    // app transitions to the signed-in state without waiting for auth callbacks.
+    // Confirm-email OFF: signUp returns a session. Store it only if confirmed.
     const sessionUser = data?.session?.user ?? null;
     if (sessionUser) {
-      rememberUser(sessionUser);
-      return { ok: true, message: 'Account created! You are signed in.' };
+      const accepted = await acceptAuthenticatedUser(sessionUser, cleanEmail);
+      if (accepted.ok) {
+        return { ok: true, message: 'Account created! You are signed in.' };
+      }
+      return accepted;
     }
 
-    // Defensive fallback for Supabase/browser races: if signUp did not include
-    // a session but email confirmation is actually off, password sign-in should
-    // succeed and establish the session. If confirmation is on, this fails with
-    // the same protected credentials error and we fall through to confirmation.
+    // No session yet — either confirmation is required, or a race. Try sign-in once.
     const signInAfterSignUp = await supabase.auth.signInWithPassword({
       email: cleanEmail,
       password,
@@ -256,13 +367,17 @@ export async function signUpWithEmailPassword(
     const fallbackUser =
       signInAfterSignUp.data?.session?.user ?? signInAfterSignUp.data?.user ?? null;
     if (!signInAfterSignUp.error && fallbackUser) {
-      rememberUser(fallbackUser);
-      return { ok: true, message: 'Account created! You are signed in.' };
+      const accepted = await acceptAuthenticatedUser(fallbackUser, cleanEmail);
+      if (accepted.ok) {
+        return { ok: true, message: 'Account created! You are signed in.' };
+      }
+      return accepted;
     }
 
+    // Default: account row may exist, but user must confirm email before using the app.
     return emailConfirmationResult(
       cleanEmail,
-      'Account created. Email not confirmed yet. Check your inbox, then sign in. You can resend the confirmation email if needed.',
+      'Account created. Check your inbox for a confirmation link, then sign in. You can resend the email if needed.',
     );
   } catch {
     return {
@@ -274,6 +389,8 @@ export async function signUpWithEmailPassword(
 
 /**
  * Sign in with email and password.
+ * Wrong password → clear error (never a fake login).
+ * Unconfirmed email → confirmation path with resend.
  */
 export async function signInWithEmailPassword(
   email: string,
@@ -300,11 +417,19 @@ export async function signInWithEmailPassword(
     });
 
     if (error) {
+      // Real "not confirmed" from Supabase — offer resend.
       if (isEmailNotConfirmedError(error)) return emailConfirmationResult(cleanEmail);
-      // Supabase often returns "Invalid login credentials" for unconfirmed
-      // users. Surface the confirmation path without leaking raw auth details.
+      // Wrong email/password — do NOT pretend it might be unconfirmed.
+      // (Previously this always opened the confirmation path, which felt like a loophole.)
       if (isInvalidCredentialsError(error)) {
-        return emailConfirmationResult(cleanEmail, POSSIBLE_EMAIL_NOT_CONFIRMED_MESSAGE);
+        return {
+          ok: false,
+          message: INVALID_CREDENTIALS_MESSAGE,
+          // Still allow resend in case their account is new and unconfirmed —
+          // Supabase often collapses that case into "invalid credentials".
+          canResendConfirmation: true,
+          email: cleanEmail,
+        };
       }
       return { ok: false, message: friendlyAuthError(error) };
     }
@@ -313,8 +438,104 @@ export async function signInWithEmailPassword(
     if (!user) {
       return { ok: false, message: GENERIC_AUTH_MESSAGE };
     }
+    const accepted = await acceptAuthenticatedUser(user, cleanEmail);
+    if (accepted.ok) {
+      return { ok: true, message: 'Signed in successfully.' };
+    }
+    return accepted;
+  } catch {
+    return {
+      ok: false,
+      message: friendlyAuthError({ message: 'network' }),
+    };
+  }
+}
+
+const PASSWORD_RESET_SENT_MESSAGE =
+  'Password reset email sent. Check your inbox (and spam), open the link, then choose a new password.';
+const PASSWORD_UPDATED_MESSAGE = 'Password updated. You are signed in.';
+
+/**
+ * Sends a password-reset email via Supabase.
+ * The user must open the link, then set a new password in the app.
+ */
+export async function requestPasswordReset(email: string): Promise<AuthActionResult> {
+  const emailCheck = validateEmail(email);
+  if (!emailCheck.valid) return { ok: false, message: emailCheck.error! };
+  const cleanEmail = emailCheck.email!;
+
+  if (!supabase) {
+    return {
+      ok: false,
+      message: ACCOUNTS_UNAVAILABLE_MESSAGE,
+    };
+  }
+
+  try {
+    const redirectTo =
+      typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo,
+    });
+    if (error) {
+      if (isRateLimitError(error)) {
+        return {
+          ok: false,
+          message: 'Reset email was requested recently. Please wait a moment and try again.',
+          email: cleanEmail,
+        };
+      }
+      if (isNetworkError(error)) {
+        return { ok: false, message: friendlyAuthError(error), email: cleanEmail };
+      }
+      // Do not reveal whether the email exists (account enumeration).
+      return {
+        ok: true,
+        message: PASSWORD_RESET_SENT_MESSAGE,
+        email: cleanEmail,
+      };
+    }
+    return {
+      ok: true,
+      message: PASSWORD_RESET_SENT_MESSAGE,
+      email: cleanEmail,
+    };
+  } catch {
+    return {
+      ok: false,
+      message: friendlyAuthError({ message: 'network' }),
+      email: cleanEmail,
+    };
+  }
+}
+
+/**
+ * Completes a password recovery session by setting a new password.
+ * Call this after the user opens the reset link from their email.
+ */
+export async function updatePasswordAfterReset(password: string): Promise<AuthActionResult> {
+  const pwCheck = validatePassword(password);
+  if (!pwCheck.valid) return { ok: false, message: pwCheck.error! };
+
+  if (!supabase) {
+    return {
+      ok: false,
+      message: ACCOUNTS_UNAVAILABLE_MESSAGE,
+    };
+  }
+
+  try {
+    const { data, error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      if (isRateLimitError(error)) {
+        return { ok: false, message: 'Too many attempts. Please wait a moment and try again.' };
+      }
+      return { ok: false, message: friendlyAuthError(error) };
+    }
+    const user = data?.user ?? null;
+    if (!user) return { ok: false, message: GENERIC_AUTH_MESSAGE };
     rememberUser(user);
-    return { ok: true, message: 'Signed in successfully.' };
+    return { ok: true, message: PASSWORD_UPDATED_MESSAGE };
   } catch {
     return {
       ok: false,
@@ -387,6 +608,20 @@ export async function restoreAuthSession(): Promise<User | null> {
       }
       return currentUser();
     }
+    if (!data.user) {
+      rememberUser(null);
+      return null;
+    }
+    // Drop stale unconfirmed sessions so a half-created account cannot open the app.
+    if (!isEmailConfirmed(data.user)) {
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // ignore
+      }
+      rememberUser(null);
+      return null;
+    }
     rememberUser(data.user);
     return data.user;
   } catch (err) {
@@ -396,6 +631,13 @@ export async function restoreAuthSession(): Promise<User | null> {
 }
 
 export async function logout(): Promise<void> {
+  // Best-effort push before leaving so the other device can pick up latest progress.
+  try {
+    const { flushCloudSync } = await import('./cloudSync.ts');
+    await flushCloudSync();
+  } catch {
+    // Offline or not configured — fine.
+  }
   if (supabase) await supabase.auth.signOut();
   rememberUser(null);
 }
@@ -404,6 +646,11 @@ export function onAuthChange(callback: (user: User | null) => void): () => void 
   if (!supabase) return () => undefined;
   const { data } = supabase.auth.onAuthStateChange((_event, session) => {
     const user = session?.user ?? null;
+    if (user && !isEmailConfirmed(user)) {
+      rememberUser(null);
+      callback(null);
+      return;
+    }
     rememberUser(user);
     callback(user);
   });

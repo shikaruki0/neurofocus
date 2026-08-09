@@ -134,9 +134,19 @@ import {
   signUpWithEmailPassword,
   validatePassword,
   resendConfirmationEmail,
+  requestPasswordReset,
+  updatePasswordAfterReset,
   logout,
+  supabase,
 } from './modules/auth.ts';
-import { createLocalBackup, syncOnLogin, syncNow } from './modules/cloudSync.ts';
+import {
+  createLocalBackup,
+  syncOnLogin,
+  syncNow,
+  startAutoSync,
+  bindLocalDataToUser,
+  pullIfCloudNewer,
+} from './modules/cloudSync.ts';
 import { exportAll } from './modules/storage.ts';
 import {
   applyTranslations,
@@ -2125,8 +2135,35 @@ function downloadBackup() {
   URL.revokeObjectURL(link.href);
 }
 
+/**
+ * Only used as a last-resort manual override. Normal login auto-merges using
+ * the richer-side logic in cloudSync so PC and phone stay identical.
+ */
 function askSyncChoice(): 'local' | 'cloud' | 'merge' {
   return 'merge';
+}
+
+/** After cloud data lands, redraw every surface that shows progress/backlog. */
+function refreshAfterCloudSync(): void {
+  try {
+    updateDashboard();
+    renderHabits();
+    renderBacklogs();
+    renderBattle();
+    renderStreak();
+    renderBuddy();
+    renderWeekly();
+    renderTrophyPreview();
+    renderRitual();
+    renderSubjects();
+    renderProfile();
+    renderAccountSettings();
+    renderFocusHistory();
+    renderMissionPlanner();
+    updateFocusUI();
+  } catch (e) {
+    console.debug('refreshAfterCloudSync', e);
+  }
 }
 
 // ===================================================================
@@ -2210,12 +2247,16 @@ function updateDashboard() {
 // ===================================================================
 
 type AuthMode = 'signin' | 'signup';
-type LoginView = 'choice' | 'email' | 'local';
+type LoginView = 'choice' | 'email' | 'local' | 'forgot' | 'reset';
 type MessageTone = 'error' | 'success' | 'info';
 
 let authMode: AuthMode = 'signin';
 let authSubmitting = false;
 let resendSubmitting = false;
+let forgotSubmitting = false;
+let resetSubmitting = false;
+/** True while the user opened a recovery link and must set a new password. */
+let passwordRecoveryPending = false;
 
 function setLoginHeader(
   kickerKey: TranslationKey,
@@ -2305,6 +2346,11 @@ function setAuthMode(mode: AuthMode): void {
     setLoginHeader('auth.kicker_signup', 'auth.title_signup', 'auth.subtitle_signup');
   }
 
+  qs<HTMLButtonElement>('#forgot-password-btn')?.classList.toggle(
+    'hidden',
+    mode !== 'signin' || !isEmailAuthConfigured,
+  );
+
   if (resendButton) {
     resendButton.classList.add('hidden');
     resendButton.disabled = false;
@@ -2325,11 +2371,15 @@ function showLoginView(view: LoginView, mode: AuthMode = 'signin'): void {
   qs<HTMLElement>('#login-choice')?.classList.toggle('hidden', view !== 'choice');
   qs<HTMLElement>('#email-login-form')?.classList.toggle('hidden', view !== 'email');
   qs<HTMLElement>('#local-login-form')?.classList.toggle('hidden', view !== 'local');
+  qs<HTMLElement>('#forgot-password-form')?.classList.toggle('hidden', view !== 'forgot');
+  qs<HTMLElement>('#reset-password-form')?.classList.toggle('hidden', view !== 'reset');
 
   if (view === 'choice') {
     setLoginHeader('auth.kicker', 'auth.title', 'auth.subtitle');
     setFormMessage('login-message');
     setFormMessage('local-login-message');
+    setFormMessage('forgot-message');
+    setFormMessage('reset-message');
     clearAuthFieldErrors();
     qs<HTMLInputElement>('#login-name')?.removeAttribute('aria-invalid');
     const passwordInput = qs<HTMLInputElement>('#login-password');
@@ -2341,6 +2391,25 @@ function showLoginView(view: LoginView, mode: AuthMode = 'signin'): void {
 
   if (view === 'email') {
     setAuthMode(mode);
+    const forgotBtn = qs<HTMLButtonElement>('#forgot-password-btn');
+    forgotBtn?.classList.toggle('hidden', mode !== 'signin' || !isEmailAuthConfigured);
+    return;
+  }
+
+  if (view === 'forgot') {
+    setLoginHeader('auth.kicker_forgot', 'auth.title_forgot', 'auth.subtitle_forgot');
+    setFormMessage('forgot-message');
+    const emailFromLogin = qs<HTMLInputElement>('#login-email')?.value || '';
+    const forgotEmail = qs<HTMLInputElement>('#forgot-email');
+    if (forgotEmail && !forgotEmail.value && emailFromLogin) forgotEmail.value = emailFromLogin;
+    return;
+  }
+
+  if (view === 'reset') {
+    setLoginHeader('auth.kicker_reset', 'auth.title_reset', 'auth.subtitle_reset');
+    setFormMessage('reset-message');
+    const newPw = qs<HTMLInputElement>('#new-password');
+    if (newPw) newPw.value = '';
     return;
   }
 
@@ -2418,14 +2487,15 @@ function setupEventListeners() {
   qs<HTMLElement>('#sync-now-btn')?.addEventListener('click', async () => {
     try {
       await syncNow();
-      renderAccountSettings();
-      showCelebrate('Synced', 'Your progress is protected.', '☁️');
+      refreshAfterCloudSync();
+      showCelebrate('Synced', 'Progress is the same on all your devices.', '☁️');
     } catch {
       showCelebrate('Sync unavailable', 'Your local progress is still safe.', '⚠️', true);
     }
   });
   qs<HTMLElement>('#logout-btn')?.addEventListener('click', async () => {
     await logout();
+    bindLocalDataToUser(null);
     renderAccountSettings();
     renderSession();
   });
@@ -2666,21 +2736,107 @@ function setupEventListeners() {
   qs<HTMLElement>('#create-account-btn')?.addEventListener('click', () => openEmailAuth('signup'));
   qs<HTMLElement>('#back-login-btn')?.addEventListener('click', renderSession);
   qs<HTMLElement>('#back-local-btn')?.addEventListener('click', renderSession);
+  qs<HTMLElement>('#back-forgot-btn')?.addEventListener('click', () => openEmailAuth('signin'));
   qs<HTMLElement>('#auth-tab-signin')?.addEventListener('click', () => setAuthMode('signin'));
   qs<HTMLElement>('#auth-tab-signup')?.addEventListener('click', () => setAuthMode('signup'));
+  qs<HTMLElement>('#forgot-password-btn')?.addEventListener('click', () => {
+    showLoginView('forgot');
+    setLoginOverlayOpen(true);
+    qs<HTMLInputElement>('#forgot-email')?.focus();
+  });
 
-  qs<HTMLButtonElement>('#toggle-login-password')?.addEventListener('click', (event) => {
-    const toggle = event.currentTarget as HTMLButtonElement;
-    const passwordInput = qs<HTMLInputElement>('#login-password');
-    if (!passwordInput) return;
-    const shouldShow = passwordInput.type === 'password';
-    passwordInput.type = shouldShow ? 'text' : 'password';
-    toggle.setAttribute('aria-pressed', String(shouldShow));
-    toggle.setAttribute(
-      'aria-label',
-      shouldShow ? t('auth.hide_password') : t('auth.show_password'),
-    );
-    toggle.textContent = shouldShow ? t('auth.hide') : t('auth.show');
+  const wirePasswordToggle = (toggleId: string, inputId: string) => {
+    qs<HTMLButtonElement>(toggleId)?.addEventListener('click', (event) => {
+      const toggle = event.currentTarget as HTMLButtonElement;
+      const passwordInput = qs<HTMLInputElement>(inputId);
+      if (!passwordInput) return;
+      const shouldShow = passwordInput.type === 'password';
+      passwordInput.type = shouldShow ? 'text' : 'password';
+      toggle.setAttribute('aria-pressed', String(shouldShow));
+      toggle.setAttribute(
+        'aria-label',
+        shouldShow ? t('auth.hide_password') : t('auth.show_password'),
+      );
+      toggle.textContent = shouldShow ? t('auth.hide') : t('auth.show');
+    });
+  };
+  wirePasswordToggle('#toggle-login-password', '#login-password');
+  wirePasswordToggle('#toggle-new-password', '#new-password');
+
+  qs<HTMLFormElement>('#forgot-password-form')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (forgotSubmitting || !isEmailAuthConfigured) return;
+    const email = qs<HTMLInputElement>('#forgot-email')?.value || '';
+    forgotSubmitting = true;
+    const sendBtn = qs<HTMLButtonElement>('#send-reset-btn');
+    if (sendBtn) {
+      sendBtn.disabled = true;
+      sendBtn.textContent = t('auth.send_reset_pending');
+    }
+    setFormMessage('forgot-message');
+    try {
+      const result = await requestPasswordReset(email);
+      setFormMessage('forgot-message', result.message, result.ok ? 'success' : 'error');
+      if (!result.ok && result.message.toLowerCase().includes('email')) {
+        qs<HTMLInputElement>('#forgot-email')?.setAttribute('aria-invalid', 'true');
+      }
+    } catch {
+      setFormMessage('forgot-message', 'Something went wrong. Please try again.', 'error');
+    } finally {
+      forgotSubmitting = false;
+      if (sendBtn) {
+        sendBtn.disabled = false;
+        sendBtn.textContent = t('auth.send_reset');
+      }
+    }
+  });
+
+  qs<HTMLFormElement>('#reset-password-form')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (resetSubmitting || !isEmailAuthConfigured) return;
+    const password = qs<HTMLInputElement>('#new-password')?.value || '';
+    resetSubmitting = true;
+    const saveBtn = qs<HTMLButtonElement>('#save-new-password-btn');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = t('auth.save_new_password_pending');
+    }
+    setFormMessage('reset-message');
+    try {
+      const result = await updatePasswordAfterReset(password);
+      setFormMessage('reset-message', result.message, result.ok ? 'success' : 'error');
+      if (result.ok) {
+        passwordRecoveryPending = false;
+        const newPw = qs<HTMLInputElement>('#new-password');
+        if (newPw) newPw.value = '';
+        setLoginOverlayOpen(false);
+        renderAccountSettings();
+        markWelcomeSeen();
+        try {
+          const user = currentUser();
+          if (user) bindLocalDataToUser(user.id);
+          const syncResult = await syncOnLogin();
+          if (syncResult.kind === 'conflict') await syncOnLogin(askSyncChoice());
+          startAutoSync();
+          refreshAfterCloudSync();
+        } catch {
+          // offline ok
+        }
+        showCelebrate('Password updated', 'You are signed in. Progress will sync.', '🔐');
+        if (!hasChosenLanguage()) openLanguagePicker();
+        else maybeOpenPostLoginSetup();
+      } else if (result.message.toLowerCase().includes('password')) {
+        qs<HTMLInputElement>('#new-password')?.setAttribute('aria-invalid', 'true');
+      }
+    } catch {
+      setFormMessage('reset-message', 'Something went wrong. Please try again.', 'error');
+    } finally {
+      resetSubmitting = false;
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = t('auth.save_new_password');
+      }
+    }
   });
 
   qs<HTMLElement>('#skip-login-btn')?.addEventListener('click', () => {
@@ -2732,6 +2888,19 @@ function setupEventListeners() {
         // Anyone who has entered the app is past the explainer stage —
         // e.g. a later logout must return to login, not to the welcome screen.
         markWelcomeSeen();
+        // Pull/push cloud progress immediately so phone and PC match.
+        try {
+          const user = currentUser();
+          if (user) bindLocalDataToUser(user.id);
+          const syncResult = await syncOnLogin();
+          if (syncResult.kind === 'conflict') {
+            await syncOnLogin(askSyncChoice());
+          }
+          startAutoSync();
+          refreshAfterCloudSync();
+        } catch {
+          // Offline is fine — local progress still works.
+        }
         // First-run only: let the user pick their in-app language once.
         if (!hasChosenLanguage()) openLanguagePicker();
         else maybeOpenPostLoginSetup();
@@ -4084,38 +4253,83 @@ function init() {
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) maybeOpenDailyClassCheck();
   });
+  // Password recovery links from email land here with type=recovery in the URL hash.
+  if (supabase) {
+    supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        passwordRecoveryPending = true;
+        markWelcomeSeen();
+        setWelcomeOverlayOpen(false);
+        setLanguageOverlayOpen(false);
+        showLoginView('reset');
+        setLoginOverlayOpen(true);
+        qs<HTMLInputElement>('#new-password')?.focus();
+      }
+    });
+  }
+
   // Restore a returning account without blocking offline startup.
   void restoreAuthSession().then(async (user) => {
+    if (passwordRecoveryPending) {
+      // User must finish setting a new password before normal app entry.
+      showLoginView('reset');
+      setLoginOverlayOpen(true);
+      return;
+    }
     if (!user) {
+      bindLocalDataToUser(null);
       renderSession();
       return;
     }
     try {
+      bindLocalDataToUser(user.id);
       const result = await syncOnLogin();
       if (result.kind === 'conflict') {
         await syncOnLogin(askSyncChoice());
       }
+      startAutoSync();
       renderAccountSettings();
-      updateDashboard();
+      refreshAfterCloudSync();
+      renderSession();
     } catch {
       renderAccountSettings();
+      renderSession();
     }
   });
   onAuthChange((user) => {
     renderAccountSettings();
-    if (!user) return;
+    if (passwordRecoveryPending) {
+      showLoginView('reset');
+      setLoginOverlayOpen(true);
+      return;
+    }
+    if (!user) {
+      bindLocalDataToUser(null);
+      return;
+    }
+    bindLocalDataToUser(user.id);
     renderSession();
     void syncOnLogin()
       .then(async (result) => {
         if (result.kind === 'conflict') {
           await syncOnLogin(askSyncChoice());
         }
-        updateDashboard();
-        renderAccountSettings();
+        startAutoSync();
+        refreshAfterCloudSync();
       })
       .catch(() => {
         showCelebrate('Sync unavailable', 'Your local progress is still safe.', '⚠️', true);
       });
+  });
+
+  // When the user returns to the tab, pull any edits made on the other device.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || !currentUser()) return;
+    void pullIfCloudNewer()
+      .then((result) => {
+        if (result.kind === 'restored' || result.kind === 'merged') refreshAfterCloudSync();
+      })
+      .catch(() => undefined);
   });
 
   // Header scroll effect

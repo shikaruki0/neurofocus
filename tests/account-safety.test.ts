@@ -69,12 +69,16 @@ describe('Account start and data safety', () => {
   it('rejects short passwords with a friendly message', () => {
     expect(validatePassword('12345')).toEqual({
       valid: false,
-      error: 'Password must be at least 6 characters.',
+      error: 'Password must be at least 8 characters.',
     });
   });
 
-  it('accepts valid passwords', () => {
-    expect(validatePassword('mypassword')).toEqual({ valid: true });
+  it('accepts valid passwords with letters and numbers', () => {
+    expect(validatePassword('mypassword1')).toEqual({ valid: true });
+  });
+
+  it('rejects passwords without a number', () => {
+    expect(validatePassword('mypassword').valid).toBe(false);
   });
 
   it('rejects empty passwords', () => {
@@ -93,6 +97,12 @@ describe('Account start and data safety', () => {
     expect(result.message).toMatch(/valid email/i);
   });
 
+  it('rejects placeholder junk emails like test@gmail.com', async () => {
+    const result = await signUpWithEmailPassword('test@gmail.com', 'password123');
+    expect(result.ok).toBe(false);
+    expect(result.message).toMatch(/real email/i);
+  });
+
   it('rejects empty password on sign-in even without Supabase', async () => {
     const result = await signInWithEmailPassword('person@example.com', '');
     expect(result.ok).toBe(false);
@@ -102,7 +112,7 @@ describe('Account start and data safety', () => {
   it('rejects short password on sign-up even without Supabase', async () => {
     const result = await signUpWithEmailPassword('person@example.com', '12');
     expect(result.ok).toBe(false);
-    expect(result.message).toMatch(/at least 6/i);
+    expect(result.message).toMatch(/at least 8/i);
   });
 
   // ─── Auth: error mapping ──────────────────────────────────────────

@@ -1,22 +1,32 @@
 /* ===================================================================
-   DESKTOP WORKSPACE
-   The shell adapts its navigation density to the available PC width.
+   DESKTOP WORKSPACE — Responsive shell for tablet & desktop
+   Mobile (<768px) is defined in base.css and untouched here.
    Home-specific composition lives in home-desktop.css.
    =================================================================== */
 
-/* Laptop / compact desktop: keep the rail useful without stealing the
-   horizontal space the dashboard needs. */
-@media (min-width: 760px) and (max-width: 1199px) {
+/* Prevent horizontal overflow on all viewports */
+html, body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+.container, .tab-content, .card, .p-card {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* ---------- Tablet 768–1023px ---------- */
+@media (min-width: 768px) and (max-width: 1023px) {
   body {
     padding-left: 92px;
     padding-bottom: 30px;
   }
-
   .header {
     min-height: 72px;
     padding: var(--space-3) 28px;
+    width: 100%;
+    box-sizing: border-box;
   }
-
   .bottom-nav {
     top: 0;
     right: auto;
@@ -33,7 +43,6 @@
     border-right: 1px solid var(--border);
     border-radius: 0;
   }
-
   .nav-item {
     width: 72px;
     max-width: none;
@@ -46,44 +55,54 @@
     border-radius: 14px;
     text-align: center;
   }
-
   .nav-item .icon {
     flex: 0 0 24px;
     height: 24px;
   }
-
   .nav-item.active {
     background: linear-gradient(135deg, var(--accent-start-fade), var(--accent-end-fade));
   }
-
-  .nav-item.active::after {
-    display: none;
-  }
-
+  .nav-item.active::after { display: none; }
   .container {
-    max-width: 1320px;
-    padding: clamp(28px, 4vw, 52px) clamp(28px, 5vw, 72px) 50px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    padding: 28px 24px 50px;
+  }
+  /* Tablet card grids: 2 columns where sensible */
+  .tab-home-premium {
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    overflow: visible;
+  }
+  .subject-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-/* Larger desktop: labels become a comfortable navigation rail. */
-@media (min-width: 1200px) {
+/* ---------- Desktop >=1024px ---------- */
+@media (min-width: 1024px) {
   body {
-    padding-left: 224px;
+    padding-left: 240px;
     padding-bottom: var(--space-8);
   }
-
   .header {
     min-height: 72px;
-    padding: var(--space-3) clamp(28px, 4vw, 64px);
+    padding: var(--space-3) clamp(24px, 2.5vw, 48px);
+    width: 100%;
+    box-sizing: border-box;
   }
-
   .bottom-nav {
     top: 0;
     right: auto;
     bottom: 0;
     left: 0;
-    width: 224px;
+    width: 240px;
     height: 100vh;
     padding: 18px 14px;
     flex-direction: column;
@@ -94,7 +113,6 @@
     border-right: 1px solid var(--border);
     border-radius: 0;
   }
-
   .nav-item {
     width: 100%;
     max-width: none;
@@ -108,59 +126,64 @@
     text-align: left;
     font-size: var(--font-sm);
   }
-
   .nav-item .icon {
     flex: 0 0 28px;
     height: 28px;
     font-size: 1.25rem;
   }
-
-  .nav-item.active::after {
-    display: none;
-  }
+  .nav-item.active::after { display: none; }
 
   .container {
-    max-width: 1440px;
-    padding: clamp(28px, 4vw, 52px) clamp(28px, 5vw, 72px) 64px;
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    padding: 40px clamp(24px, 2.5vw, 48px) 64px;
   }
-}
 
-@media (min-width: 1024px) {
+  /* Prevent cards from squeezing / overlapping */
+  .card, .p-card, .p-stat, .subject-card, .stat-card, .list-item, .quest-item {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
   /* Wide forms keep labels and controls easy to scan. */
   #tab-backlog,
   #tab-detox,
   #tab-plan {
     max-width: 1120px;
     margin: 0 auto;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
-
   #tab-plan {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 24px;
     align-items: start;
   }
-
   #tab-plan > .section-label,
   #tab-plan > [data-i18n='plan.title'],
   #tab-plan > [data-i18n='plan.subtitle'],
   #tab-plan > .card:last-child {
     grid-column: 1 / -1;
   }
+  #tab-plan > .card { margin-bottom: 0; }
 
-  #tab-plan > .card {
-    margin-bottom: 0;
-  }
-
-  /* Focus is the primary desktop workspace: timer left, planning right. */
+  /* Focus: timer left, planning right */
   #tab-focus {
     display: grid;
-    grid-template-columns: minmax(440px, 1.25fr) minmax(330px, 0.75fr);
+    grid-template-columns: minmax(380px, 1.25fr) minmax(320px, 0.75fr);
     gap: 24px;
     max-width: 1180px;
-    align-items: start;
+    margin: 0 auto;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
-
   #tab-focus > .section-label,
   #tab-focus > [data-i18n='focus.title'],
   #tab-focus > [data-i18n='focus.subtitle'],
@@ -168,44 +191,47 @@
   #tab-focus > #focus-history-card {
     grid-column: 1 / -1;
   }
-
   #tab-focus > .focus-session-card,
   #tab-focus > .focus-session-card + .card {
     grid-column: 1;
   }
-
   #tab-focus > .mission-planner-card,
   #tab-focus > .mission-setup-card,
   #tab-focus > .mission-confirmed-card {
     grid-column: 2;
     margin-bottom: 0;
   }
-
-  #tab-focus > .focus-session-card {
-    grid-row: span 2;
-  }
-
-  #tab-focus > #focus-history-card {
-    margin-top: 8px;
-  }
-
+  #tab-focus > .focus-session-card { grid-row: span 2; }
+  #tab-focus > #focus-history-card { margin-top: 8px; }
   .focus-session-card .timer-ring-wrap {
     width: min(290px, 100%);
     height: auto;
     aspect-ratio: 1;
   }
+
+  .tab-home-premium {
+    max-width: 100%;
+    width: 100%;
+    margin: 0 auto;
+    overflow: visible;
+  }
+  /* Subject / stats responsive columns */
+  .subject-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
+/* Very wide screens: contain stretch */
 @media (min-width: 1440px) {
-  .container {
-    max-width: 1480px;
-  }
+  .container { max-width: 1360px; }
+}
+@media (min-width: 1920px) {
+  .container { max-width: 1400px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-  }
+  *, *::before, *::after { scroll-behavior: auto !important; }
 }

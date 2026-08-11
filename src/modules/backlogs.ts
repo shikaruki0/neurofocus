@@ -232,3 +232,28 @@ export function getRemainingCount(): number {
 export function getPendingChapterCount(): number {
   return data.backlogs.filter((b) => remaining(b as Backlog) > 0).length;
 }
+
+/**
+ * Resets a specific backlog's done count to 0.
+ * Useful for fixing accidental clicks or data corruption.
+ * @param id - Backlog ID
+ */
+export function resetBacklogProgress(id: number): void {
+  const backlog = data.backlogs.find((b) => b.id === id);
+  if (!backlog) return;
+  backlog.done = 0;
+  backlog.updatedAt = Date.now();
+  persist('backlogs');
+}
+
+/**
+ * Resets ALL backlog progress (done count) to 0.
+ * Use with caution - this affects all lectures.
+ */
+export function resetAllBacklogProgress(): void {
+  data.backlogs.forEach((b) => {
+    b.done = 0;
+    b.updatedAt = Date.now();
+  });
+  persist('backlogs');
+}

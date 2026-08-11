@@ -81,6 +81,23 @@ function isSameChapterBacklog(a: Backlog, input: BacklogInput): boolean {
 }
 
 /**
+ * Finds an existing backlog row for an exact subject/book/chapter.
+ * Used to link missions to existing rows instead of creating duplicates.
+ */
+export function findBacklogForChapter(input: {
+  subject: string;
+  chapterId: string;
+  bookId?: string;
+}): Backlog | undefined {
+  return data.backlogs.find(
+    (b) =>
+      b.chapterId === input.chapterId &&
+      b.subject === input.subject &&
+      (b.bookId || '') === (input.bookId || ''),
+  ) as Backlog | undefined;
+}
+
+/**
  * Adds a new backlog entry. For NCERT chapter entries, repeated additions to the
  * same subject/book/chapter update the existing remaining count instead of
  * creating duplicate rows.

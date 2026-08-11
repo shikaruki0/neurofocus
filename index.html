@@ -1148,12 +1148,18 @@
             <label class="field-label" for="mission-subject">Subject</label>
             <select class="input" id="mission-subject"></select>
 
+            <div id="mission-chapter-field">
+              <label class="field-label" for="mission-chapter">Chapter (links to Backlog)</label>
+              <select class="input" id="mission-chapter" aria-describedby="mission-link-hint"></select>
+            </div>
+
             <label class="field-label" for="mission-total">Total lecture duration (minutes)</label>
             <input type="number" class="input" id="mission-total" min="1" max="720" step="1" inputmode="numeric" placeholder="e.g. 60" />
 
             <label class="field-label" for="mission-block">Focus block duration (minutes)</label>
             <input type="number" class="input" id="mission-block" min="1" max="180" step="1" inputmode="numeric" placeholder="e.g. 25" />
           </div>
+          <p class="auth-hint" id="mission-link-hint"></p>
           <p class="auth-message" id="mission-setup-message" role="status" aria-live="polite"></p>
           <div class="mission-blocks-preview" id="mission-blocks-preview"></div>
           <button class="btn btn-block" id="mission-confirm-btn" type="button">Confirm mission</button>

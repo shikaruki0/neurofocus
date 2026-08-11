@@ -60,12 +60,11 @@ import {
 import {
   addBacklog,
   incrementBacklog,
+  decrementBacklog,
   deleteBacklog,
   getBacklogs,
   getBacklogsGroupedBySubject,
   getPendingChapterCount,
-  resetBacklogProgress,
-  resetAllBacklogProgress,
 } from './modules/backlogs.ts';
 import type { BacklogInput, Backlog } from './modules/backlogs.ts';
 import { recommendMission, calculateBlocks, buildMissionSetup } from './modules/missionPlanner.ts';
@@ -925,8 +924,9 @@ function renderBacklogs() {
                       </div>
                       <div class="backlog-actions">
                         <span class="tag ${left > 5 ? 'tag-red' : 'tag-green'}">${escapeHTML(leftText)}</span>
+                        <button class="btn btn-danger btn-sm" data-action="dec-backlog" data-id="${b.id}" title="Undo 1 lecture">−1</button>
                         <button class="btn btn-success btn-sm" data-action="inc-backlog" data-id="${b.id}">+1</button>
-                        <button class="btn btn-danger btn-sm" data-action="del-backlog" data-id="${b.id}">×</button>
+                        <button class="btn btn-danger btn-sm" data-action="del-backlog" data-id="${b.id}" title="Delete this backlog">×</button>
                       </div>
                     </div>`;
                 })
@@ -977,6 +977,24 @@ function renderBacklogs() {
       }, 1500);
     });
   });
+
+  // Handler for "-1" button (undo accidental mark)
+  qsa<HTMLElement>('[data-action="dec-backlog"]', el).forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = parseInt((btn as HTMLElement).dataset.id || '0', 10);
+      const backlogs = getBacklogs() as Backlog[];
+      const backlog = backlogs.find(b => b.id === id);
+      const lectureTitle = backlog?.chapterName || backlog?.name || 'lecture';
+
+      decrementBacklog(id);
+      renderBacklogs();
+      updateDashboard();
+
+      // Show confirmation toast
+      showCelebrate('Lecture Unmarked', `↩️ Removed 1 from "${lectureTitle}"`, '↩️', true);
+    });
+  });
+
   qsa<HTMLElement>('[data-action="del-backlog"]', el).forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = parseInt((btn as HTMLElement).dataset.id || '0', 10);
@@ -3203,15 +3221,6 @@ function setupEventListeners() {
     dailyChecksBuilt = false;
     renderDailyChecks();
     updateDashboard();
-  });
-
-  // Reset backlog lecture progress (fixes accidental double-clicks)
-  qs<HTMLElement>('#reset-backlog-btn')?.addEventListener('click', () => {
-    if (!confirm('Reset all lecture progress? This will mark all lectures as not completed. Use this if lectures were accidentally marked as done.')) return;
-    resetAllBacklogProgress();
-    renderBacklogs();
-    updateDashboard();
-    showCelebrate('Progress Reset', 'All lecture progress has been reset to 0.', '🔄', true);
   });
 
   qs<HTMLElement>('#reset-all-btn')?.addEventListener('click', () => {

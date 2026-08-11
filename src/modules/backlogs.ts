@@ -152,6 +152,21 @@ export function incrementBacklog(id: number): void {
 }
 
 /**
+ * Decrements a backlog's completed count by 1.
+ * Use this to undo accidental marks.
+ * @param id - Backlog ID
+ */
+export function decrementBacklog(id: number): void {
+  const backlog = data.backlogs.find((b) => b.id === id);
+  if (!backlog) return;
+  if ((backlog.done || 0) <= 0) return;
+
+  backlog.done = (backlog.done || 0) - 1;
+  backlog.updatedAt = Date.now();
+  persist('backlogs');
+}
+
+/**
  * Deletes a backlog entry.
  * @param id - Backlog ID
  */

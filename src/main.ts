@@ -62,6 +62,7 @@ import {
   incrementBacklog,
   decrementBacklog,
   deleteBacklog,
+  findBacklogForChapter,
   getBacklogs,
   getBacklogsGroupedBySubject,
   getPendingChapterCount,
@@ -205,6 +206,8 @@ let dailyAttendanceDraft = { totalHeld: 0, attended: 0, missed: 0 };
 // Mission planner state (planning layer only — does not touch timer/XP/backlog)
 let missionSelectedSubject = '';
 let missionDraftBacklogId: number | null = null;
+// True once the user hand-edits the mission title (stops chapter auto-fill).
+let missionTitleTouched = false;
 // Transient banner shown after a block completes, until the user picks an option.
 let lastBlockCompletionMinutes: number | null = null;
 let focusHistoryDate = localISODate();
@@ -1141,6 +1144,81 @@ function populateMissionSubjectSelect(selectEl: HTMLSelectElement, selected: str
   }
 }
 
+/** Populates the mission chapter picker for the current subject, keeping a selection. */
+function populateMissionChapterSelect(
+  subjectSelect: HTMLSelectElement,
+  chapterSelect: HTMLSelectElement,
+  selectedChapterId: string,
+): void {
+  updateChapterSelect(subjectSelect, chapterSelect);
+  if (!selectedChapterId) return;
+  const options = Array.from(chapterSelect.options);
+  if (options.some((option) => option.value === selectedChapterId)) {
+    chapterSelect.value = selectedChapterId;
+  }
+}
+
+/** Reflects the current chapter → backlog link state in the manual mission form. */
+function updateMissionLinkHint(): void {
+  const hint = qs<HTMLElement>('#mission-link-hint');
+  if (!hint) return;
+  const chapterSelect = qs<HTMLSelectElement>('#mission-chapter');
+  const chapterField = qs<HTMLElement>('#mission-chapter-field');
+  if (!isNcertClass10Enabled() || !chapterSelect || chapterField?.classList.contains('hidden')) {
+    hint.textContent = '';
+    return;
+  }
+  const profile = getStudentProfile();
+  const chapter = findNcertChapter(chapterSelect.value, profile);
+  hint.textContent = chapter
+    ? `🔗 Will be linked to backlog: ${chapter.subjectLabel} — ${chapter.title}`
+    : '🔗 Will be linked to your Backlog tab (chapter added automatically).';
+}
+
+/**
+ * Links a manual mission to a backlog row for the chosen NCERT chapter.
+ * Reuses an existing pending row; otherwise creates a fresh 1-lecture row so
+ * completing the mission automatically crushes it in the Backlog tab.
+ * Returns the linked backlog id, or null when nothing can be linked.
+ */
+function linkManualMissionToChapter(subject: string, chapterId: string): number | null {
+  if (!chapterId) return null;
+  const profile = getStudentProfile();
+  const option = getSubjectOptionsForProfile(profile).find((item) => item.key === subject);
+  const chapter =
+    findNcertChapter(chapterId, profile) || makeUnassignedChapter(subject, option?.label || subject);
+
+  const existing = findBacklogForChapter({
+    subject: chapter.subjectKey,
+    chapterId: chapter.id,
+    bookId: chapter.bookId,
+  });
+  if (existing && Math.max(0, (existing.total || 0) - (existing.done || 0)) > 0) {
+    return existing.id;
+  }
+
+  const result = addBacklog({
+    name: `${chapter.subjectLabel} — ${chapter.title}`,
+    count: 1,
+    subject: chapter.subjectKey,
+    subjectLabel: chapter.subjectLabel,
+    chapterId: chapter.id,
+    chapterName: chapter.title,
+    bookId: chapter.bookId,
+    bookName: chapter.bookName,
+    unitName: chapter.unitName,
+    source: 'ncert-class10',
+    createdFrom: 'manual',
+  });
+  if (!result.success) return null;
+  const created = findBacklogForChapter({
+    subject: chapter.subjectKey,
+    chapterId: chapter.id,
+    bookId: chapter.bookId,
+  });
+  return created ? created.id : null;
+}
+
 function renderMissionPlanner(): void {
   const body = qs<HTMLElement>('#mission-planner-body');
   if (!body) return;
@@ -1292,18 +1370,48 @@ function openMissionSetup(backlog: Backlog | null): void {
 
   const titleInput = qs<HTMLInputElement>('#mission-title');
   const subjectSelect = qs<HTMLSelectElement>('#mission-subject');
+  const chapterSelect = qs<HTMLSelectElement>('#mission-chapter');
+  const chapterField = qs<HTMLElement>('#mission-chapter-field');
   const totalInput = qs<HTMLInputElement>('#mission-total');
   const blockInput = qs<HTMLInputElement>('#mission-block');
   const message = qs<HTMLElement>('#mission-setup-message');
+  const hint = qs<HTMLElement>('#mission-link-hint');
   const preview = qs<HTMLElement>('#mission-blocks-preview');
 
   if (titleInput) titleInput.value = backlog ? backlog.chapterName || backlog.name : '';
+  missionTitleTouched = false;
   if (subjectSelect) {
     populateMissionSubjectSelect(
       subjectSelect,
       backlog?.subject || missionSelectedSubject || 'Physics',
     );
+    // When the mission was started from a backlog recommendation, its subject and
+    // chapter are already fixed by that row — lock them so the link stays honest.
+    subjectSelect.disabled = Boolean(backlog);
   }
+
+  // Chapter picker: shown for manual missions in NCERT mode; locked to the linked
+  // chapter when the mission was started from a backlog recommendation.
+  const ncertEnabled = isNcertClass10Enabled();
+  const showChapterField = ncertEnabled && (!backlog || backlog.chapterId);
+  if (chapterField) chapterField.classList.toggle('hidden', !showChapterField);
+  if (chapterSelect && subjectSelect) {
+    if (showChapterField) {
+      populateMissionChapterSelect(subjectSelect, chapterSelect, backlog?.chapterId || '');
+      chapterSelect.disabled = Boolean(backlog);
+    } else {
+      chapterSelect.disabled = true;
+    }
+  }
+
+  if (hint) {
+    hint.textContent = backlog
+      ? '🔗 Linked to your backlog — completing the mission crushes 1 lecture.'
+      : ncertEnabled
+        ? 'Choose a chapter below to auto-link this mission with your Backlog tab.'
+        : '';
+  }
+
   if (totalInput) totalInput.value = '';
   if (blockInput) blockInput.value = '25';
   if (message) message.textContent = '';
@@ -1326,6 +1434,8 @@ function closeMissionSetup(): void {
   if (card) card.classList.add('hidden');
   const message = qs<HTMLElement>('#mission-setup-message');
   if (message) message.textContent = '';
+  const hint = qs<HTMLElement>('#mission-link-hint');
+  if (hint) hint.textContent = '';
 }
 
 function confirmMission(): void {
@@ -1349,10 +1459,20 @@ function confirmMission(): void {
   }
 
   const d = validation.data;
+  // Manual missions: a chosen chapter auto-links (and auto-creates) a backlog row,
+  // so the mission and the Backlog tab stay connected automatically.
+  let resolvedBacklogId = missionDraftBacklogId;
+  if (!resolvedBacklogId && isNcertClass10Enabled()) {
+    const chapterSelect = qs<HTMLSelectElement>('#mission-chapter');
+    const subject = subjectSelect?.value || d.subject;
+    if (chapterSelect && chapterSelect.value && !chapterSelect.disabled) {
+      resolvedBacklogId = linkManualMissionToChapter(subject, chapterSelect.value);
+    }
+  }
   const mission = buildMissionSetup({
     title: d.title,
     subject: subjectSelect?.value || d.subject,
-    backlogId: missionDraftBacklogId,
+    backlogId: resolvedBacklogId,
     totalMinutes: d.totalMinutes,
     blockMinutes: d.blockMinutes,
   });
@@ -3362,6 +3482,32 @@ function setupEventListeners() {
   });
   qs<HTMLElement>('#mission-clear-btn')?.addEventListener('click', () => {
     clearActiveMission();
+  });
+
+  // Manual mission chapter picker — keeps the subject → chapter cascade in sync
+  // and auto-links the mission to a Backlog tab row.
+  qs<HTMLSelectElement>('#mission-subject')?.addEventListener('change', (event) => {
+    const subjectSelect = event.currentTarget as HTMLSelectElement;
+    const chapterSelect = qs<HTMLSelectElement>('#mission-chapter');
+    if (chapterSelect) {
+      chapterSelect.disabled = false;
+      populateMissionChapterSelect(subjectSelect, chapterSelect, '');
+    }
+    updateMissionLinkHint();
+  });
+
+  qs<HTMLSelectElement>('#mission-chapter')?.addEventListener('change', () => {
+    const chapterSelect = qs<HTMLSelectElement>('#mission-chapter');
+    const titleInput = qs<HTMLInputElement>('#mission-title');
+    if (chapterSelect && titleInput && !missionTitleTouched) {
+      const chapter = findNcertChapter(chapterSelect.value, getStudentProfile());
+      if (chapter) titleInput.value = chapter.title;
+    }
+    updateMissionLinkHint();
+  });
+
+  qs<HTMLInputElement>('#mission-title')?.addEventListener('input', () => {
+    missionTitleTouched = true;
   });
 
   // Focus timer modes

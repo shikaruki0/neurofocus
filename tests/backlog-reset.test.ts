@@ -41,7 +41,7 @@ describe('Backlog Reset Functions', () => {
     });
 
     it('updates the updatedAt timestamp', () => {
-      const originalTime = data.backlogs[0].updatedAt;
+      const originalTime = data.backlogs[0].updatedAt ?? 0;
       resetBacklogProgress(1);
       expect(data.backlogs[0].updatedAt).toBeGreaterThanOrEqual(originalTime);
     });
@@ -56,7 +56,7 @@ describe('Backlog Reset Functions', () => {
     });
 
     it('preserves the total count', () => {
-      const totals = data.backlogs.map(b => b.total);
+      const totals = data.backlogs.map(b => b.total ?? 0);
       resetAllBacklogProgress();
       expect(data.backlogs[0].total).toBe(totals[0]);
       expect(data.backlogs[1].total).toBe(totals[1]);
@@ -64,7 +64,7 @@ describe('Backlog Reset Functions', () => {
     });
 
     it('updates all updatedAt timestamps', () => {
-      const originalTimes = data.backlogs.map(b => b.updatedAt);
+      const originalTimes = data.backlogs.map(b => b.updatedAt ?? 0);
       resetAllBacklogProgress();
       data.backlogs.forEach((backlog, i) => {
         expect(backlog.updatedAt).toBeGreaterThanOrEqual(originalTimes[i]);

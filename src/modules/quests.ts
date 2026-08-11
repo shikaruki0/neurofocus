@@ -4,6 +4,7 @@
  */
 
 import { data, persist } from './data.ts';
+import { getTodayFocusMinutes } from './focusDaily.ts';
 import { todayStr } from '../utils/date.ts';
 import { addXP } from './xp.ts';
 
@@ -35,7 +36,8 @@ const QUEST_POOL: QuestDefinition[] = [
     label: 'Complete 1 focus session',
     target: 1,
     reward: 20,
-    check: () => data.focusMinutes >= 25,
+    // Must be backed by a real recorded session today — not a leftover counter.
+    check: () => getTodayFocusMinutes() >= 25,
   },
   {
     id: 'q_backlog',

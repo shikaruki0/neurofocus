@@ -237,7 +237,9 @@ describe('Daily quests', () => {
         { id: 'q_ritual', label: 'Complete morning ritual', reward: 30, completed: false },
       ],
     };
+    // A focus quest now requires a real recorded session, not just a counter.
     data.focusMinutes = 25;
+    data.sessions = [{ date: todayStr(), time: Date.now(), duration: 25 }];
     data.habits = [
       { id: 1, name: 'A', anchor: 'wake', streak: 1, today: true, days: [] },
       { id: 2, name: 'B', anchor: 'wake', streak: 1, today: true, days: [] },
@@ -260,6 +262,7 @@ describe('Daily quests', () => {
       quests: [{ id: 'q_focus', label: 'Focus', reward: 20, completed: false }],
     };
     data.focusMinutes = 25;
+    data.sessions = [{ date: todayStr(), time: Date.now(), duration: 25 }];
 
     expect(checkQuests()).toEqual([]);
   });
@@ -291,7 +294,10 @@ describe('Weekly reporting', () => {
   it('records, updates, fills, trims, and totals weekly stats', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-24T09:00:00'));
+    // Weekly focus hours derive from recorded sessions (the counter alone can go
+    // stale and used to bake phantom study time into the chart).
     data.focusMinutes = 90;
+    data.sessions = [{ date: todayStr(), time: Date.now(), duration: 90 }];
     data.backlogsToday = 3;
     data.habitsToday = 2;
     data.detoxLastDate = todayStr();
@@ -301,6 +307,7 @@ describe('Weekly reporting', () => {
     expect(data.weeklyStats[0]).toMatchObject({ focus: 1.5, backlogs: 3, habits: 2, streak: 1 });
 
     data.focusMinutes = 120;
+    data.sessions = [{ date: todayStr(), time: Date.now(), duration: 120 }];
     recordDailyStat();
     expect(data.weeklyStats).toHaveLength(1);
     expect(data.weeklyStats[0].focus).toBe(2);

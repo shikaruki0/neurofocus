@@ -201,8 +201,15 @@ export const data = {
 
 // --- Daily resets ---
 
-/** Resets per-day counters if the day has changed. Uses dynamic today for correctness. */
-function applyDailyResets(): void {
+/**
+ * Resets per-day counters if the day has changed. Uses dynamic today for correctness.
+ *
+ * Exported so the app can re-run it while it is already open (e.g. the user leaves
+ * the tab open past midnight, or comes back to the app the next morning). Running
+ * it only once at page load was one reason yesterday's numbers could still be shown
+ * as "today".
+ */
+export function applyDailyResets(): void {
   const today = getToday();
   if (data.focusDate !== today) {
     data.focusMinutes = 0;

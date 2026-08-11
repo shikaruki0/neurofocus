@@ -18,6 +18,7 @@
 import { currentUser, supabase } from './auth.ts';
 import { exportAll, get, importAll, set, remove } from './storage.ts';
 import { data } from './data.ts';
+import { reconcileDailyFocus } from './focusDaily.ts';
 import { restoreMission } from './mission.ts';
 
 export type SyncChoice = 'local' | 'cloud' | 'merge';
@@ -94,7 +95,7 @@ export function progressScore(value: Record<string, unknown> = appSnapshot()): n
   const xp = Number(value.xp) || 0;
   score += Math.max(0, xp);
   score += (Number(value.totalFocusMinutes) || 0) * 2;
-  score += (Number(value.focusMinutes) || 0);
+  score += Number(value.focusMinutes) || 0;
   score += (Number(value.detoxStreak) || 0) * 10;
   score += (Number(value.consecutiveStreak) || 0) * 10;
   const backlogs = Array.isArray(value.backlogs) ? value.backlogs : [];
@@ -173,6 +174,14 @@ function restoreApp(value: Record<string, unknown>): void {
     } catch {
       // ignore
     }
+    // A restored snapshot can carry another day's focus counters (e.g. the cloud
+    // copy was saved yesterday). Realign them with the restored session log so the
+    // app never claims focus time that has no session behind it.
+    try {
+      reconcileDailyFocus();
+    } catch {
+      // ignore
+    }
   } finally {
     applyingRemote = false;
     // Cancel any debounced pushes scheduled by the restore writes themselves.
@@ -233,6 +242,10 @@ function wipeProgressKeys(): void {
   data.sessions = [];
   data.badgesUnlocked = [];
   data.focusMinutes = 0;
+  // Clearing minutes without clearing the day stamp used to leave the reset guard
+  // thinking "today is already handled", so the empty state could look like study time.
+  data.focusDate = '';
+  data.flowState = { date: '', sessions: 0 };
   data.totalFocusMinutes = 0;
   data.detoxStreak = 0;
   data.consecutiveStreak = 0;
@@ -267,6 +280,8 @@ function wipeProgressKeys(): void {
     'sessions',
     'badgesUnlocked',
     'focusMinutes',
+    'focusDate',
+    'flowState',
     'totalFocusMinutes',
     'detoxStreak',
     'consecutiveStreak',
@@ -402,8 +417,9 @@ function mergeEntityArrays(cloudArr: unknown[], localArr: unknown[], key: string
     }
     // Prefer the row with the higher updatedAt / done / streak.
     const existingScore =
-      Number(existing.updatedAt || existing.done || existing.streak || existing.completedDuration || 0) ||
-      0;
+      Number(
+        existing.updatedAt || existing.done || existing.streak || existing.completedDuration || 0,
+      ) || 0;
     const nextScore =
       Number(row.updatedAt || row.done || row.streak || row.completedDuration || 0) || 0;
     if (nextScore >= existingScore) map.set(id, { ...existing, ...row });

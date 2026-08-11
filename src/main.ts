@@ -60,6 +60,7 @@ import {
 import {
   addBacklog,
   incrementBacklog,
+  decrementBacklog,
   deleteBacklog,
   getBacklogs,
   getBacklogsGroupedBySubject,
@@ -923,8 +924,9 @@ function renderBacklogs() {
                       </div>
                       <div class="backlog-actions">
                         <span class="tag ${left > 5 ? 'tag-red' : 'tag-green'}">${escapeHTML(leftText)}</span>
+                        <button class="btn btn-danger btn-sm" data-action="dec-backlog" data-id="${b.id}" title="Undo 1 lecture">−1</button>
                         <button class="btn btn-success btn-sm" data-action="inc-backlog" data-id="${b.id}">+1</button>
-                        <button class="btn btn-danger btn-sm" data-action="del-backlog" data-id="${b.id}">×</button>
+                        <button class="btn btn-danger btn-sm" data-action="del-backlog" data-id="${b.id}" title="Delete this backlog">×</button>
                       </div>
                     </div>`;
                 })
@@ -935,15 +937,64 @@ function renderBacklogs() {
       })
       .join('')}`;
 
-  // Add handlers
+  // Add handlers with click debounce to prevent accidental double-clicks
   qsa<HTMLElement>('[data-action="inc-backlog"]', el).forEach((btn) => {
+    let lastClickTime = 0;
+    const DEBOUNCE_MS = 1000; // Prevent rapid clicks within 1 second
+
     btn.addEventListener('click', () => {
+      const now = Date.now();
+      if (now - lastClickTime < DEBOUNCE_MS) {
+        // Silently ignore rapid clicks - this prevents accidental double-ticks
+        return;
+      }
+      lastClickTime = now;
+
+      // Disable button temporarily to give clear visual feedback
+      const btnEl = btn as HTMLButtonElement;
+      const originalText = btnEl.textContent;
+      btnEl.disabled = true;
+      btnEl.textContent = '✓';
+
       const id = parseInt((btn as HTMLElement).dataset.id || '0', 10);
+
+      // Get backlog info before increment for feedback
+      const backlogs = getBacklogs() as Backlog[];
+      const backlog = backlogs.find(b => b.id === id);
+      const lectureTitle = backlog?.chapterName || backlog?.name || 'lecture';
+
       incrementBacklog(id);
       renderBacklogs();
       updateDashboard();
+
+      // Show brief confirmation toast
+      showCelebrate('Lecture Completed', `✓ "${lectureTitle}" marked as done!`, '📚', true);
+
+      // Re-enable button after a short delay
+      setTimeout(() => {
+        btnEl.disabled = false;
+        btnEl.textContent = originalText;
+      }, 1500);
     });
   });
+
+  // Handler for "-1" button (undo accidental mark)
+  qsa<HTMLElement>('[data-action="dec-backlog"]', el).forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = parseInt((btn as HTMLElement).dataset.id || '0', 10);
+      const backlogs = getBacklogs() as Backlog[];
+      const backlog = backlogs.find(b => b.id === id);
+      const lectureTitle = backlog?.chapterName || backlog?.name || 'lecture';
+
+      decrementBacklog(id);
+      renderBacklogs();
+      updateDashboard();
+
+      // Show confirmation toast
+      showCelebrate('Lecture Unmarked', `↩️ Removed 1 from "${lectureTitle}"`, '↩️', true);
+    });
+  });
+
   qsa<HTMLElement>('[data-action="del-backlog"]', el).forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = parseInt((btn as HTMLElement).dataset.id || '0', 10);

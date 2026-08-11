@@ -152,6 +152,21 @@ export function incrementBacklog(id: number): void {
 }
 
 /**
+ * Decrements a backlog's completed count by 1.
+ * Use this to undo accidental marks.
+ * @param id - Backlog ID
+ */
+export function decrementBacklog(id: number): void {
+  const backlog = data.backlogs.find((b) => b.id === id);
+  if (!backlog) return;
+  if ((backlog.done || 0) <= 0) return;
+
+  backlog.done = (backlog.done || 0) - 1;
+  backlog.updatedAt = Date.now();
+  persist('backlogs');
+}
+
+/**
  * Deletes a backlog entry.
  * @param id - Backlog ID
  */
@@ -231,4 +246,29 @@ export function getRemainingCount(): number {
 /** Gets how many backlog rows still have remaining lectures. */
 export function getPendingChapterCount(): number {
   return data.backlogs.filter((b) => remaining(b as Backlog) > 0).length;
+}
+
+/**
+ * Resets a specific backlog's done count to 0.
+ * Useful for fixing accidental clicks or data corruption.
+ * @param id - Backlog ID
+ */
+export function resetBacklogProgress(id: number): void {
+  const backlog = data.backlogs.find((b) => b.id === id);
+  if (!backlog) return;
+  backlog.done = 0;
+  backlog.updatedAt = Date.now();
+  persist('backlogs');
+}
+
+/**
+ * Resets ALL backlog progress (done count) to 0.
+ * Use with caution - this affects all lectures.
+ */
+export function resetAllBacklogProgress(): void {
+  data.backlogs.forEach((b) => {
+    b.done = 0;
+    b.updatedAt = Date.now();
+  });
+  persist('backlogs');
 }

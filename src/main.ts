@@ -22,7 +22,7 @@ import './styles/desktop.css';
 import './styles/home-premium.css';
 import './styles/home-desktop.css';
 
-import { data, resetHabitsForNewDay } from './modules/data.ts';
+import { applyDailyResets, data, resetHabitsForNewDay } from './modules/data.ts';
 import { clearAll } from './modules/storage.ts';
 import { xpLevel, xpForLevel, addXP } from './modules/xp.ts';
 import { getCurrentRank, getNextRank, RANK_TIERS } from './modules/ranks.ts';
@@ -181,6 +181,11 @@ import {
   parseLocalISODate,
 } from './utils/date.ts';
 import { getDailyFocusHistory } from './modules/focusHistory.ts';
+import {
+  clearFocusSessionsForDate,
+  getTodayFocusHours,
+  reconcileDailyFocus,
+} from './modules/focusDaily.ts';
 import { validateProfileName, validateMission, validateMissionSetup } from './utils/validation.ts';
 
 // ===================================================================
@@ -355,8 +360,9 @@ function renderHomePremium() {
   const freezeNum = qs<HTMLElement>('#p-freeze-num');
   if (freezeNum) freezeNum.textContent = String(streakInfo.freezes);
 
-  // Stat tile: focus hours with unit (overrides raw updateDashboard value)
-  const focusHours = Math.floor(((data.focusMinutes || 0) / 60) * 10) / 10;
+  // Stat tile: focus hours with unit (overrides raw updateDashboard value).
+  // Derived from recorded sessions so Home and "Today's Focus" always agree.
+  const focusHours = getTodayFocusHours();
   const focusTile = qs<HTMLElement>('#d-focus');
   if (focusTile) focusTile.textContent = `${focusHours.toFixed(1)}h`;
 
@@ -2146,6 +2152,9 @@ function askSyncChoice(): 'local' | 'cloud' | 'merge' {
 /** After cloud data lands, redraw every surface that shows progress/backlog. */
 function refreshAfterCloudSync(): void {
   try {
+    // Cloud data may have been written on a different day/device — realign today's
+    // counters with the session log before anything is drawn.
+    reconcileDailyFocus();
     updateDashboard();
     renderHabits();
     renderBacklogs();
@@ -2167,6 +2176,67 @@ function refreshAfterCloudSync(): void {
 }
 
 // ===================================================================
+// DAILY ROLLOVER
+// ===================================================================
+
+/** The calendar day the UI currently believes it is showing. */
+let lastRenderedDay = todayStr();
+
+/**
+ * Keeps a long-running app honest about what day it is.
+ *
+ * The daily reset used to run only once, when the page first loaded. If the app
+ * stayed open past midnight (phones keep PWAs alive for days), yesterday's focus
+ * minutes, checks and quests were still displayed as "today". This re-runs the
+ * reset, re-derives today's focus from the recorded sessions, and redraws only
+ * when something actually changed.
+ */
+function syncDailyRollover(): void {
+  const today = todayStr();
+  const dayChanged = today !== lastRenderedDay;
+  lastRenderedDay = today;
+
+  try {
+    applyDailyResets();
+  } catch (e) {
+    console.debug('applyDailyResets', e);
+  }
+  try {
+    resetHabitsForNewDay();
+  } catch (e) {
+    console.debug('resetHabitsForNewDay', e);
+  }
+
+  const healed = reconcileDailyFocus();
+  if (!dayChanged && !healed) return;
+
+  if (dayChanged) {
+    try {
+      generateDailyQuests();
+    } catch (e) {
+      console.debug('generateDailyQuests', e);
+    }
+    dailyChecksBuilt = false;
+    try {
+      renderDailyChecks();
+    } catch (e) {
+      console.debug('renderDailyChecks', e);
+    }
+    // Follow the user into the new day instead of stranding them on yesterday.
+    focusHistoryDate = localISODate();
+  }
+
+  try {
+    updateDashboard();
+    renderQuests();
+    renderRitual();
+    renderHabits();
+  } catch (e) {
+    console.debug('syncDailyRollover render', e);
+  }
+}
+
+// ===================================================================
 // DASHBOARD UPDATE
 // ===================================================================
 
@@ -2182,7 +2252,9 @@ function updateDashboard() {
     db.textContent = String(
       data.backlogs.reduce((a, b) => a + ((b.total || 0) - (b.done || 0)), 0),
     );
-  if (df) df.textContent = (Math.floor(((data.focusMinutes || 0) / 60) * 10) / 10).toFixed(1);
+  // Today's focus comes from the recorded session log — the same source the
+  // "Today's Focus" panel uses — so the two can never show different stories.
+  if (df) df.textContent = getTodayFocusHours().toFixed(1);
   if (dh) dh.textContent = String(data.habits.filter((h) => h.today).length);
 
   // Priority section
@@ -2548,6 +2620,8 @@ function setupEventListeners() {
       showCelebrate('Progress Restored', `${validation.fieldCount} fields imported.`, '📦');
 
       // Refresh UI
+      reconcileDailyFocus();
+      renderFocusHistory();
       updateDashboard();
       renderAccountSettings();
       renderProfile();
@@ -3067,6 +3141,9 @@ function setupEventListeners() {
     if (!confirm("Reset today's progress?")) return;
     data.dailyChecks = {};
     data.detoxLastDate = null;
+    // Remove today's recorded sessions too. Zeroing only the counter used to leave
+    // the sessions behind, so Home showed 0h while "Today's Focus" still listed work.
+    clearFocusSessionsForDate(localISODate());
     data.focusMinutes = 0;
     data.focusDate = todayStr();
     data.flowState = { date: todayStr(), sessions: 0 };
@@ -3084,6 +3161,7 @@ function setupEventListeners() {
       localStorage.setItem('nf_focusMinutes', '0');
       localStorage.setItem('nf_focusDate', JSON.stringify(todayStr()));
       localStorage.setItem('nf_flowState', JSON.stringify(data.flowState));
+      localStorage.setItem('nf_sessions', JSON.stringify(data.sessions));
       localStorage.setItem('nf_morningRitual', JSON.stringify(data.morningRitual));
       localStorage.setItem('nf_dailyQuests', 'null');
       localStorage.setItem('nf_backlogsToday', '0');
@@ -4201,6 +4279,9 @@ function init() {
     }
   };
 
+  // Heal any drift left by a previous session (stale counters, cloud restores,
+  // imports) BEFORE the first paint, so the very first screen is truthful.
+  safe(() => reconcileDailyFocus(), 'reconcileFocus');
   safe(() => renderHabits(), 'habits');
   safe(() => renderBacklogs(), 'backlogs');
   safe(() => renderBattle(), 'battle');
@@ -4247,11 +4328,18 @@ function init() {
   renderSoundSettings();
   window.setInterval(() => {
     try {
+      syncDailyRollover();
+    } catch {}
+    try {
       maybeOpenDailyClassCheck();
     } catch {}
   }, 60_000);
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) maybeOpenDailyClassCheck();
+    if (document.hidden) return;
+    try {
+      syncDailyRollover();
+    } catch {}
+    maybeOpenDailyClassCheck();
   });
   // Password recovery links from email land here with type=recovery in the URL hash.
   if (supabase) {

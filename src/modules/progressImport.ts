@@ -12,6 +12,7 @@
 
 import { createLocalBackup, localData } from './cloudSync.ts';
 import { data, persist } from './data.ts';
+import { reconcileDailyFocus } from './focusDaily.ts';
 import { set } from './storage.ts';
 
 /** Conservative file size limit: 2 MB */
@@ -253,6 +254,14 @@ export function applyImport(sanitizedData: Record<string, unknown>): {
       if (key in data) {
         (data as Record<string, unknown>)[key] = value;
       }
+    }
+
+    // An imported file can contain focus minutes with no matching sessions (or a
+    // stale date stamp). Realign today's counters with the imported session log.
+    try {
+      reconcileDailyFocus();
+    } catch {
+      // Import still succeeded; the next app refresh will reconcile again.
     }
 
     return { ok: true };

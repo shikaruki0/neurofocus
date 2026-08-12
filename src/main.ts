@@ -364,11 +364,10 @@ function renderHomePremium() {
   const freezeNum = qs<HTMLElement>('#p-freeze-num');
   if (freezeNum) freezeNum.textContent = String(streakInfo.freezes);
 
-  // Stat tile: focus hours with unit (overrides raw updateDashboard value).
-  // Derived from recorded sessions so Home and "Today's Focus" always agree.
+  // Note: Focus stat (#d-focus) is set in updateDashboard() with just the number.
+  // The "h" suffix is added via CSS content property or we add it here for clarity.
+  // This keeps Home and "Today's Focus" panel showing the same value.
   const focusHours = getTodayFocusHours();
-  const focusTile = qs<HTMLElement>('#d-focus');
-  if (focusTile) focusTile.textContent = `${focusHours.toFixed(1)}h`;
 
   // Weekly average pill + big focus-hours number (overrides renderWeekly's score)
   const avgEl = qs<HTMLElement>('#p-week-avg');
@@ -2419,13 +2418,22 @@ function updateDashboard() {
   const dh = qs<HTMLElement>('#d-habits');
 
   if (ds) ds.textContent = String(data.detoxStreak || 0);
-  if (db)
-    db.textContent = String(
-      data.backlogs.reduce((a, b) => a + ((b.total || 0) - (b.done || 0)), 0),
-    );
+  
+  // Calculate remaining backlogs: sum of (total - done) for each backlog
+  // Guard against data corruption where done > total
+  if (db) {
+    const remaining = data.backlogs.reduce((sum, b) => {
+      const total = b.total || 0;
+      const done = Math.min(b.done || 0, total); // Prevent negative remaining
+      return sum + (total - done);
+    }, 0);
+    db.textContent = String(remaining);
+  }
+  
   // Today's focus comes from the recorded session log — the same source the
   // "Today's Focus" panel uses — so the two can never show different stories.
-  if (df) df.textContent = getTodayFocusHours().toFixed(1);
+  if (df) df.textContent = `${getTodayFocusHours().toFixed(1)}h`;
+  
   if (dh) dh.textContent = String(data.habits.filter((h) => h.today).length);
 
   // Priority section

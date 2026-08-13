@@ -45,7 +45,11 @@ const QUEST_POOL: QuestDefinition[] = [
     label: 'Clear 2 backlog lectures',
     target: 2,
     reward: 25,
-    check: () => totalBacklogsDone() >= 2,
+    // Counts lectures cleared TODAY (backlogsToday), not the lifetime total.
+    // Summing `done` over all backlogs made this a permanent free 25 XP once the
+    // user had ever cleared 2 lectures — it even lit up right after a single
+    // 25-min focus block of a longer mission.
+    check: () => (data.backlogsToday || 0) >= 2,
   },
   {
     id: 'q_streak',
@@ -72,10 +76,6 @@ const QUEST_POOL: QuestDefinition[] = [
     check: () => data.morningRitual.completed && data.morningRitual.date === todayStr(),
   },
 ];
-
-function totalBacklogsDone(): number {
-  return data.backlogs.reduce((sum, b) => sum + (b.done || 0), 0);
-}
 
 /**
  * Generates 3 random daily quests for today.

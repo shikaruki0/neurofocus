@@ -180,6 +180,12 @@ export function decrementBacklog(id: number): void {
 
   backlog.done = (backlog.done || 0) - 1;
   backlog.updatedAt = Date.now();
+  // Keep today's counter honest so the daily quest can't be gamed by
+  // incrementing then undoing (the daily counter only moves forward otherwise).
+  if ((data.backlogsToday || 0) > 0) {
+    data.backlogsToday -= 1;
+    persist('backlogsToday');
+  }
   persist('backlogs');
 }
 

@@ -168,7 +168,7 @@ describe('Manual mission → chapter → backlog auto-link', () => {
     setMissionDurations('60', '25');
     confirmMission();
 
-    const { getBacklogs, getActiveMission } = await import('../src/modules/backlogs.ts');
+    const { getBacklogs } = await import('../src/modules/backlogs.ts');
     const missionModule = await import('../src/modules/mission.ts');
     const backlogs = getBacklogs();
     expect(backlogs.length).toBe(1);

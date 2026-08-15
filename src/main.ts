@@ -15,6 +15,7 @@
 import './styles/variables.css';
 import './styles/base.css';
 import './styles/components.css';
+import './styles/premium-select.css';
 import './styles/animations.css';
 import './styles/onboarding.css';
 import './styles/neural-atlas.css';
@@ -31,6 +32,7 @@ import { generateDailyQuests, checkQuests } from './modules/quests.ts';
 import { toggleStep, getRitual, RITUAL_STEPS, RITUAL_ICONS } from './modules/ritual.ts';
 import { claimStreak, useFreeze, canUseFreeze, getStreakInfo } from './modules/streak.ts';
 import { getSubjectsWithInfo } from './modules/subjects.ts';
+import { enhancePremiumSelect } from './modules/premiumSelect.ts';
 import {
   setMode,
   setCustomBlock,
@@ -2707,6 +2709,28 @@ function updateResendConfirmationState(
   delete resendBtn.dataset.email;
 }
 
+function setupStudyPickers(): void {
+  const pickers = [
+    { id: 'setup-backlog-subject', title: 'Choose a subject', search: 'Search subjects' },
+    { id: 'setup-backlog-chapter', title: 'Choose a chapter', search: 'Search chapters' },
+    { id: 'daily-missed-subject', title: 'Which subject did you miss?', search: 'Search subjects' },
+    { id: 'daily-missed-chapter', title: 'Choose the missed chapter', search: 'Search chapters' },
+    { id: 'bl-subject', title: 'Choose a subject', search: 'Search subjects' },
+    { id: 'bl-chapter', title: 'Choose a chapter', search: 'Search chapters' },
+    { id: 'mission-subject', title: 'Choose your focus subject', search: 'Search subjects' },
+    { id: 'mission-chapter', title: 'Choose your focus topic', search: 'Search topics' },
+  ];
+
+  pickers.forEach(({ id, title, search }) => {
+    const select = qs<HTMLSelectElement>(`#${id}`);
+    if (!select) return;
+    enhancePremiumSelect(select, {
+      title,
+      searchPlaceholder: search,
+    });
+  });
+}
+
 function setupEventListeners() {
   // Tab navigation
   qsa<HTMLElement>('.nav-item').forEach((btn) => {
@@ -4527,6 +4551,7 @@ function init() {
   } catch (e) {
     console.error('Failed to setup listeners', e);
   }
+  safe(() => setupStudyPickers(), 'studyPickers');
   safe(() => wireHomePremiumFocus(), 'homePremium');
   renderAccountSettings();
   renderSettingsLanguageList();

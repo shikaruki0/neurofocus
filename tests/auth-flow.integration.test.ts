@@ -89,7 +89,6 @@ describe('Production auth/import flows', () => {
     localStorage.clear();
     hoisted.listeners.length = 0;
     vi.clearAllMocks();
-    window.confirm = () => true;
   });
 
   it('presents sign-in, account creation, and device-only use as distinct choices', async () => {
@@ -224,9 +223,9 @@ describe('Production auth/import flows', () => {
     expect(form.classList.contains('hidden')).toBe(false);
     const email = document.querySelector<HTMLInputElement>('#forgot-email')!;
     email.value = 'person@example.com';
-    document.querySelector<HTMLFormElement>('#forgot-password-form')?.dispatchEvent(
-      new Event('submit', { bubbles: true, cancelable: true }),
-    );
+    document
+      .querySelector<HTMLFormElement>('#forgot-password-form')
+      ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     await new Promise((r) => setTimeout(r, 50));
 
     expect(hoisted.fakeSupabase.auth.resetPasswordForEmail).toHaveBeenCalled();
@@ -297,7 +296,6 @@ describe('First-run onboarding flow', () => {
     localStorage.clear();
     hoisted.listeners.length = 0;
     vi.clearAllMocks();
-    window.confirm = () => true;
   });
 
   const welcomeVisible = () => {
@@ -412,7 +410,13 @@ describe('First-run onboarding flow', () => {
     const input = document.querySelector<HTMLInputElement>('#import-file-input')!;
     Object.defineProperty(input, 'files', { value: [file], configurable: true });
     input.dispatchEvent(new Event('change'));
-    await new Promise((r) => setTimeout(r, 60));
+    await new Promise((r) => setTimeout(r, 20));
+
+    // Import now asks through the branded confirm dialog (no native confirm()).
+    const confirmBtn = document.querySelector<HTMLButtonElement>('.nf-confirm-confirm-btn');
+    expect(confirmBtn).not.toBeNull();
+    confirmBtn!.click();
+    await new Promise((r) => setTimeout(r, 20));
 
     const msg = document.querySelector<HTMLElement>('#import-message')?.textContent || '';
     expect(msg).toContain('restored');

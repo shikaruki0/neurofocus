@@ -40,6 +40,16 @@ function totalBacklogsDone(): number {
 }
 
 /**
+ * Total completed focus sessions (the recorded session log is authoritative).
+ * The focus badges describe themselves in sessions ("Complete 1 focus session"),
+ * so they count sessions — not minutes. Minutes were a proxy that let a single
+ * 90-minute Flow State session (270 min) unlock the "10 focus sessions" badge.
+ */
+function totalFocusSessions(): number {
+  return Array.isArray(data.sessions) ? data.sessions.length : 0;
+}
+
+/**
  * Special achievement definitions.
  * Each has a `check()` function that returns true when unlocked.
  */
@@ -50,7 +60,7 @@ export const SPECIAL_BADGES: SpecialBadge[] = [
     desc: 'Complete 1 focus session',
     icon: 'neuro-mark',
     rarity: 'common',
-    check: () => data.totalFocusMinutes >= 25,
+    check: () => totalFocusSessions() >= 1,
   },
   {
     id: 'focus_10',
@@ -58,7 +68,7 @@ export const SPECIAL_BADGES: SpecialBadge[] = [
     desc: '10 focus sessions',
     icon: '⏱️',
     rarity: 'rare',
-    check: () => data.totalFocusMinutes >= 250,
+    check: () => totalFocusSessions() >= 10,
   },
   {
     id: 'focus_50',
@@ -66,7 +76,7 @@ export const SPECIAL_BADGES: SpecialBadge[] = [
     desc: '50 focus sessions',
     icon: '⚙️',
     rarity: 'epic',
-    check: () => data.totalFocusMinutes >= 1250,
+    check: () => totalFocusSessions() >= 50,
   },
   {
     id: 'focus_100',
@@ -74,7 +84,7 @@ export const SPECIAL_BADGES: SpecialBadge[] = [
     desc: '100 focus sessions',
     icon: '🌊',
     rarity: 'legendary',
-    check: () => data.totalFocusMinutes >= 2500,
+    check: () => totalFocusSessions() >= 100,
   },
   {
     id: 'detox_3',

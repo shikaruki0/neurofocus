@@ -11,6 +11,7 @@ describe('Badge System', () => {
     data.consecutiveStreak = 0;
     data.backlogs = [];
     data.habits = [];
+    data.sessions = [];
   });
 
   it('has correct TOTAL_BADGES constant', () => {
@@ -36,7 +37,7 @@ describe('Badge System', () => {
   });
 
   it('unlocks special achievement badges under correct conditions', () => {
-    data.totalFocusMinutes = 25; // Completes 1 focus session
+    data.sessions = [{ date: 'Wed Jul 22 2026', time: 1, duration: 25 }]; // Completes 1 focus session
     let unlocked = checkBadges();
     expect(data.badgesUnlocked).toContain('first_focus');
     expect(unlocked.some((b) => b.id === 'first_focus')).toBe(true);
@@ -44,5 +45,26 @@ describe('Badge System', () => {
     data.consecutiveStreak = 3; // Completes 3 day streak
     unlocked = checkBadges();
     expect(data.badgesUnlocked).toContain('detox_3');
+  });
+
+  it('counts focus sessions (not minutes) for the focus badges', () => {
+    // 3 long sessions = 270 minutes. The old minute-based check (>= 250 min)
+    // wrongly unlocked the "10 focus sessions" badge after just 3 sessions.
+    data.sessions = Array.from({ length: 3 }, (_, i) => ({
+      date: 'Wed Jul 22 2026',
+      time: i,
+      duration: 90,
+    }));
+    let unlocked = checkBadges();
+    expect(unlocked.some((b) => b.id === 'focus_10')).toBe(false);
+
+    // 10 sessions (even short ones) is what the description promises.
+    data.sessions = Array.from({ length: 10 }, (_, i) => ({
+      date: 'Wed Jul 22 2026',
+      time: 100 + i,
+      duration: 25,
+    }));
+    unlocked = checkBadges();
+    expect(unlocked.some((b) => b.id === 'focus_10')).toBe(true);
   });
 });

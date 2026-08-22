@@ -113,6 +113,13 @@ interface Habit {
   streak: number;
   today: boolean;
   days: number[];
+  /**
+   * The exact XP credited when this habit was completed today. Tracked so
+   * un-checking the habit can revoke exactly what was awarded (which keeps
+   * toggling the habit from farming unlimited XP) and so re-checking re-awards
+   * the same, boost-adjusted amount. Absent on legacy habits.
+   */
+  xpAwarded?: number;
 }
 
 interface BattleTask {
@@ -121,6 +128,8 @@ interface BattleTask {
   priority: 'A' | 'B' | 'C';
   time: 'morning' | 'afternoon' | 'evening';
   done: boolean;
+  /** XP credited when completed; revoked exactly on un-check (see Habit.xpAwarded). */
+  xpAwarded?: number;
 }
 
 interface DailyQuest {
@@ -278,6 +287,9 @@ export function resetHabitsForNewDay(): void {
   if (lastCheck !== today) {
     data.habits.forEach((h) => {
       h.today = false;
+      // Clear yesterday's completion reward so today's completion can award
+      // fresh XP instead of being treated as an already-rewarded re-toggle.
+      h.xpAwarded = undefined;
     });
     set('habits', data.habits);
     set('habitCheck', today);

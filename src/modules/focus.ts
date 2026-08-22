@@ -325,7 +325,11 @@ function completeSession(): void {
   totalSeconds = remainingSeconds;
   saveTimerState();
   isCompleting = false;
-  notifyComplete(mode);
+  // Hand the UI the CREDITED XP (after any morning-ritual / flow-state boost),
+  // not the base amount. The celebration, notification and immersive "TIME'S UP"
+  // screen all display this number — previously they showed the base XP, so a
+  // 2x-boosted Pomodoro toasted "+40 XP" while the user actually earned +80.
+  notifyComplete({ minutes: mode.minutes, xp: credited, label: mode.label });
 }
 
 export function getTimerState(): TimerState {

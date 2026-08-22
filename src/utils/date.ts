@@ -72,14 +72,25 @@ export function currentHour(): number {
 
 /**
  * Calculates the difference in days between two date strings.
+ *
+ * Compares calendar dates in local time, not elapsed milliseconds. A plain
+ * `(b - a) / 86400000` with `Math.floor` broke across daylight-saving time:
+ * two local midnights 23 hours apart rounded DOWN to 0 days, so a streak claimed
+ * on the day after a "spring forward" was treated as the same day and reset.
+ * Normalizing each local date to its UTC calendar day makes the result immune
+ * to DST shifts and timezone offsets.
+ *
  * @param dateStrA - Earlier date (toDateString format)
  * @param dateStrB - Later date (toDateString format)
- * @returns Positive integer day difference
+ * @returns Whole-number calendar-day difference (positive when B is after A)
  */
 export function daysBetween(dateStrA: string, dateStrB: string): number {
-  const a = new Date(dateStrA).getTime();
-  const b = new Date(dateStrB).getTime();
-  return Math.floor((b - a) / (1000 * 60 * 60 * 24));
+  const a = new Date(dateStrA);
+  const b = new Date(dateStrB);
+  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return 0;
+  const dayA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+  const dayB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round((dayB - dayA) / 86_400_000);
 }
 
 /**

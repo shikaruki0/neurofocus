@@ -141,8 +141,15 @@ describe('Home focus tile vs Today\u2019s Focus panel', () => {
     expect(homeFocusText()).toBe('0.8h');
     expect(historyRowCount()).toBe(1);
 
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    // "Reset today" now asks through the branded in-app confirm dialog instead
+    // of a native confirm(). Click the dialog's affirmative button to proceed.
     document.querySelector<HTMLButtonElement>('#reset-today-btn')!.click();
+    const confirmBtn = document.querySelector<HTMLButtonElement>('.nf-confirm-confirm-btn');
+    expect(confirmBtn).not.toBeNull();
+    confirmBtn!.click();
+    // Flush the async click handler's microtasks so the reset completes.
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(homeFocusText()).toBe('0.0h');
     expect(historyTotalText()).toBe('0 min');

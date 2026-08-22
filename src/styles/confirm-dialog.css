@@ -1,0 +1,41 @@
+/* Branded in-app confirmation dialog (replaces native confirm/alert). */
+
+.nf-confirm-overlay {
+  z-index: 400; /* above other overlays so it can layer on top of Settings, etc. */
+  align-items: center;
+}
+
+.nf-confirm-overlay .modal {
+  max-width: 400px;
+}
+
+.nf-confirm-title {
+  padding-right: var(--space-6); /* keep the long title clear of the top edge */
+}
+
+.nf-confirm-message {
+  margin: 0 0 var(--space-6);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: var(--line-relaxed);
+  white-space: pre-line; /* preserve any intentional line breaks in messages */
+}
+
+.nf-confirm-actions {
+  display: flex;
+  flex-direction: row-reverse; /* primary action sits right-most */
+  gap: var(--space-3);
+}
+
+.nf-confirm-actions .btn {
+  flex: 1;
+  white-space: nowrap;
+}
+
+/* Respect the user's reduced-motion preference for the reveal transition. */
+@media (prefers-reduced-motion: reduce) {
+  .nf-confirm-overlay,
+  .nf-confirm-overlay .modal {
+    transition: none;
+  }
+}

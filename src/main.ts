@@ -16,6 +16,7 @@ import './styles/variables.css';
 import './styles/base.css';
 import './styles/components.css';
 import './styles/premium-select.css';
+import './styles/confirm-dialog.css';
 import './styles/animations.css';
 import './styles/onboarding.css';
 import './styles/neural-atlas.css';
@@ -23,9 +24,15 @@ import './styles/desktop.css';
 import './styles/home-premium.css';
 import './styles/home-desktop.css';
 
-import { applyDailyResets, data, resetHabitsForNewDay } from './modules/data.ts';
+import {
+  applyDailyResets,
+  data,
+  persist,
+  persistMany,
+  resetHabitsForNewDay,
+} from './modules/data.ts';
 import { clearAll } from './modules/storage.ts';
-import { xpLevel, xpForLevel, addXP } from './modules/xp.ts';
+import { xpLevel, xpForLevel, addXP, onLevelUp } from './modules/xp.ts';
 import { getCurrentRank, getNextRank, RANK_TIERS } from './modules/ranks.ts';
 import { checkBadges, SPECIAL_BADGES, TOTAL_BADGES } from './modules/badges.ts';
 import { generateDailyQuests, checkQuests } from './modules/quests.ts';
@@ -107,7 +114,8 @@ import { recordDailyStat, getWeekStats, getWeekTotals } from './modules/weekly.t
 import { setBuddy, removeBuddy, getBuddy, shareProgress } from './modules/buddy.ts';
 import { setTheme, loadTheme, setAutoTheme, getCurrentTheme } from './modules/theme.ts';
 import { getDailyQuote } from './modules/quotes.ts';
-import { showCelebrate, hideCelebrate, hideRankUp } from './modules/celebration.ts';
+import { showCelebrate, hideCelebrate, hideRankUp, showRankUp } from './modules/celebration.ts';
+import { confirmDialog } from './modules/confirmDialog.ts';
 import { endLocalSession, isSessionStarted, startLocalSession } from './modules/session.ts';
 import {
   startAlarmLoop,
@@ -354,11 +362,14 @@ function renderHomePremium() {
   const nameEl = qs<HTMLElement>('#p-name');
   if (nameEl) nameEl.textContent = data.profileName || 'Warrior';
 
-  // Friendly "N XP to NextRank" label (overrides the raw renderXP value)
+  // Friendly "N XP to NextRank" label (overrides the raw renderXP value).
+  // `info.need` is the FULL requirement for the current level — showing it here
+  // told a player with 80/100 XP they still needed "100 XP to Apprentice".
+  // The real remaining distance to the next rank is total-to-rank minus current XP.
   const xpNext = qs<HTMLElement>('#xp-next');
   if (xpNext) {
     xpNext.textContent = next
-      ? t('home.xp_to_next', { xp: info.need, rank: next.name })
+      ? t('home.xp_to_next', { xp: xpForLevel(next.level) - data.xp, rank: next.name })
       : t('rank.max_rank');
   }
 
@@ -627,11 +638,9 @@ function renderDailyChecks() {
       const toggle = () => {
         if (data.detoxLastDate === todayStr()) return;
         data.dailyChecks[item.id] = !data.dailyChecks[item.id];
-        try {
-          localStorage.setItem('nf_dailyChecks', JSON.stringify(data.dailyChecks));
-        } catch {
-          // ignore storage errors
-        }
+        // Write through the storage module so cloud sync notices the change
+        // (raw localStorage.setItem here used to skip the cloud-push trigger).
+        persist('dailyChecks');
         dailyChecksBuilt = false; // force re-render of checks state
         renderDailyChecks();
       };
@@ -964,7 +973,7 @@ function renderBacklogs() {
 
       // Get backlog info before increment for feedback
       const backlogs = getBacklogs() as Backlog[];
-      const backlog = backlogs.find(b => b.id === id);
+      const backlog = backlogs.find((b) => b.id === id);
       const lectureTitle = backlog?.chapterName || backlog?.name || 'lecture';
 
       incrementBacklog(id);
@@ -987,7 +996,7 @@ function renderBacklogs() {
     btn.addEventListener('click', () => {
       const id = parseInt((btn as HTMLElement).dataset.id || '0', 10);
       const backlogs = getBacklogs() as Backlog[];
-      const backlog = backlogs.find(b => b.id === id);
+      const backlog = backlogs.find((b) => b.id === id);
       const lectureTitle = backlog?.chapterName || backlog?.name || 'lecture';
 
       decrementBacklog(id);
@@ -1187,7 +1196,8 @@ function linkManualMissionToChapter(subject: string, chapterId: string): number 
   const profile = getStudentProfile();
   const option = getSubjectOptionsForProfile(profile).find((item) => item.key === subject);
   const chapter =
-    findNcertChapter(chapterId, profile) || makeUnassignedChapter(subject, option?.label || subject);
+    findNcertChapter(chapterId, profile) ||
+    makeUnassignedChapter(subject, option?.label || subject);
 
   const existing = findBacklogForChapter({
     subject: chapter.subjectKey,
@@ -2420,7 +2430,7 @@ function updateDashboard() {
   const dh = qs<HTMLElement>('#d-habits');
 
   if (ds) ds.textContent = String(data.detoxStreak || 0);
-  
+
   // Calculate remaining backlogs: sum of (total - done) for each backlog
   // Guard against data corruption where done > total
   if (db) {
@@ -2431,11 +2441,11 @@ function updateDashboard() {
     }, 0);
     db.textContent = String(remaining);
   }
-  
+
   // Today's focus comes from the recorded session log — the same source the
   // "Today's Focus" panel uses — so the two can never show different stories.
   if (df) df.textContent = `${getTodayFocusHours().toFixed(1)}h`;
-  
+
   if (dh) dh.textContent = String(data.habits.filter((h) => h.today).length);
 
   // Priority section
@@ -2801,11 +2811,17 @@ function setupEventListeners() {
 
       // Show confirmation explaining replacement
       const isSignedIn = Boolean(currentUser());
-      const confirmText = isSignedIn
-        ? `Restore ${validation.fieldCount} fields from backup?\n\nThis will replace your current local progress. A backup of your current data will be saved automatically.\n\nImporting is local first — cloud sync remains a separate step.`
-        : `Restore ${validation.fieldCount} fields from backup?\n\nThis will replace your current local progress. A backup of your current data will be saved automatically.`;
+      const confirmMessage = isSignedIn
+        ? 'This will replace your current local progress. A backup of your current data will be saved automatically.\n\nImporting is local first — cloud sync remains a separate step.'
+        : 'This will replace your current local progress. A backup of your current data will be saved automatically.';
 
-      const confirmed = window.confirm(confirmText);
+      const confirmed = await confirmDialog({
+        title: `Restore ${validation.fieldCount} fields from backup?`,
+        message: confirmMessage,
+        confirmLabel: 'Restore backup',
+        cancelLabel: 'Cancel',
+        danger: true,
+      });
       if (!confirmed) {
         if (msg) msg.textContent = 'Import cancelled.';
         return;
@@ -3291,9 +3307,7 @@ function setupEventListeners() {
       return;
     }
     data.profileName = validation.data as string;
-    try {
-      localStorage.setItem('nf_profileName', JSON.stringify(validation.data));
-    } catch {}
+    persist('profileName');
     renderProfile();
     showCelebrate('Profile Updated', 'Your warrior name is set.', '👤');
   });
@@ -3309,9 +3323,7 @@ function setupEventListeners() {
       return;
     }
     data.mission = validation.data as string;
-    try {
-      localStorage.setItem('nf_mission', JSON.stringify(validation.data));
-    } catch {}
+    persist('mission');
     renderProfile();
     showCelebrate('Mission Updated', 'Your north star is locked.', '🎯');
   });
@@ -3340,8 +3352,16 @@ function setupEventListeners() {
   });
 
   // Reset buttons
-  qs<HTMLElement>('#reset-today-btn')?.addEventListener('click', () => {
-    if (!confirm("Reset today's progress?")) return;
+  qs<HTMLElement>('#reset-today-btn')?.addEventListener('click', async () => {
+    const confirmed = await confirmDialog({
+      title: "Reset today's progress?",
+      message:
+        'This clears today’s focus sessions, daily checks, ritual, and streak claim for the day. Your XP and history from previous days stay safe.',
+      confirmLabel: 'Reset today',
+      cancelLabel: 'Keep it',
+      danger: true,
+    });
+    if (!confirmed) return;
     data.dailyChecks = {};
     data.detoxLastDate = null;
     // Remove today's recorded sessions too. Zeroing only the counter used to leave
@@ -3358,26 +3378,42 @@ function setupEventListeners() {
     data.dailyQuests = null;
     data.backlogsToday = 0;
     data.habitsToday = 0;
-    try {
-      localStorage.setItem('nf_dailyChecks', '{}');
-      localStorage.setItem('nf_detoxLastDate', 'null');
-      localStorage.setItem('nf_focusMinutes', '0');
-      localStorage.setItem('nf_focusDate', JSON.stringify(todayStr()));
-      localStorage.setItem('nf_flowState', JSON.stringify(data.flowState));
-      localStorage.setItem('nf_sessions', JSON.stringify(data.sessions));
-      localStorage.setItem('nf_morningRitual', JSON.stringify(data.morningRitual));
-      localStorage.setItem('nf_dailyQuests', 'null');
-      localStorage.setItem('nf_backlogsToday', '0');
-      localStorage.setItem('nf_habitsToday', '0');
-    } catch {}
+    // Write through the storage module so cloud sync notices the change (raw
+    // localStorage.setItem here used to silently skip the cloud-push trigger).
+    persistMany([
+      'dailyChecks',
+      'detoxLastDate',
+      'focusMinutes',
+      'focusDate',
+      'flowState',
+      'sessions',
+      'morningRitual',
+      'dailyQuests',
+      'backlogsToday',
+      'habitsToday',
+    ]);
     dailyChecksBuilt = false;
     renderDailyChecks();
     updateDashboard();
   });
 
-  qs<HTMLElement>('#reset-all-btn')?.addEventListener('click', () => {
-    if (!confirm('⚠️ This will DELETE ALL your progress forever. Are you sure?')) return;
-    if (!confirm('Really sure? This cannot be undone.')) return;
+  qs<HTMLElement>('#reset-all-btn')?.addEventListener('click', async () => {
+    const first = await confirmDialog({
+      title: 'Delete ALL your progress?',
+      message: '⚠️ This will DELETE ALL your progress forever. This cannot be undone.',
+      confirmLabel: 'Delete everything',
+      cancelLabel: 'Cancel',
+      danger: true,
+    });
+    if (!first) return;
+    const second = await confirmDialog({
+      title: 'Really sure?',
+      message: 'This is your last chance. Every lecture, badge, and streak will be gone.',
+      confirmLabel: 'Yes, delete forever',
+      cancelLabel: 'Cancel',
+      danger: true,
+    });
+    if (!second) return;
     clearAll();
     location.reload();
   });
@@ -4497,6 +4533,17 @@ function init() {
     updateUrgeUI();
     renderAccountSettings();
     renderSettingsLanguageList();
+  });
+
+  // Fire the rank-up celebration when XP gains cross a rank threshold. Ranks are
+  // every 5 levels, so only celebrate when the RANK actually changes — a plain
+  // level-up inside the same rank (e.g. 6 → 7) is already shown on the progress bar.
+  onLevelUp(({ from, to }) => {
+    const beforeRank = getCurrentRank(from);
+    const afterRank = getCurrentRank(to);
+    if (afterRank.level > beforeRank.level) {
+      showRankUp(afterRank);
+    }
   });
 
   // Initial renders - each wrapped to prevent one failure breaking entire app

@@ -241,6 +241,27 @@ describe('Focus Timer', () => {
     };
   });
 
+  it('passes the credited (boosted) XP to the completion callback', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-24T08:00:00')); // morning → ritual 2x applies
+
+    const today = new Date('2026-07-24T08:00:00').toDateString();
+    data.morningRitual = { date: today, completed: true, steps: [true, true, true, true, true] };
+
+    const complete = vi.fn();
+    onComplete(complete);
+
+    setMode(0); // Pomodoro 25 min → base 40 XP, ×2 = 80 credited
+    startTimer();
+    vi.advanceTimersByTime(25 * 60 * 1000);
+
+    // The UI shows this number in the celebration/notification; it must be the
+    // credited amount, not the base 40.
+    expect(complete).toHaveBeenCalledWith({ minutes: 25, xp: 80, label: 'Pomodoro' });
+
+    data.morningRitual = { date: '', completed: false, steps: [false, false, false, false, false] };
+  });
+
   // FIX E: double-completion guard — another tab consuming the session first
   it('skips awarding if the persisted timer was already consumed by another tab', () => {
     vi.useFakeTimers();

@@ -29,6 +29,8 @@ export interface BattleTask {
   priority: Priority;
   time: TimeOfDay;
   done: boolean;
+  /** XP credited when completed; revoked exactly on un-check. */
+  xpAwarded?: number;
 }
 
 /**
@@ -61,11 +63,20 @@ export function toggleTask(id: number): void {
   if (!task) return;
 
   task.done = !task.done;
-  persist('battle');
 
   if (task.done) {
-    addXP(10, 'Task Done');
+    if (task.xpAwarded === undefined) {
+      // Award (and remember) the boost-adjusted XP once per completion.
+      task.xpAwarded = addXP(10, 'Task Done');
+    }
+  } else if (task.xpAwarded !== undefined) {
+    // Undo revokes exactly what was credited — toggling can't farm XP.
+    data.xp = Math.max(0, data.xp - task.xpAwarded);
+    persist('xp');
+    task.xpAwarded = undefined;
   }
+
+  persist('battle');
 }
 
 /**

@@ -70,8 +70,8 @@ export function getMultiplier(): number {
   const today = todayStr();
   const hour = currentHour();
 
-  // Morning ritual: 2x until noon
-  if (data.morningRitual.completed && data.morningRitual.date === today && hour <= 12) {
+  // Morning ritual: 2x before noon (noon is 12:00, so the boost ends at 12:00 sharp).
+  if (data.morningRitual.completed && data.morningRitual.date === today && hour < 12) {
     return 2;
   }
 
@@ -83,6 +83,30 @@ export function getMultiplier(): number {
   return 1;
 }
 
+export interface LevelUpEvent {
+  /** The level before this award. */
+  from: number;
+  /** The level after this award. */
+  to: number;
+}
+
+type LevelUpListener = (event: LevelUpEvent) => void;
+
+const levelUpListeners = new Set<LevelUpListener>();
+
+/**
+ * Registers a callback fired whenever XP gains move the user up a level.
+ * Returns an unsubscribe function. Registered listeners are the only way the UI
+ * learns about a level-up (the celebration is never fired from inside addXP,
+ * so the logic module stays free of DOM/coupling).
+ */
+export function onLevelUp(listener: LevelUpListener): () => void {
+  levelUpListeners.add(listener);
+  return () => {
+    levelUpListeners.delete(listener);
+  };
+}
+
 /**
  * Adds XP to the user's total with multiplier applied.
  * @param amount - Base XP amount
@@ -92,9 +116,22 @@ export function getMultiplier(): number {
 export function addXP(amount: number, _reason: string): number {
   const mult = getMultiplier();
   const total = Math.floor(amount * mult);
+  if (total <= 0) return 0;
 
+  const before = xpLevel(data.xp).level;
   data.xp += total;
   persist('xp');
+  const after = xpLevel(data.xp).level;
+
+  if (after > before) {
+    for (const listener of levelUpListeners) {
+      try {
+        listener({ from: before, to: after });
+      } catch {
+        // A broken listener must never break XP awarding.
+      }
+    }
+  }
 
   return total;
 }

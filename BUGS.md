@@ -6,6 +6,10 @@ and what is left. Statuses: **NOW** (fixed in this PR), **NEXT** (planned next),
 
 Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 
+**Second-pass scan (v2)** — entries 1.12–1.17, 3.5–3.6 and the test-suite repair at
+the end of section 5 come from a follow-up exhaustive scan focused on award/revoke
+symmetry, reset flows, and account-switching leaks.
+
 ---
 
 ## 1. XP / Level / Streak (the "numbers look wrong" area)
@@ -116,6 +120,81 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 - **Fix:** Added strict positive and finite numeric validation to all XP math helpers.
 - **Status:** NOW. Test: `tests/xp.test.ts`.
 
+### 1.12 🔴 Boosted backlog increment/decrement cycles farmed the multiplier remainder — `src/modules/backlogs.ts`
+
+- **Bug:** `incrementBacklog()` credits `addXP(25)` — i.e. 25 × the current boost
+  (50 during the 2x morning ritual, 37 with 1.5x flow state) — but 1.8's fix made
+  `decrementBacklog()` revoke a **flat** 25 XP. Every boosted +1/-1 cycle silently
+  kept the +25 (or +12) remainder; repeating it minted unlimited XP with zero work.
+  The subject-XP revoke also wrote to the raw subject key, so NCERT language
+  courses (`Hindi Course A/B`, `Sanskrit`, `Urdu`) were never actually revoked
+  (the credit lands on the canonical `Hindi` key via `canonicalSubjectKey`).
+- **Fix:** Each increment now pushes the exact credits onto a dated LIFO ledger
+  (`xpLedger: { xp, sx, date }[]`). Decrement pops and revokes precisely what was
+  credited (works even when the boost expired between inc and dec) and revokes
+  subject XP via the canonical subject key. `backlogsToday` only moves for
+  same-day entries. Legacy rows without a ledger keep the old flat-25 behavior.
+  `resetBacklogProgress`/`resetAllBacklogProgress` clear now-unreachable ledgers.
+- **Status:** NOW. Tests: `tests/xp-revocation.test.ts` (7 cases).
+
+### 1.13 🔴 Deleting a completed battle task kept its XP — `src/modules/battle.ts`
+
+- **Bug:** 1.9 fixed `deleteHabit()` to revoke today's credit, but `deleteTask()`
+  just dropped the task — its `xpAwarded` stayed banked. Create → complete →
+  delete → recreate minted the (+10 × boost) completion XP every cycle.
+- **Fix:** `deleteTask()` revokes the task's `xpAwarded` exactly (mirrors
+  `deleteHabit()`), so create/complete/delete/recreate loops net zero.
+- **Status:** NOW. Tests: `tests/xp-revocation.test.ts` (3 cases).
+
+### 1.14 🔴 Streak claim → "Reset today" → re-claim farmed XP and streak freezes — `src/main.ts`
+
+- **Bug:** Claiming the daily streak awards +50 × boost; "Reset today's progress"
+  rolled back the claim markers (`detoxLastDate`, streak counters, lastStreakDate)
+  but forgot the XP. Re-checking the 7 boxes and re-claiming paid +50 again,
+  forever. Worse: at every 7-day boundary each cycle also re-earned a streak
+  freeze (consecutive 6 → 7 re-fires `maybeAddFreeze`).
+- **Fix:** The claim handler records exactly what the claim credited in a new
+  optional field `streakClaimToday = { date, xp, freezeEarned }` (default null —
+  backward compatible). Reset revokes precisely that (clamped) and un-awards the
+  freeze. Reset → legit re-claim restores exactly one claim's worth — net zero
+  across any number of cycles.
+- **Status:** NOW. Test: `tests/streak-claim-reset.test.ts`.
+
+### 1.15 🟠 "Reset today" wiped the quest pool, letting quests pay out twice — `src/main.ts`
+
+- **Bug:** Reset set `data.dailyQuests = null`, regenerating the pool with every
+  quest un-completed. Quests whose check stayed satisfied after the reset —
+  `q_habit` (habits stay toggled), `q_streak` (after a re-claim), `q_ritual`
+  (re-doable) — paid their reward a second time on the next `checkQuests()`.
+- **Fix:** Reset keeps today's quests with their completion state (quests are
+  "once done, done" like the daily checks). Day-change regeneration is already
+  handled by the rollover path.
+- **Status:** NOW. Test: `tests/streak-claim-reset.test.ts`.
+
+### 1.16 🔴 Backlog create/update → delete loops minted the +10 bonus (and today's increments) — `src/modules/backlogs.ts`
+
+- **Bug:** `addBacklog()` awards +10 × boost per new row and per same-chapter
+  merge, and `deleteBacklog()` revoked nothing. Create → increment → delete →
+  recreate minted +10+25 (×boost) per cycle; re-adding the same NCERT chapter
+  minted +10 per tap without even deleting.
+- **Fix:** Creation/update bonuses are tracked per row (`createdXP` +
+  `createdXPDate`, accumulable same-day). Deleting a row revokes **today's**
+  credits exactly (creation bonus + today's ledgered increments + subject XP),
+  so farm loops net zero while honestly banked history from previous days is
+  never punished (mirrors the habit/task delete rules).
+- **Status:** NOW. Tests: `tests/xp-revocation.test.ts` (5 cases).
+
+### 1.17 🟡 Test suite was red at HEAD (flaky quest forcing) — `tests/quest-backlog-loophole.test.ts`
+
+- **Bug:** `forceBacklogQuest()` injected a 1-quest pool, but `getQuests()` →
+  `generateDailyQuests()` re-rolls any pool whose length ≠ 3. The forced quest
+  vanished ~40% of the time and `q?.completed` read `undefined` — the
+  "Full user story" test failed intermittently (red at HEAD on 2026-08-25).
+- **Fix:** The harness now forces a valid 3-quest pool (incl. `q_backlog`) whose
+  other quests cannot complete in-scenario — deterministic under `Math.random()`.
+- **Status:** NOW (test-side repair; app behavior of "always exactly 3 quests"
+  is by design and unchanged).
+
 ---
 
 ## 2. Browser-native popups → branded in-app dialogs
@@ -169,6 +248,25 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 - **Fix:** Added `soundSettings` and `activeMission` to `KNOWN_FIELDS`.
 - **Status:** NOW.
 
+### 3.5 🟠 Account switch leaked User A's mission into User B — `src/modules/cloudSync.ts`
+
+- **Bug:** `wipeProgressKeys()` only removed the `activeMission` storage key, not
+  the mission module's **in-memory** state (`restoreMission()` runs only on the
+  cached-restore branch). Switching User A → User B with no cache kept A's active
+  mission running in memory and re-persisted it into B. The `mission` statement
+  field was also never wiped, so B inherited A's personal mission text.
+- **Fix:** `wipeProgressKeys()` now calls `clearMission()` (resets both storage
+  and in-memory mission state) and resets `data.mission` to the shared
+  `DEFAULT_MISSION` constant exported from `data.ts`.
+- **Status:** NOW.
+
+### 3.6 ⚪ `streakClaimToday` missing from import/cloud hygiene — `src/modules/progressImport.ts`, `src/modules/cloudSync.ts`
+
+- **Bug:** The new claim-record field (see 1.14) was not among importable known
+  fields or the account-switch wipe list.
+- **Fix:** Added `streakClaimToday` to `KNOWN_FIELDS` and to `wipeProgressKeys()`.
+- **Status:** NOW.
+
 ---
 
 ## 4. Dependencies
@@ -192,6 +290,11 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
   dead parameter.
 - ⚪ `src/modules/habits.ts` — `dailyChecks.dc7` is set on completion but never unset
   on undo (deliberately kept: daily checks are "once done, done").
+- ⚪ 17 pre-existing files fail the repo-wide `npm run format:check` (untouched by
+  this PR; reformatting them here would pollute a surgical diff). Tracked for a
+  dedicated formatting PR. All files touched by this PR pass Prettier.
+- ✅ DONE v2 — `src/modules/mission.ts` Hindi-English mixed comment
+  ("backlog se reduce karo") translated to English.
 
 ### REJECT (verified — not bugs)
 
@@ -206,12 +309,12 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 
 ## Verification (all gates)
 
-| Gate                                   | Result                                      |
-| -------------------------------------- | ------------------------------------------- |
-| `npm run typecheck`                    | ✅ clean (0 errors)                         |
-| `npm test`                             | ✅ 464 tests / 36 files green               |
-| `npm run build`                        | ✅ succeeds (PWA + SPA fallback)            |
-| `npm run format:check` (files touched) | ✅ pass                                     |
-| `git diff --check`                     | ✅ clean                                    |
-| `npm audit --omit=dev`                 | ✅ 0 vulnerabilities                        |
-| `npm run dev` smoke test               | ✅ HTTP 200, app loads, no transform errors |
+| Gate                                   | Result                                                                 |
+| -------------------------------------- | ---------------------------------------------------------------------- |
+| `npm run typecheck`                    | ✅ clean (0 errors)                                                    |
+| `npm test`                             | ✅ 481 tests / 38 files green (was 464/36; +17 regression tests)       |
+| `npm run build`                        | ✅ succeeds (PWA + SPA fallback)                                       |
+| `npm run format:check` (files touched) | ✅ all 10 touched files pass (17 pre-existing failures left untouched) |
+| `git diff --check`                     | ✅ clean                                                               |
+| `npm audit --omit=dev`                 | ✅ 0 vulnerabilities                                                   |
+| `npm run dev` smoke test               | ✅ HTTP 200 for `/` and `/src/main.ts`, no transform errors            |

@@ -16,10 +16,10 @@
  */
 
 import { currentUser, supabase } from './auth.ts';
-import { exportAll, get, importAll, set, remove } from './storage.ts';
-import { data } from './data.ts';
+import { exportAll, get, importAll, set } from './storage.ts';
+import { data, DEFAULT_MISSION } from './data.ts';
 import { reconcileDailyFocus } from './focusDaily.ts';
-import { restoreMission } from './mission.ts';
+import { clearMission, restoreMission } from './mission.ts';
 
 export type SyncChoice = 'local' | 'cloud' | 'merge';
 export interface CloudState {
@@ -267,6 +267,8 @@ function wipeProgressKeys(): void {
   data.backlogsToday = 0;
   data.habitsToday = 0;
   data.profileName = 'Warrior';
+  data.mission = DEFAULT_MISSION;
+  data.streakClaimToday = null;
   data.buddyName = '';
   data.hasOnboarded = false;
   data.subjects = {
@@ -311,12 +313,17 @@ function wipeProgressKeys(): void {
     'backlogsToday',
     'habitsToday',
     'profileName',
+    'mission',
+    'streakClaimToday',
     'buddyName',
     'hasOnboarded',
     'subjects',
   ];
   for (const key of keys) set(key, data[key]);
-  remove('activeMission');
+  // clearMission resets the mission module's IN-MEMORY state too — plain
+  // remove('activeMission') only cleared storage, so User A's active mission
+  // kept running in memory and silently re-persisted into User B's account.
+  clearMission();
 }
 
 async function readCloud(userId: string): Promise<CloudState | null> {

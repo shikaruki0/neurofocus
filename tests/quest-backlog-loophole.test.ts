@@ -68,12 +68,22 @@ function resetEnv(): void {
   localStorage.setItem('nf_hasCompletedInitialBacklogSetup', JSON.stringify(true));
 }
 
-/** Forces the backlog quest into today's quest pool so tests are deterministic. */
+/**
+ * Forces the backlog quest into today's quest pool so tests are deterministic.
+ * The pool must contain exactly 3 quests: generateDailyQuests() (called by
+ * getQuests() on every render) re-rolls any pool whose length is not 3, which
+ * used to silently replace the forced 1-quest list — 40% of the time the
+ * backlog quest vanished and the assertions read `undefined` (flaky).
+ */
 function forceBacklogQuest(): void {
   const { data } = dataModule;
   data.dailyQuests = {
     date: todayStr(),
-    quests: [{ id: 'q_backlog', label: 'Clear 2 backlog lectures', reward: 25, completed: false }],
+    quests: [
+      { id: 'q_backlog', label: 'Clear 2 backlog lectures', reward: 25, completed: false },
+      { id: 'q_habit', label: 'Complete 2 habits', reward: 20, completed: false },
+      { id: 'q_ritual', label: 'Complete morning ritual', reward: 30, completed: false },
+    ],
   };
 }
 

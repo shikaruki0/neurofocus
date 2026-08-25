@@ -12,6 +12,9 @@ function getToday(): string {
 }
 const TODAY = getToday();
 
+/** Default mission statement for a fresh (or freshly wiped) profile. */
+export const DEFAULT_MISSION = 'I am building discipline to score 100% and master my skills.';
+
 interface MorningRitual {
   date: string;
   completed: boolean;
@@ -104,6 +107,27 @@ interface Backlog {
   source?: 'manual' | 'ncert-class10';
   createdFrom?: 'manual' | 'initial-setup' | 'daily-check';
   updatedAt?: number;
+  /**
+   * Exact XP credits per lecture increment (LIFO stack, dated). Lets
+   * decrementBacklog revoke exactly what was credited (closing the
+   * multiplier-asymmetry farm) and lets deleteBacklog revoke only today's
+   * credits while older, honestly earned work stays banked. Absent on legacy rows.
+   */
+  xpLedger?: { xp: number; sx: number; date: string }[];
+  /** Creation/update bonus still revocable today + the day it was credited. */
+  createdXP?: number;
+  createdXPDate?: string;
+}
+
+/**
+ * Record of today's streak-claim award so "Reset today" can revoke exactly
+ * what the claim credited (XP and any freeze earned) instead of leaving a
+ * claim → reset → re-claim farming loop open. Absent on legacy claims.
+ */
+export interface StreakClaimRecord {
+  date: string;
+  xp: number;
+  freezeEarned: boolean;
 }
 
 interface Habit {
@@ -150,7 +174,7 @@ interface DailyQuests {
  */
 export const data = {
   profileName: get<string>('profileName', 'Warrior'),
-  mission: get<string>('mission', 'I am building discipline to score 100% and master my skills.'),
+  mission: get<string>('mission', DEFAULT_MISSION),
   xp: get<number>('xp', 0),
   detoxStreak: get<number>('detoxStreak', 0),
   consecutiveStreak: get<number>('consecutiveStreak', 0),
@@ -194,6 +218,7 @@ export const data = {
   buddyName: get<string>('buddyName', ''),
   hasOnboarded: get<boolean>('hasOnboarded', false),
   lastLoginAt: get<number | null>('lastLoginAt', null),
+  streakClaimToday: get<StreakClaimRecord | null>('streakClaimToday', null),
   backlogsToday: get<number>('backlogsToday', 0),
   habitsToday: get<number>('habitsToday', 0),
   sessions: get<Session[]>('sessions', []),

@@ -71,6 +71,7 @@ const KNOWN_FIELDS: Record<string, FieldType> = {
   buddyName: 'string',
   hasOnboarded: 'boolean',
   lastLoginAt: 'any',
+  streakClaimToday: 'any',
   backlogsToday: 'number',
   habitsToday: 'number',
   sessions: 'array',

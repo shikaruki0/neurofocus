@@ -3371,7 +3371,22 @@ function setupEventListeners() {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       data.lastStreakDate = data.consecutiveStreak > 0 ? yesterday.toDateString() : null;
+      // Revoke exactly what today's streak claim credited. Without this, the
+      // claim → reset → re-check → re-claim loop mints unlimited XP — and at
+      // every 7-day boundary it also mints a streak freeze per cycle.
+      const claim = data.streakClaimToday;
+      if (claim && claim.date === todayStr()) {
+        if (Number.isFinite(claim.xp) && claim.xp > 0) {
+          data.xp = Math.max(0, (data.xp || 0) - claim.xp);
+          persist('xp');
+        }
+        if (claim.freezeEarned) {
+          data.streakFreezes = Math.max(0, (data.streakFreezes || 0) - 1);
+          persist('streakFreezes');
+        }
+      }
     }
+    data.streakClaimToday = null;
     data.detoxLastDate = null;
     // Remove today's recorded sessions too. Zeroing only the counter used to leave
     // the sessions behind, so Home showed 0h while "Today's Focus" still listed work.
@@ -3384,7 +3399,10 @@ function setupEventListeners() {
       completed: false,
       steps: [false, false, false, false, false],
     };
-    data.dailyQuests = null;
+    // Keep today's quests as-is. Clearing them regenerated the pool with every
+    // quest un-completed, so quests whose check was still true (habits done
+    // stayed done, a re-done ritual, a re-claimed streak) paid out a second
+    // time after every reset.
     data.backlogsToday = 0;
     data.habitsToday = 0;
     // Write through the storage module so cloud sync notices the change (raw
@@ -3400,9 +3418,9 @@ function setupEventListeners() {
       'flowState',
       'sessions',
       'morningRitual',
-      'dailyQuests',
       'backlogsToday',
       'habitsToday',
+      'streakClaimToday',
     ]);
     dailyChecksBuilt = false;
     renderDailyChecks();
@@ -3480,9 +3498,19 @@ function setupEventListeners() {
     const allChecked = CHECK_ITEMS.every((id) => !!data.dailyChecks[id]);
     if (!allChecked) return;
 
+    const freezesBefore = data.streakFreezes || 0;
     const result = claimStreak();
     if (result.success) {
-      addXP(50, 'Streak Verified');
+      const credited = addXP(50, 'Streak Verified');
+      // Remember exactly what this claim credited (boost-adjusted XP and any
+      // 7-day freeze) so "Reset today" can revoke it precisely — otherwise
+      // claim → reset → re-check → re-claim farms unlimited XP and freezes.
+      data.streakClaimToday = {
+        date: todayStr(),
+        xp: credited,
+        freezeEarned: (data.streakFreezes || 0) > freezesBefore,
+      };
+      persist('streakClaimToday');
       dailyChecksBuilt = false;
       renderDailyChecks();
       updateDashboard();

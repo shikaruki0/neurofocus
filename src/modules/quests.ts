@@ -4,7 +4,7 @@
  */
 
 import { data, persist } from './data.ts';
-import { getTodayFocusMinutes } from './focusDaily.ts';
+import { getTodayFocusMinutes, getTodayFocusSessionCount } from './focusDaily.ts';
 import { todayStr } from '../utils/date.ts';
 import { addXP } from './xp.ts';
 
@@ -37,7 +37,7 @@ const QUEST_POOL: QuestDefinition[] = [
     target: 1,
     reward: 20,
     // Must be backed by a real recorded session today — not a leftover counter.
-    check: () => getTodayFocusMinutes() >= 25,
+    check: () => getTodayFocusSessionCount() >= 1 || getTodayFocusMinutes() >= 25,
   },
   {
     id: 'q_backlog',
@@ -81,7 +81,14 @@ const QUEST_POOL: QuestDefinition[] = [
  * Generates 3 random daily quests for today.
  */
 export function generateDailyQuests(): void {
-  if (data.dailyQuests && data.dailyQuests.date === todayStr()) return;
+  if (
+    data.dailyQuests &&
+    data.dailyQuests.date === todayStr() &&
+    Array.isArray(data.dailyQuests.quests) &&
+    data.dailyQuests.quests.length === 3
+  ) {
+    return;
+  }
 
   const pool = [...QUEST_POOL].sort(() => Math.random() - 0.5);
   const selected = pool.slice(0, 3);

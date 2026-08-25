@@ -73,43 +73,71 @@ function maybeAddFreeze(): boolean {
 }
 
 /**
- * Uses a freeze token to protect today's streak.
+ * Uses a freeze token to protect today's streak (or repair yesterday's missed day).
  * @returns True if freeze was used
  */
 export function useFreeze(): boolean {
-  if (data.streakFreezes <= 0) return false;
+  if (!canUseFreeze()) return false;
 
-  data.streakFreezes--;
-  data.lastStreakDate = todayStr();
+  const today = todayStr();
+  const diff = data.lastStreakDate ? daysBetween(data.lastStreakDate, today) : 0;
+
+  data.streakFreezes = Math.max(0, (data.streakFreezes || 0) - 1);
+  if (diff === 2) {
+    // Retroactive freeze: set lastStreakDate to yesterday so streak can continue today
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    data.lastStreakDate = yesterday.toDateString();
+  } else {
+    // Proactive freeze: protect today
+    data.lastStreakDate = today;
+  }
+
   persistMany(['streakFreezes', 'lastStreakDate']);
   return true;
 }
 
 /**
  * Checks if a freeze can be used today.
+ * Supports both proactive freeze for today and retroactive freeze for yesterday.
  * @returns True if freeze can be used
  */
 export function canUseFreeze(): boolean {
   const today = todayStr();
-  if (data.streakFreezes <= 0) return false;
+  if ((data.streakFreezes || 0) <= 0) return false;
   if (data.lastStreakDate === today) return false;
+  if (!data.lastStreakDate) return false;
 
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yStr = yesterday.toDateString();
-
-  // Can use if yesterday was claimed and today is not
-  return data.lastStreakDate === yStr && data.lastStreakDate !== today;
+  const diff = daysBetween(data.lastStreakDate, today);
+  // Can use if claimed yesterday (diff === 1, proactive freeze for today)
+  // OR claimed 2 days ago (diff === 2, retroactive freeze to save yesterday).
+  return diff === 1 || diff === 2;
 }
 
 /**
  * Gets current streak info.
+ * Reflects whether the consecutive streak is currently active, at-risk, or lapsed.
  * @returns Streak info
  */
 export function getStreakInfo(): StreakInfo {
+  const today = todayStr();
+  let currentConsecutive = data.consecutiveStreak || 0;
+
+  if (data.lastStreakDate) {
+    const diff = daysBetween(data.lastStreakDate, today);
+    // If more than 1 day has passed without a streak claim or freeze:
+    // - diff === 2: user missed yesterday; if they have a freeze token, the streak can still be saved
+    // - diff > 2 or (diff === 2 && no freeze): streak is broken and lapsed to 0
+    if (diff > 2 || (diff === 2 && (data.streakFreezes || 0) <= 0)) {
+      currentConsecutive = 0;
+    }
+  } else {
+    currentConsecutive = 0;
+  }
+
   return {
     detox: data.detoxStreak || 0,
-    consecutive: data.consecutiveStreak || 0,
+    consecutive: currentConsecutive,
     freezes: data.streakFreezes || 0,
   };
 }

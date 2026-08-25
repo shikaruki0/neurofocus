@@ -51,7 +51,10 @@ export function getBuddy(): string {
 export function generateShareText(): string {
   const rank = getCurrentRank(xpLevel(data.xp).level);
   const info = xpLevel(data.xp);
-  const remaining = data.backlogs.reduce((sum, b) => sum + ((b.total || 0) - (b.done || 0)), 0);
+  const remaining = data.backlogs.reduce(
+    (sum, b) => sum + Math.max(0, (b.total || 0) - (b.done || 0)),
+    0,
+  );
 
   return [
     '🔥 NeuroFocusX Progress',

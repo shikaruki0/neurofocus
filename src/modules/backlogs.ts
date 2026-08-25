@@ -186,6 +186,20 @@ export function decrementBacklog(id: number): void {
     data.backlogsToday -= 1;
     persist('backlogsToday');
   }
+
+  // Revoke the 25 XP and 25 subject XP awarded on increment so toggling
+  // +1 and -1 cannot farm unlimited XP.
+  data.xp = Math.max(0, (data.xp || 0) - 25);
+  persist('xp');
+
+  if (backlog.subject && data.subjects) {
+    const currentSubjectXP = data.subjects[backlog.subject];
+    if (typeof currentSubjectXP === 'number') {
+      data.subjects[backlog.subject] = Math.max(0, currentSubjectXP - 25);
+      persist('subjects');
+    }
+  }
+
   persist('backlogs');
 }
 
@@ -263,7 +277,7 @@ export function getTotalDone(): number {
  * @returns Remaining count
  */
 export function getRemainingCount(): number {
-  return data.backlogs.reduce((sum, b) => sum + ((b.total || 0) - (b.done || 0)), 0);
+  return data.backlogs.reduce((sum, b) => sum + Math.max(0, (b.total || 0) - (b.done || 0)), 0);
 }
 
 /** Gets how many backlog rows still have remaining lectures. */

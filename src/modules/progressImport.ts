@@ -80,6 +80,8 @@ const KNOWN_FIELDS: Record<string, FieldType> = {
   habitCheck: 'string',
   badgesUnlocked: 'array',
   backupSnapshots: 'array',
+  soundSettings: 'object',
+  activeMission: 'any',
 };
 
 /** Maximum safe string length for imported strings. */

@@ -249,6 +249,16 @@ function wipeProgressKeys(): void {
   data.totalFocusMinutes = 0;
   data.detoxStreak = 0;
   data.consecutiveStreak = 0;
+  data.lastStreakDate = null;
+  data.detoxLastDate = null;
+  data.streakFreezes = 0;
+  data.dailyChecks = {};
+  data.dailyCheckDate = '';
+  data.morningRitual = {
+    date: '',
+    completed: false,
+    steps: [false, false, false, false, false],
+  };
   data.weeklyStats = [];
   data.studentProfile = null;
   data.initialBacklogSetupComplete = false;
@@ -257,6 +267,7 @@ function wipeProgressKeys(): void {
   data.backlogsToday = 0;
   data.habitsToday = 0;
   data.profileName = 'Warrior';
+  data.buddyName = '';
   data.hasOnboarded = false;
   data.subjects = {
     Physics: 0,
@@ -265,6 +276,7 @@ function wipeProgressKeys(): void {
     Biology: 0,
     History: 0,
     Geography: 0,
+    'Political Science': 0,
     Economics: 0,
     Hindi: 0,
     English: 0,
@@ -285,6 +297,12 @@ function wipeProgressKeys(): void {
     'totalFocusMinutes',
     'detoxStreak',
     'consecutiveStreak',
+    'lastStreakDate',
+    'detoxLastDate',
+    'streakFreezes',
+    'dailyChecks',
+    'dailyCheckDate',
+    'morningRitual',
     'weeklyStats',
     'studentProfile',
     'initialBacklogSetupComplete',
@@ -293,6 +311,7 @@ function wipeProgressKeys(): void {
     'backlogsToday',
     'habitsToday',
     'profileName',
+    'buddyName',
     'hasOnboarded',
     'subjects',
   ];
@@ -375,6 +394,24 @@ export function smartMerge(
         out[key] = Math.max(ln, cn);
         continue;
       }
+    }
+
+    // Merge subjects by taking the maximum XP for each subject key
+    if (
+      key === 'subjects' &&
+      localVal &&
+      typeof localVal === 'object' &&
+      cloudVal &&
+      typeof cloudVal === 'object'
+    ) {
+      const mergedSubjects: Record<string, number> = {
+        ...(cloudVal as Record<string, number>),
+      };
+      for (const [sKey, sVal] of Object.entries(localVal as Record<string, number>)) {
+        mergedSubjects[sKey] = Math.max(Number(sVal) || 0, Number(mergedSubjects[sKey]) || 0);
+      }
+      out[key] = mergedSubjects;
+      continue;
     }
 
     // Objects: shallow merge, local fields override when present & non-empty.

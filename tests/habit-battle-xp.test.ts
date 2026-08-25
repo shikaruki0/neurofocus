@@ -1,14 +1,18 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { data } from '../src/modules/data.ts';
-import { addHabit, toggleHabit } from '../src/modules/habits.ts';
+import { addHabit, toggleHabit, deleteHabit } from '../src/modules/habits.ts';
 import { addTask, toggleTask } from '../src/modules/battle.ts';
+import { addBacklog, incrementBacklog, decrementBacklog } from '../src/modules/backlogs.ts';
 
 describe('XP cannot be farmed by toggling completions', () => {
   beforeEach(() => {
     data.xp = 0;
     data.habits = [];
     data.battle = [];
+    data.backlogs = [];
+    data.subjects = { Physics: 0 };
     data.habitsToday = 0;
+    data.backlogsToday = 0;
     data.dailyChecks = {};
     data.morningRitual = { date: '', completed: false, steps: [false, false, false, false, false] };
     data.flowState = { date: '', sessions: 0 };
@@ -38,6 +42,51 @@ describe('XP cannot be farmed by toggling completions', () => {
       for (let i = 0; i < 6; i++) toggleHabit(habitId);
       // Six toggles (even) leaves the habit "off": net XP = 0, not +90.
       expect(data.xp).toBe(0);
+    });
+
+    it('cleans up habitsToday and revokes xpAwarded when a completed habit is deleted', () => {
+      addHabit({ name: 'Walk', anchor: 'morning' });
+      const id = data.habits[0].id;
+      toggleHabit(id);
+      expect(data.xp).toBe(15);
+      expect(data.habitsToday).toBe(1);
+
+      deleteHabit(id);
+      expect(data.xp).toBe(0);
+      expect(data.habitsToday).toBe(0);
+    });
+  });
+
+  describe('backlog lectures', () => {
+    it('revokes XP and subject XP when decrementing an accidentally completed lecture', () => {
+      addBacklog({ name: 'Optics Lecture 1', count: 3, subject: 'Physics' });
+      const initialXP = data.xp; // 10 from adding backlog
+      const id = data.backlogs[0].id;
+
+      incrementBacklog(id); // +25 XP, +25 Physics XP
+      expect(data.xp).toBe(initialXP + 25);
+      expect(data.subjects.Physics).toBe(25);
+      expect(data.backlogsToday).toBe(1);
+
+      decrementBacklog(id); // undo → revokes 25 XP and 25 Physics XP
+      expect(data.xp).toBe(initialXP);
+      expect(data.subjects.Physics).toBe(0);
+      expect(data.backlogsToday).toBe(0);
+    });
+
+    it('does not accumulate XP when incremented and decremented repeatedly', () => {
+      addBacklog({ name: 'Mechanics', count: 5, subject: 'Physics' });
+      const baseXP = data.xp;
+      const id = data.backlogs[0].id;
+
+      for (let i = 0; i < 5; i++) {
+        incrementBacklog(id);
+        decrementBacklog(id);
+      }
+
+      expect(data.xp).toBe(baseXP);
+      expect(data.subjects.Physics).toBe(0);
+      expect(data.backlogsToday).toBe(0);
     });
   });
 

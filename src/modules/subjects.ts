@@ -58,9 +58,10 @@ export interface SubjectLevelInfo {
  * @returns Subject level info
  */
 export function subjectLevel(xp: number): SubjectLevelInfo {
+  const safeXP = Math.max(0, Number.isFinite(xp) ? xp : 0);
   let level = 1;
   let need = 50;
-  let remaining = xp;
+  let remaining = safeXP;
 
   while (remaining >= need) {
     remaining -= need;
@@ -72,15 +73,32 @@ export function subjectLevel(xp: number): SubjectLevelInfo {
 }
 
 /**
+ * Maps sub-subjects (like NCERT second languages) to their canonical subject key.
+ */
+export function canonicalSubjectKey(subject: string): string {
+  if (!subject) return 'Other';
+  if (SUBJECTS.some((s) => s.key === subject)) return subject;
+  if (subject.startsWith('Hindi') || subject === 'Sanskrit' || subject === 'Urdu') {
+    return 'Hindi';
+  }
+  return 'Other';
+}
+
+/**
  * Adds XP to a subject.
  * @param subject - Subject key
  * @param amount - XP amount
  */
 export function addSubjectXP(subject: string, amount: number): void {
-  if (!subject || subject === 'Other') return;
-  if (!data.subjects[subject]) data.subjects[subject] = 0;
+  if (!subject || subject === 'Other' || !Number.isFinite(amount) || amount <= 0) return;
+  const canonical = canonicalSubjectKey(subject);
+  if (canonical === 'Other') return;
 
-  data.subjects[subject] += amount;
+  if (typeof data.subjects[canonical] !== 'number') data.subjects[canonical] = 0;
+
+  data.subjects[canonical] =
+    Math.max(0, Number.isFinite(data.subjects[canonical]) ? data.subjects[canonical] : 0) +
+    Math.floor(amount);
   persist('subjects');
 }
 
@@ -91,11 +109,20 @@ export interface SubjectWithInfo extends SubjectConfig, SubjectLevelInfo {
 
 /**
  * Gets all subjects with their level info.
+ * Aggregates any legacy second-language keys into Hindi.
  * @returns Subjects with level info
  */
 export function getSubjectsWithInfo(): SubjectWithInfo[] {
   return SUBJECTS.map((s) => {
-    const xp = data.subjects[s.key] || 0;
+    let xp = Number(data.subjects[s.key]) || 0;
+    if (s.key === 'Hindi') {
+      const extra =
+        (Number(data.subjects['Hindi Course A']) || 0) +
+        (Number(data.subjects['Hindi Course B']) || 0) +
+        (Number(data.subjects['Sanskrit']) || 0) +
+        (Number(data.subjects['Urdu']) || 0);
+      xp += extra;
+    }
     const info = subjectLevel(xp);
     return { ...s, xp, ...info, cls: SUBJECT_MAP[s.key] || s.key.toLowerCase() };
   });

@@ -11,6 +11,7 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 ## 1. XP / Level / Streak (the "numbers look wrong" area)
 
 ### 1.1 🔴 Morning-ritual 2x boost leaked past noon — `src/modules/xp.ts`
+
 - **Bug:** `getMultiplier()` used `hour <= 12`, so the 2x "Morning Ritual" boost was
   active during 12:00–12:59 (noon / early afternoon), while the ritual UI
   (`isBoostActive()` in `ritual.ts`) correctly used `hour < 12`. The two disagreed,
@@ -21,6 +22,7 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 - **Status:** NOW. Test: `tests/xp.test.ts`.
 
 ### 1.2 🔴 Celebration/notification showed base XP, not the boosted XP actually earned — `src/modules/focus.ts`
+
 - **Bug:** `completeSession()` credits XP through `addXP()` (which applies the
   2x / 1.5x multiplier) and stores the credited amount on the session — but handed the
   **base** `mode.xp` to `notifyComplete()`. The celebration toast, browser notification
@@ -32,7 +34,8 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 - **Status:** NOW. Test: `tests/focus.test.ts`.
 
 ### 1.3 🟠 "N XP to next rank" showed the full level requirement, not the remaining distance — `src/main.ts`
-- **Bug:** `renderHomePremium()` fed `info.need` (the *whole* XP requirement for the
+
+- **Bug:** `renderHomePremium()` fed `info.need` (the _whole_ XP requirement for the
   current level) into `home.xp_to_next`, so a player with 80/100 XP was told they still
   needed "100 XP to Apprentice" when only 20 remained.
 - **Fix:** Compute the true remaining distance `xpForLevel(next.level) - data.xp`
@@ -40,6 +43,7 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 - **Status:** NOW. Test: `tests/xp.test.ts` (formula documented).
 
 ### 1.4 🔴 Rank-up celebration never fired — `src/modules/xp.ts` + `src/main.ts` + `src/modules/celebration.ts`
+
 - **Bug:** `showRankUp()` and `fireConfetti()` were exported but **never called
   anywhere**. Nothing detected a level/rank change, so the rank-up modal, sound and
   confetti were dead code — the user never saw a rank-up celebration.
@@ -50,6 +54,7 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 - **Status:** NOW. Test: `tests/xp.test.ts` (`onLevelUp`).
 
 ### 1.5 🔴 Streak could reset across daylight-saving time — `src/utils/date.ts`
+
 - **Bug:** `daysBetween()` used `Math.floor((b - a) / 86400000)`. Two local midnights
   23 hours apart (the "spring forward" Sunday) rounded **down** to 0 days, so a streak
   claimed the day after the shift was treated as "same day" and reset to 1.
@@ -58,6 +63,7 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 - **Status:** NOW. Test: `tests/date.test.ts`.
 
 ### 1.6 🔴 XP could be farmed by toggling habit / battle completion — `src/modules/habits.ts`, `src/modules/battle.ts`
+
 - **Bug:** `toggleHabit()` awarded +15 XP every time `today` flipped `false → true`
   (and `toggleTask()` +10 every `done` flip), with **no** revocation on un-check. A
   user could tap a habit/task on-off-on repeatedly to mint unlimited XP and level up.
@@ -68,6 +74,7 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 - **Status:** NOW. Tests: `tests/habit-battle-xp.test.ts`.
 
 ### 1.7 🟠 Focus badges counted minutes, but describe themselves in sessions — `src/modules/badges.ts`
+
 - **Bug:** `First Dive` (1 session), `Flow State` (10 sessions), `Machine` (50),
   `Deep Worker` (100) checked `totalFocusMinutes >= 25/250/1250/2500`. A single
   90-minute Flow State session (270 min) unlocked the "10 focus sessions" badge after
@@ -76,11 +83,45 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
   authoritative per-session record.
 - **Status:** NOW. Test: `tests/badges.test.ts`.
 
+### 1.8 🔴 Backlog increment/decrement had XP farm vulnerability — `src/modules/backlogs.ts`
+
+- **Bug:** `incrementBacklog()` awarded +25 XP and +25 subject XP, but `decrementBacklog()`
+  did not revoke any XP. Users could repeatedly increment and decrement a backlog to
+  farm unlimited XP.
+- **Fix:** `decrementBacklog()` now safely revokes the 25 XP and 25 subject XP.
+- **Status:** NOW. Test: `tests/habit-battle-xp.test.ts`.
+
+### 1.9 🟠 Habit deletion left phantom daily counts and awarded XP — `src/modules/habits.ts`
+
+- **Bug:** Deleting a habit that was marked done today left `data.habitsToday` inflated
+  and retained the earned XP without rollback.
+- **Fix:** `deleteHabit()` decrements `data.habitsToday` and revokes `xpAwarded` when
+  deleting a habit marked complete today.
+- **Status:** NOW. Test: `tests/habit-battle-xp.test.ts`.
+
+### 1.10 🟠 Streak freeze rescue window was limited to today — `src/modules/streak.ts`
+
+- **Bug:** `canUseFreeze()` and `useFreeze()` only handled proactive freezes (`diff === 1`).
+  If the user missed yesterday (`diff === 2`), they could not use a streak freeze
+  to rescue their streak, and `getStreakInfo()` did not reflect lapsed streaks as 0.
+- **Fix:** Supported both proactive (`diff === 1`) and retroactive (`diff === 2`) freeze
+  rescues, and ensured `getStreakInfo()` accurately returns 0 consecutive streak when
+  lapsed without freezes.
+- **Status:** NOW. Test: `tests/streak.test.ts`.
+
+### 1.11 🟡 Non-finite or negative XP inputs could corrupt progress — `src/modules/xp.ts`
+
+- **Bug:** `addXP()`, `xpLevel()`, and `xpForLevel()` lacked guards against `NaN`,
+  `Infinity`, or negative values.
+- **Fix:** Added strict positive and finite numeric validation to all XP math helpers.
+- **Status:** NOW. Test: `tests/xp.test.ts`.
+
 ---
 
 ## 2. Browser-native popups → branded in-app dialogs
 
 ### 2.1 🟠 Four native `confirm()` / `window.confirm()` dialogs — `src/main.ts`
+
 - **Bug:** Chrome's blocking native dialogs were used for (a) import/restore
   confirmation, (b) "Reset today's progress?", (c)+(d) the double "Delete ALL your
   progress" confirmation. These look nothing like the app, block the whole page, and
@@ -97,11 +138,35 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 ## 3. Data / cloud-sync consistency
 
 ### 3.1 🟡 Raw `localStorage.setItem` bypassed the storage module — `src/main.ts`
+
 - **Bug:** `renderDailyChecks`, "save name", "save mission", and "reset today" wrote
   `localStorage` directly instead of through `persist()`/`persistMany()`. This skipped
   the in-memory store and — more importantly — the debounced **cloud-push trigger** in
   `storage.set()`, so those edits could fail to sync to the signed-in account.
 - **Fix:** Routed all of them through `persist()` / `persistMany()`.
+- **Status:** NOW.
+
+### 3.2 🟡 NCERT second language courses fragmented subject mastery — `src/modules/subjects.ts`
+
+- **Bug:** NCERT language variations (`Hindi Course A`, `Hindi Course B`, `Sanskrit`,
+  `Urdu`) were stored under distinct keys rather than aggregating into the standard
+  `Hindi` mastery category.
+- **Fix:** Added `canonicalSubjectKey` mapping NCERT language courses to `Hindi`.
+- **Status:** NOW. Test: `tests/feature-modules.test.ts`.
+
+### 3.3 🟡 Cloud smart merge missed subject XP max-merge — `src/modules/cloudSync.ts`
+
+- **Bug:** `smartMerge()` replaced the entire `subjects` object instead of doing a
+  per-subject maximum merge, potentially losing mastery XP earned across devices.
+- **Fix:** Deep max-merged `subjects` dictionary in `smartMerge()`, and added missing
+  fields (`lastStreakDate`, `detoxLastDate`, `streakFreezes`, `dailyChecks`, `morningRitual`,
+  `buddyName`, `'Political Science'`) in `wipeProgressKeys()`.
+- **Status:** NOW.
+
+### 3.4 ⚪ Missing known fields in progress import — `src/modules/progressImport.ts`
+
+- **Bug:** `soundSettings` and `activeMission` were omitted from `KNOWN_FIELDS`.
+- **Fix:** Added `soundSettings` and `activeMission` to `KNOWN_FIELDS`.
 - **Status:** NOW.
 
 ---
@@ -118,23 +183,18 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 ## 5. What's left (tracked, not shipped in this PR)
 
 ### NEXT
-- *(none currently — the high/medium XP, streak, sync, and popup issues are closed.)*
+
+- _(none currently — the high/medium XP, streak, sync, and popup issues are closed.)_
 
 ### LATER (minor / cosmetic — documented so they aren't forgotten)
-- ⚪ `src/modules/backlogs.ts` — `getRemainingCount()` can return a **negative** number
-  if `done > total`; it is also unused by the app (the UI uses a `Math.max(0, …)`
-  guarded reduction). Candidate for removal or a guard.
+
 - ⚪ `src/modules/xp.ts` — `addXP(amount, _reason)` ignores `_reason`; harmless but
   dead parameter.
-- ⚪ `src/modules/subjects.ts` — `SUBJECTS` lists a `Political Science` key that is not
-  in the default `data.subjects` object (works via the index signature, but is
-  inconsistent); `SUBJECT_MAP` maps some subjects to shared color classes (cosmetic).
-- ⚪ `src/modules/quests.ts` — the `q_focus` quest label says "Complete 1 focus
-  session" while its check is `getTodayFocusMinutes() >= 25`. Minor label/check wording.
 - ⚪ `src/modules/habits.ts` — `dailyChecks.dc7` is set on completion but never unset
   on undo (deliberately kept: daily checks are "once done, done").
 
 ### REJECT (verified — not bugs)
+
 - `xpLevel`/`xpForLevel` use `Math.floor(need * 1.35)` — matches the spec exactly
   (100 → 135 → 182 → …). Verified by `tests/xp.test.ts` and `tests/ranks.test.ts`.
 - The cloud `progressScore()` / `smartMerge()` "richer side wins" heuristics are
@@ -146,12 +206,12 @@ Legend for severity: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 
 ## Verification (all gates)
 
-| Gate | Result |
-| --- | --- |
-| `npm run typecheck` | ✅ clean |
-| `npm test` | ✅ 451 tests / 36 files green |
-| `npm run build` | ✅ succeeds (PWA + SPA fallback) |
-| `npm run format:check` (files touched) | ✅ pass |
-| `git diff --check` | ✅ clean |
-| `npm audit --omit=dev` | ✅ 0 vulnerabilities |
-| `npm run dev` smoke test | ✅ HTTP 200, app loads, no transform errors |
+| Gate                                   | Result                                      |
+| -------------------------------------- | ------------------------------------------- |
+| `npm run typecheck`                    | ✅ clean (0 errors)                         |
+| `npm test`                             | ✅ 464 tests / 36 files green               |
+| `npm run build`                        | ✅ succeeds (PWA + SPA fallback)            |
+| `npm run format:check` (files touched) | ✅ pass                                     |
+| `git diff --check`                     | ✅ clean                                    |
+| `npm audit --omit=dev`                 | ✅ 0 vulnerabilities                        |
+| `npm run dev` smoke test               | ✅ HTTP 200, app loads, no transform errors |

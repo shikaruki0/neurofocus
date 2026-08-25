@@ -47,12 +47,14 @@ export function getFocusSessionsForDate(isoDate: string): Session[] {
   const daySessions = all
     .filter((session) => session && sessionISODate(session) === isoDate)
     .slice()
-    .sort((a, b) => b.time - a.time);
+    .sort((a, b) => (b.time || 0) - (a.time || 0));
 
-  return daySessions.filter(
-    (session, index, list) =>
-      list.findIndex((candidate) => candidate.time === session.time) === index,
-  );
+  return daySessions.filter((session, index, list) => {
+    if (typeof session.time === 'number' && Number.isFinite(session.time) && session.time > 0) {
+      return list.findIndex((candidate) => candidate.time === session.time) === index;
+    }
+    return true;
+  });
 }
 
 /** Total focus minutes actually recorded on a given local date. */

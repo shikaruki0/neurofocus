@@ -34,11 +34,26 @@ describe('XP System', () => {
       const result = xpLevel(50);
       expect(result.pct).toBe(50);
     });
+
+    it('handles negative or NaN XP safely without crashing', () => {
+      const neg = xpLevel(-50);
+      expect(neg.level).toBe(1);
+      expect(neg.current).toBe(0);
+      expect(neg.pct).toBe(0);
+
+      const nan = xpLevel(NaN);
+      expect(nan.level).toBe(1);
+      expect(nan.current).toBe(0);
+      expect(nan.pct).toBe(0);
+    });
   });
 
   describe('xpForLevel', () => {
-    it('returns 0 for level 1', () => {
+    it('returns 0 for level 1 and non-positive levels', () => {
       expect(xpForLevel(1)).toBe(0);
+      expect(xpForLevel(0)).toBe(0);
+      expect(xpForLevel(-5)).toBe(0);
+      expect(xpForLevel(NaN)).toBe(0);
     });
 
     it('returns 100 for level 2', () => {
@@ -147,6 +162,21 @@ describe('XP System', () => {
       data.xp = 90;
       addXP(20, 'test'); // crosses level 2 but no listener remains
       expect(calls).toBe(0);
+    });
+
+    it('rejects non-positive, NaN, and non-finite XP awards without corrupting state', () => {
+      data.xp = 50;
+      expect(addXP(0, 'zero')).toBe(0);
+      expect(data.xp).toBe(50);
+
+      expect(addXP(-10, 'negative')).toBe(0);
+      expect(data.xp).toBe(50);
+
+      expect(addXP(NaN, 'nan')).toBe(0);
+      expect(data.xp).toBe(50);
+
+      expect(addXP(Infinity, 'infinity')).toBe(0);
+      expect(data.xp).toBe(50);
     });
   });
 });

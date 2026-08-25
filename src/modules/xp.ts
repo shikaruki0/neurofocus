@@ -29,9 +29,10 @@ export interface LevelInfo {
  * @returns Level info
  */
 export function xpLevel(xp: number): LevelInfo {
+  const safeXP = Math.max(0, Number.isFinite(xp) ? xp : 0);
   let level = 1;
   let need = BASE_XP;
-  let remaining = xp;
+  let remaining = safeXP;
 
   while (remaining >= need) {
     remaining -= need;
@@ -53,9 +54,11 @@ export function xpLevel(xp: number): LevelInfo {
  * @returns Total XP needed
  */
 export function xpForLevel(targetLevel: number): number {
+  if (!Number.isFinite(targetLevel) || targetLevel <= 1) return 0;
+  const target = Math.floor(targetLevel);
   let total = 0;
   let need = BASE_XP;
-  for (let i = 1; i < targetLevel; i++) {
+  for (let i = 1; i < target; i++) {
     total += need;
     need = Math.floor(need * XP_MULTIPLIER);
   }
@@ -114,12 +117,13 @@ export function onLevelUp(listener: LevelUpListener): () => void {
  * @returns Actual XP gained (after multiplier)
  */
 export function addXP(amount: number, _reason: string): number {
+  if (!Number.isFinite(amount) || amount <= 0) return 0;
   const mult = getMultiplier();
   const total = Math.floor(amount * mult);
-  if (total <= 0) return 0;
+  if (!Number.isFinite(total) || total <= 0) return 0;
 
   const before = xpLevel(data.xp).level;
-  data.xp += total;
+  data.xp = Math.max(0, Number.isFinite(data.xp) ? data.xp : 0) + total;
   persist('xp');
   const after = xpLevel(data.xp).level;
 

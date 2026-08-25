@@ -93,6 +93,17 @@ export function toggleHabit(id: number): void {
  * @param id - Habit ID
  */
 export function deleteHabit(id: number): void {
+  const habit = data.habits.find((h) => h.id === id);
+  if (habit) {
+    if (habit.today && (data.habitsToday || 0) > 0) {
+      data.habitsToday = Math.max(0, (data.habitsToday || 0) - 1);
+      persist('habitsToday');
+    }
+    if (habit.xpAwarded !== undefined) {
+      data.xp = Math.max(0, (data.xp || 0) - habit.xpAwarded);
+      persist('xp');
+    }
+  }
   data.habits = data.habits.filter((h) => h.id !== id);
   persist('habits');
 }

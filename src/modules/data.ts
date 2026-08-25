@@ -182,6 +182,7 @@ export const data = {
     Biology: 0,
     History: 0,
     Geography: 0,
+    'Political Science': 0,
     Economics: 0,
     Hindi: 0,
     English: 0,

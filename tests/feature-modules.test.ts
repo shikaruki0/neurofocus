@@ -136,6 +136,19 @@ describe('Subject mastery', () => {
     const physics = getSubjectsWithInfo().find((subject) => subject.name === 'Physics');
     expect(physics).toMatchObject({ xp: 25, cls: 'physics' });
   });
+
+  it('maps NCERT second language courses (Hindi Course A/B, Sanskrit, Urdu) to Hindi mastery', () => {
+    addSubjectXP('Hindi Course A', 25);
+    addSubjectXP('Hindi Course B', 25);
+    addSubjectXP('Sanskrit', 25);
+    addSubjectXP('Urdu', 25);
+
+    expect(data.subjects.Hindi).toBe(100);
+
+    const hindi = getSubjectsWithInfo().find((subject) => subject.name === 'Hindi');
+    expect(hindi).toMatchObject({ xp: 100, cls: 'hindi' });
+    expect(hindi?.level).toBeGreaterThan(1);
+  });
 });
 
 describe('Backlog module', () => {

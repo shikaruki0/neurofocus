@@ -512,11 +512,13 @@ function renderStreak() {
   const btn = qs<HTMLElement>('#freeze-btn');
   const cmdFreeze = qs<HTMLElement>('#freeze-count-cmd');
   const cmdStreak = qs<HTMLElement>('#cmd-streak-num');
+  const pFreezeNum = qs<HTMLElement>('#p-freeze-num');
 
   if (elNum) elNum.textContent = String(info.consecutive);
   if (elFreeze) elFreeze.textContent = t('home.freezes_count', { count: info.freezes });
   if (cmdFreeze) cmdFreeze.textContent = String(info.freezes);
   if (cmdStreak) cmdStreak.textContent = String(info.consecutive);
+  if (pFreezeNum) pFreezeNum.textContent = String(info.freezes);
 
   if (btn) {
     const canFreeze = canUseFreeze();
@@ -3363,6 +3365,13 @@ function setupEventListeners() {
     });
     if (!confirmed) return;
     data.dailyChecks = {};
+    if (data.detoxLastDate === todayStr()) {
+      data.detoxStreak = Math.max(0, (data.detoxStreak || 0) - 1);
+      data.consecutiveStreak = Math.max(0, (data.consecutiveStreak || 0) - 1);
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      data.lastStreakDate = data.consecutiveStreak > 0 ? yesterday.toDateString() : null;
+    }
     data.detoxLastDate = null;
     // Remove today's recorded sessions too. Zeroing only the counter used to leave
     // the sessions behind, so Home showed 0h while "Today's Focus" still listed work.
@@ -3382,6 +3391,9 @@ function setupEventListeners() {
     // localStorage.setItem here used to silently skip the cloud-push trigger).
     persistMany([
       'dailyChecks',
+      'detoxStreak',
+      'consecutiveStreak',
+      'lastStreakDate',
       'detoxLastDate',
       'focusMinutes',
       'focusDate',

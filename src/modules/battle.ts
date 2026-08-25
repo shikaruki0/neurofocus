@@ -81,9 +81,18 @@ export function toggleTask(id: number): void {
 
 /**
  * Deletes a task.
+ * Revokes the completion credit when deleting a done task — otherwise
+ * create → complete → delete → recreate mints the +10 (or boosted) XP every
+ * cycle with zero work (the same farm deleteHabit already closes).
  * @param id - Task ID
  */
 export function deleteTask(id: number): void {
+  const task = data.battle.find((t) => t.id === id);
+  if (task && task.xpAwarded !== undefined) {
+    data.xp = Math.max(0, (data.xp || 0) - task.xpAwarded);
+    task.xpAwarded = undefined;
+    persist('xp');
+  }
   data.battle = data.battle.filter((t) => t.id !== id);
   persist('battle');
 }

@@ -246,7 +246,7 @@ export function completeCurrentBlock(options?: {
   const missionComplete = nextIndex === -1;
   if (missionComplete) {
     active.status = 'completed';
-    // Exactly one lecture backlog se reduce karo (Milestone 3)
+    // Exactly one lecture is cleared from the linked backlog (Milestone 3).
     if (active.backlogId && !active.backlogUpdated) {
       incrementBacklog(active.backlogId);
       active.backlogUpdated = true;

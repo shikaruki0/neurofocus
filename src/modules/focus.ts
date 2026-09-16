@@ -1,12 +1,27 @@
 /**
  * Focus Timer — Pomodoro (25min), Deep Work (52min), Flow State (90min).
  * Tracks sessions, awards XP, and survives reloads/background suspension.
+ *
+ * BACKGROUND RELIABILITY — why this file is more than a simple setInterval:
+ *  Mobile browsers throttle or fully suspend intervals when the tab is hidden,
+ *  the screen is off, or the PWA is in background. The timer MUST keep correct
+ *  wall-clock time and MUST credit the session at the REAL deadline, not at the
+ *  moment the user happens to reopen the app. That is achieved by:
+ *   1. Persisting an absolute `endTimestamp` (wall-clock deadline) at start.
+ *   2. Deriving `remainingSeconds` from `endTimestamp - Date.now()` on EVERY read
+ *      (tick, getTimerState, visibility resume), never by decrementing a counter.
+ *   3. Scheduling an exact `setTimeout` for the deadline in addition to the
+ *      500 ms poll, plus listening to every Page Lifecycle event that fires when
+ *      the user returns (visibilitychange, pageshow, focus, resume, freeze).
+ *   4. Recording the session with `time = endTimestamp` (the true finish moment)
+ *      instead of `Date.now()` at detection time, so history and daily stats stay
+ *      truthful even when detection is delayed by minutes.
  */
 
 import { data, persist } from './data.ts';
 import type { Session } from './data.ts';
 import { get, remove, set } from './storage.ts';
-import { todayStr } from '../utils/date.ts';
+import { todayStr, localISODate } from '../utils/date.ts';
 import { addXP } from './xp.ts';
 
 export interface TimerMode {
@@ -66,6 +81,7 @@ let currentMode = 0;
 let remainingSeconds = TIMER_MODES[0].minutes * 60;
 let totalSeconds = remainingSeconds;
 let intervalId: ReturnType<typeof setInterval> | null = null;
+let completionTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let isRunning = false;
 let endTimestamp = 0;
 let isCompleting = false;
@@ -117,11 +133,39 @@ function clearTimerInterval(): void {
   }
 }
 
+function clearCompletionTimeout(): void {
+  if (completionTimeoutId !== null) {
+    clearTimeout(completionTimeoutId);
+    completionTimeoutId = null;
+  }
+}
+
 /** Recalculates from an absolute deadline so throttled background tabs stay accurate. */
 function syncRunningTimer(): void {
   if (!isRunning) return;
-  remainingSeconds = Math.max(0, Math.ceil((endTimestamp - Date.now()) / 1000));
+  // Clamp to [0, totalSeconds] so a clock that jumped backwards cannot show > 100%.
+  const raw = Math.ceil((endTimestamp - Date.now()) / 1000);
+  remainingSeconds = Math.max(0, Math.min(totalSeconds, raw));
   if (remainingSeconds === 0) completeSession();
+}
+
+function scheduleCompletionTimeout(): void {
+  clearCompletionTimeout();
+  if (!isRunning) return;
+  const delay = endTimestamp - Date.now();
+  if (delay <= 0) {
+    // Already overdue — sync will complete immediately.
+    syncRunningTimer();
+    return;
+  }
+  // Schedule an exact wake-up for the deadline. Even when throttled, this fires
+  // as soon as the browser resumes timers, complementing the 500 ms poll.
+  // Guard against huge delays (> 24 days would overflow setTimeout; our max is 90 min).
+  const safeDelay = Math.min(delay, 2_147_483_647);
+  completionTimeoutId = setTimeout(() => {
+    syncRunningTimer();
+    notifyTick();
+  }, safeDelay + 20);
 }
 
 function scheduleTicks(): void {
@@ -130,6 +174,7 @@ function scheduleTicks(): void {
     syncRunningTimer();
     notifyTick();
   }, 500);
+  scheduleCompletionTimeout();
 }
 
 function restoreTimerState(): void {
@@ -242,11 +287,14 @@ export function startTimer(): void {
 export function pauseTimer(): void {
   if (isRunning) {
     remainingSeconds = Math.max(0, Math.ceil((endTimestamp - Date.now()) / 1000));
+    // Clamp after pause as well
+    remainingSeconds = Math.min(totalSeconds, remainingSeconds);
   }
   isRunning = false;
   endTimestamp = 0;
   wasPaused = true;
   clearTimerInterval();
+  clearCompletionTimeout();
   saveTimerState();
 }
 
@@ -256,6 +304,7 @@ export function stopTimer(): void {
   endTimestamp = 0;
   wasPaused = false;
   clearTimerInterval();
+  clearCompletionTimeout();
   remainingSeconds = activeMinutes() * 60;
   totalSeconds = remainingSeconds;
   saveTimerState();
@@ -266,16 +315,22 @@ function completeSession(): void {
   if (isCompleting) return;
   isCompleting = true;
 
+  // Capture the authoritative completion moment BEFORE anything clears it.
+  // This is the REAL wall-clock deadline the user committed to, not the moment
+  // we happened to notice it (which can be minutes later when the tab was hidden).
+  const ourEndTimestamp = endTimestamp;
+  const completedAt = ourEndTimestamp;
+
   // Double-completion guard (multi-tab): if another browser tab already consumed
   // this session, the persisted timer state will have changed or been removed.
   // Skip awarding and resync this tab to idle instead of double-crediting XP.
-  const ourEndTimestamp = endTimestamp;
   const savedState = get<Partial<PersistedTimerState> | null>(TIMER_STORAGE_KEY, null);
   if (!savedState || savedState.running !== true || savedState.endTimestamp !== ourEndTimestamp) {
     isRunning = false;
     endTimestamp = 0;
     wasPaused = false;
     clearTimerInterval();
+    clearCompletionTimeout();
     remainingSeconds = activeMinutes() * 60;
     totalSeconds = remainingSeconds;
     saveTimerState();
@@ -287,6 +342,7 @@ function completeSession(): void {
   endTimestamp = 0;
   wasPaused = false;
   clearTimerInterval();
+  clearCompletionTimeout();
   remove(TIMER_STORAGE_KEY);
 
   // Preserve the exact preset object for standard modes; synthesize one for custom blocks.
@@ -294,32 +350,51 @@ function completeSession(): void {
     customMinutes !== null
       ? { minutes: activeMinutes(), xp: activeXp(), label: activeLabel() }
       : TIMER_MODES[currentMode];
-  const today = todayStr();
-  data.focusMinutes = (data.focusMinutes || 0) + mode.minutes;
+
+  // Use the TRUE completion moment for every record. Previously we used
+  // Date.now() / todayStr() at detection time, so a session that actually ended
+  // at 10:25 but was only noticed at 10:40 (because the phone was locked) was
+  // stamped 10:40 and could even land on the wrong calendar day.
+  const completedDate = new Date(completedAt);
+  const completedDayStr = completedDate.toDateString();
+  const completedISO = localISODate(completedDate);
+  const nowISO = localISODate();
+  const isToday = completedISO === nowISO;
+
+  // Lifetime totals always grow, even for a late-detected session from a prior day.
   data.totalFocusMinutes = (data.totalFocusMinutes || 0) + mode.minutes;
-  data.focusDate = today;
-  // Record XP + label per session so Focus History can show exact daily XP and
-  // keep mission/custom names even after the mission is cleared.
-  if (data.flowState.date !== today) data.flowState = { date: today, sessions: 0 };
-  data.flowState.sessions = (data.flowState.sessions || 0) + 1;
-  data.dailyChecks.dc6 = true;
+
+  // Daily counters only grow when the session actually finished TODAY.
+  // If the timer finished yesterday but we only noticed today (e.g. PWA was killed
+  // for hours), crediting it to today would lie in the Home / Weekly charts.
+  // The session still appears in history under its real date via the session log,
+  // which is the single source of truth for daily totals (see focusDaily.ts).
+  if (isToday) {
+    data.focusMinutes = (data.focusMinutes || 0) + mode.minutes;
+    data.focusDate = completedDayStr;
+    if (data.flowState.date !== completedDayStr) data.flowState = { date: completedDayStr, sessions: 0 };
+    data.flowState.sessions = (data.flowState.sessions || 0) + 1;
+    data.dailyChecks.dc6 = true;
+    persist('focusMinutes');
+    persist('focusDate');
+    persist('flowState');
+    persist('dailyChecks');
+  }
+  // For past-day completions we still ensure history is writeable and let
+  // reconcileDailyFocus heal today's counters on next render — no direct bump.
 
   const credited = addXP(mode.xp, 'Deep Work XP');
 
   data.sessions.push({
-    date: today,
-    time: Date.now(),
+    date: completedDayStr,
+    time: completedAt,
     duration: mode.minutes,
     xp: credited,
     label: mode.label,
   });
 
-  persist('focusMinutes');
   persist('totalFocusMinutes');
-  persist('focusDate');
   persist('sessions');
-  persist('flowState');
-  persist('dailyChecks');
 
   remainingSeconds = mode.minutes * 60;
   totalSeconds = remainingSeconds;
@@ -396,12 +471,43 @@ export function consumePendingCompletion(): TimerMode | null {
 // Restore immediately when the module loads. This is local-only and works offline.
 restoreTimerState();
 
-// Mobile browsers may throttle intervals; reconcile as soon as the app is visible again.
+// Reconcile immediately when the app becomes visible again — and on every other
+// signal that the OS may have unsuspended us. Mobile browsers throttle intervals
+// aggressively; without these listeners a timer that finished while the screen
+// was off would still show "24:xx" until the next throttled tick minutes later.
+function handleResumeSync(): void {
+  if (isRunning) {
+    syncRunningTimer();
+    scheduleCompletionTimeout();
+  }
+  // Always tick the UI so a user who just unlocked sees the true remaining time
+  // instantly, not a stale number from before the screen turned off.
+  notifyTick();
+}
+
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && isRunning) {
-      syncRunningTimer();
-      notifyTick();
-    }
+    if (document.visibilityState === 'visible') handleResumeSync();
   });
+  // Persist before the browser freezes or discards the page (Page Lifecycle API)
+  // so a later restore has an exact endTimestamp.
+  document.addEventListener('freeze', () => {
+    if (isRunning) saveTimerState();
+  });
+  document.addEventListener('resume', handleResumeSync);
+  // `pageshow` fires on bfcache restores where visibilitychange may not.
+  window.addEventListener('pageshow', handleResumeSync);
+  window.addEventListener('focus', handleResumeSync);
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', () => {
+    if (isRunning) saveTimerState();
+  });
+  window.addEventListener('beforeunload', () => {
+    if (isRunning) saveTimerState();
+  });
+  // Extra safety: if the device comes back online after being offline in background,
+  // re-sync (helps when clock may have drifted).
+  window.addEventListener('online', handleResumeSync);
 }

@@ -4,6 +4,8 @@
  *
  * Mirrors focus.ts patterns: deadline-based countdown (survives background
  * throttling), 500ms sync interval, and persistence across reloads.
+ * Now also survives full background suspension via exact completion timeout
+ * and Page Lifecycle resume handlers (same as focus.ts).
  */
 
 import { get, remove, set } from './storage.ts';
@@ -14,6 +16,7 @@ const URGE_STORAGE_KEY = 'urgeTimer';
 let remainingSeconds = DEFAULT_DURATION;
 let totalSeconds = DEFAULT_DURATION;
 let intervalId: ReturnType<typeof setInterval> | null = null;
+let completionTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let isRunning = false;
 let endTimestamp = 0;
 let isCompleting = false;
@@ -50,6 +53,13 @@ function clearUrgeInterval(): void {
   }
 }
 
+function clearCompletionTimeout(): void {
+  if (completionTimeoutId !== null) {
+    clearTimeout(completionTimeoutId);
+    completionTimeoutId = null;
+  }
+}
+
 function saveUrgeState(): void {
   set(URGE_STORAGE_KEY, {
     version: 1,
@@ -62,8 +72,23 @@ function saveUrgeState(): void {
 /** Recalculates from an absolute deadline so throttled background tabs stay accurate. */
 function syncRunningTimer(): void {
   if (!isRunning) return;
-  remainingSeconds = Math.max(0, Math.ceil((endTimestamp - Date.now()) / 1000));
+  const raw = Math.ceil((endTimestamp - Date.now()) / 1000);
+  remainingSeconds = Math.max(0, Math.min(totalSeconds, raw));
   if (remainingSeconds === 0) completeTimer();
+}
+
+function scheduleCompletionTimeout(): void {
+  clearCompletionTimeout();
+  if (!isRunning) return;
+  const delay = endTimestamp - Date.now();
+  if (delay <= 0) {
+    syncRunningTimer();
+    return;
+  }
+  completionTimeoutId = setTimeout(() => {
+    syncRunningTimer();
+    onTickCallback(getState());
+  }, Math.min(delay, 2_147_483_647) + 20);
 }
 
 function scheduleTicks(): void {
@@ -72,6 +97,7 @@ function scheduleTicks(): void {
     syncRunningTimer();
     onTickCallback(getState());
   }, 500);
+  scheduleCompletionTimeout();
 }
 
 function restoreUrgeState(): void {
@@ -129,6 +155,7 @@ function stopUrgeTimer(): void {
   isRunning = false;
   endTimestamp = 0;
   clearUrgeInterval();
+  clearCompletionTimeout();
 }
 
 function completeTimer(): void {
@@ -186,12 +213,32 @@ export function consumePendingCompletion(): boolean {
 // Restore persisted state on module load.
 restoreUrgeState();
 
-// Mobile browsers may throttle intervals; reconcile on visibility change.
+function handleResumeSync(): void {
+  if (isRunning) {
+    syncRunningTimer();
+    scheduleCompletionTimeout();
+  }
+  onTickCallback(getState());
+}
+
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && isRunning) {
-      syncRunningTimer();
-      onTickCallback(getState());
-    }
+    if (document.visibilityState === 'visible') handleResumeSync();
   });
+  document.addEventListener('freeze', () => {
+    if (isRunning) saveUrgeState();
+  });
+  document.addEventListener('resume', handleResumeSync);
+  window.addEventListener('pageshow', handleResumeSync);
+  window.addEventListener('focus', handleResumeSync);
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', () => {
+    if (isRunning) saveUrgeState();
+  });
+  window.addEventListener('beforeunload', () => {
+    if (isRunning) saveUrgeState();
+  });
+  window.addEventListener('online', handleResumeSync);
 }

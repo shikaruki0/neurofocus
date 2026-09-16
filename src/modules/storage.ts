@@ -38,7 +38,7 @@ export function get<T = unknown>(key: string, fallback: T = null as T): T {
   }
 }
 
-/** Keys that are meta / auth and must not trigger a cloud push. */
+/** Keys that are meta / auth / transient and must not trigger a cloud push. */
 const NO_CLOUD_PUSH_KEYS = new Set([
   'authUser',
   'backupSnapshots',
@@ -49,6 +49,9 @@ const NO_CLOUD_PUSH_KEYS = new Set([
   'welcomeSeen',
   'locale',
   'languageChosen',
+  // Ephemeral timer state — not progress, just the running countdown.
+  'focusTimer',
+  'urgeTimer',
 ]);
 
 /**

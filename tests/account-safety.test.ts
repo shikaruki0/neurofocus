@@ -168,19 +168,43 @@ describe('Account start and data safety', () => {
 
   // ─── CSP ──────────────────────────────────────────────────────────
 
-  it('allows Supabase Auth requests in the content security policy', () => {
+  it('keeps the CSP strict and injects the Supabase origin only at build time', async () => {
     const html = readFileSync('index.html', 'utf8');
-    expect(html).toContain(
-      "connect-src 'self' https://zgrwthwfbjzpwngfazwc.supabase.co wss://zgrwthwfbjzpwngfazwc.supabase.co;",
+    // The repo must not hard-code any Supabase project reference anymore —
+    // the origin is added to connect-src only when VITE_SUPABASE_URL is set
+    // for a given environment (see cspPlugin in vite.config.ts).
+    expect(html).toContain('http-equiv="Content-Security-Policy"');
+    expect(html).toContain('__CSP_CONTENT__');
+    expect(html).not.toContain('.supabase.co');
+
+    const { cspPlugin } = await import('../vite.config.ts');
+    const render = (env: Record<string, string>) =>
+      cspPlugin(env).transformIndexHtml('<meta content="__CSP_CONTENT__" />') as string;
+
+    // A configured https project extends connect-src with exactly its origin.
+    const configured = render({ VITE_SUPABASE_URL: 'https://proj.supabase.co' });
+    expect(configured).toContain("connect-src 'self' https://proj.supabase.co");
+    // http:// URLs and garbage never extend the policy.
+    expect(render({ VITE_SUPABASE_URL: 'http://proj.supabase.co' })).not.toContain(
+      'http://proj.supabase.co',
     );
+    expect(render({ VITE_SUPABASE_URL: 'not a url' })).not.toContain('not a url');
+    // No env (local-only / GitHub Pages) ships a strict CSP without extra hosts.
+    expect(render({})).not.toContain('.supabase.co');
   });
 
-  it('does not weaken other CSP restrictions', () => {
-    const html = readFileSync('index.html', 'utf8');
-    expect(html).toContain("script-src 'self'");
-    expect(html).toContain("object-src 'none'");
-    expect(html).toContain("base-uri 'self'");
-    expect(html).toContain("frame-ancestors 'none'");
+  it('does not weaken other CSP restrictions', async () => {
+    const { cspPlugin } = await import('../vite.config.ts');
+    const policy = cspPlugin({}).transformIndexHtml('__CSP_CONTENT__') as string;
+    expect(policy).toContain("default-src 'self'");
+    expect(policy).toContain("script-src 'self'");
+    expect(policy).toContain("object-src 'none'");
+    expect(policy).toContain("base-uri 'self'");
+    expect(policy).toContain("form-action 'self'");
+    expect(policy).toContain("frame-ancestors 'none'");
+    // No eval, no wildcard hosts, no third-party script sources.
+    expect(policy).not.toContain("'unsafe-eval'");
+    expect(policy).not.toMatch(/script-src[^;]*https?:\/\//);
   });
 
   // ─── Local backup ────────────────────────────────────────────────

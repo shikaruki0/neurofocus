@@ -41,6 +41,81 @@ const META_KEYS = new Set([
   'cloudRevision',
 ]);
 
+/**
+ * Per-account local caches written by bindLocalDataToUser (key =
+ * `accountCache:<userId>`). These contain ANOTHER account's full progress and
+ * are strictly per-device. They must never be uploaded to a cloud row — doing
+ * so leaked Account A's private data into Account B's synced state on shared
+ * devices — and must never be applied from a cloud row.
+ */
+const EXCLUDED_KEY_PREFIXES = ['accountCache:'];
+
+function isExcludedSyncKey(key: string): boolean {
+  if (META_KEYS.has(key)) return true;
+  for (const prefix of EXCLUDED_KEY_PREFIXES) {
+    if (key.startsWith(prefix)) return true;
+  }
+  return false;
+}
+
+/**
+ * The complete set of storage keys this app version knows how to use. Restores
+ * (from cloud rows or account caches) apply ONLY these keys; anything else is
+ * dropped. This makes a cloud row / imported snapshot a read-only source of
+ * known app state instead of an arbitrary write primitive into localStorage —
+ * a defense-in-depth layer on top of Supabase RLS.
+ */
+const RESTORE_ALLOWED_KEYS = new Set<string>([
+  // data.ts fields (the shared progress object)
+  'profileName',
+  'mission',
+  'xp',
+  'detoxStreak',
+  'consecutiveStreak',
+  'lastStreakDate',
+  'detoxLastDate',
+  'dailyChecks',
+  'dailyCheckDate',
+  'studentProfile',
+  'initialBacklogSetupComplete',
+  'dailyClassCheck',
+  'backlogs',
+  'habits',
+  'battle',
+  'focusMinutes',
+  'totalFocusMinutes',
+  'focusDate',
+  'flowState',
+  'badgesUnlocked',
+  'dailyQuests',
+  'morningRitual',
+  'subjects',
+  'weeklyStats',
+  'streakFreezes',
+  'buddyName',
+  'hasOnboarded',
+  'lastLoginAt',
+  'streakClaimToday',
+  'backlogsToday',
+  'habitsToday',
+  'sessions',
+  'autoTheme',
+  'theme',
+  'soundSettings',
+  // app-level keys (ephemeral timers, UI prefs, missions, import legacy alias)
+  'statCheck',
+  'habitCheck',
+  'quoteDate',
+  'quoteText',
+  'welcomeSeen',
+  'locale',
+  'languageChosen',
+  'focusTimer',
+  'urgeTimer',
+  'activeMission',
+  'badges',
+]);
+
 /** Keys that count as real user progress (for conflict detection). */
 const PROGRESS_SIGNAL_KEYS = new Set([
   'xp',
@@ -70,7 +145,7 @@ let lastKnownCloudUpdatedAt: string | null = null;
 let applyingRemote = false;
 
 function appSnapshot(): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(exportAll()).filter(([key]) => !META_KEYS.has(key)));
+  return Object.fromEntries(Object.entries(exportAll()).filter(([key]) => !isExcludedSyncKey(key)));
 }
 
 function isNonEmptyValue(item: unknown): boolean {
@@ -151,10 +226,15 @@ const STORAGE_KEY_TO_DATA_FIELD: Record<string, keyof typeof data> = {
 function restoreApp(value: Record<string, unknown>): void {
   applyingRemote = true;
   try {
-    // Never let cloud wipe/override auth session keys.
+    // Never let cloud wipe/override auth session keys or account caches, and
+    // only accept keys this app version actually uses (see RESTORE_ALLOWED_KEYS).
     const safe: Record<string, unknown> = {};
     for (const [key, item] of Object.entries(value || {})) {
-      if (META_KEYS.has(key)) continue;
+      if (isExcludedSyncKey(key)) continue;
+      if (!RESTORE_ALLOWED_KEYS.has(key)) {
+        console.debug('cloudSync: ignoring unknown key from restore', key);
+        continue;
+      }
       safe[key] = item;
     }
     importAll(safe);

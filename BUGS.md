@@ -371,7 +371,11 @@ Findings and fixes:
   `typecheck`, no tests. A red test suite or a type regression would still
   deploy to production.
 - **Fix:** `npm run typecheck` + `npm test` now gate the build.
-- **Status:** NOW.
+- **Status:** NOW (committed on this branch as the "ci: gate deployment…"
+  commit). NOTE: the GitHub App used by this session lacks the `workflows`
+  permission, so that single commit could not be pushed; it is the last
+  commit on the branch and pushes cleanly once permission is granted (or
+  apply the 6-line change manually — snippet in the PR description).
 
 ### 6.6 🟡 Hard-coded Supabase project URL in the CSP meta tag — `index.html`, `vite.config.ts`
 

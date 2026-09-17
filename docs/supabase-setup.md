@@ -22,9 +22,47 @@ create policy "Users can insert their own state"
 create policy "Users can update their own state"
   on public.user_states for update using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+create policy "Users can delete their own state"
+  on public.user_states for delete using (auth.uid() = user_id);
 ```
 
 If policies already exist, do not create duplicate policies; review them in the Table Editor.
+
+The DELETE policy is what makes the in-app **"Delete ALL your progress"** action
+also remove the account's cloud row. Without it, "delete forever" only cleared
+local data and the cloud row (with the full study history) stayed behind.
+
+### Verify RLS from the outside (read-only)
+
+Run this from any machine, using the project's **public anon key** (the
+`VITE_SUPABASE_ANON_KEY` value — it is public by design and shipped in the
+app bundle; no secrets are involved):
+
+```bash
+curl -s "https://<your-project>.supabase.co/rest/v1/user_states?select=updated_at&limit=1" \
+  -H "apikey: <anon-key>"
+```
+
+**Expected result: `[]`** (empty array, HTTP 200). RLS is doing its job — an
+anonymous caller can see zero rows.
+
+- If the response contains **rows**, RLS is not enforced on `user_states`.
+  Treat this as an active data-exposure incident: re-run the SQL above, and
+  check for extra permissive policies (below).
+- If the response is a **401/403 with no rows**, that is also acceptable
+  (stricter than expected).
+
+Also list the active policies in the SQL Editor:
+
+```sql
+select policyname, permissive, roles, cmd, qual, with_check
+from pg_policies
+where tablename = 'user_states';
+```
+
+You should see exactly the four policies above (select/insert/update/delete),
+all with `qual`/`with_check` containing `auth.uid() = user_id`. Any policy
+with `TRUE` (or a looser condition) is a finding — drop it.
 
 ## 2. Configure email login (important)
 
@@ -76,14 +114,14 @@ Never put a service-role key in the frontend or commit `.env.local`. Restart Vit
 
 ## 4. How cross-device sync works
 
-| Moment | What happens |
-|--------|----------------|
-| Sign in / open app while signed in | Device loads cloud progress for **this account**. Empty device restores cloud. Richer side wins; close scores smart-merge. |
-| You add backlog, XP, habits, etc. | Local save triggers a **debounced cloud push** (~1s). |
-| You switch tabs / leave the page | Latest progress is flushed to cloud. |
-| You come back / other device was used | App **pulls** newer cloud data and refreshes the UI. |
-| Settings → **Sync now** | Pull + merge + push immediately. |
-| Logout | Flushes cloud, then ends session. Local guest data is not deleted. |
+| Moment                                | What happens                                                                                                               |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Sign in / open app while signed in    | Device loads cloud progress for **this account**. Empty device restores cloud. Richer side wins; close scores smart-merge. |
+| You add backlog, XP, habits, etc.     | Local save triggers a **debounced cloud push** (~1s).                                                                      |
+| You switch tabs / leave the page      | Latest progress is flushed to cloud.                                                                                       |
+| You come back / other device was used | App **pulls** newer cloud data and refreshes the UI.                                                                       |
+| Settings → **Sync now**               | Pull + merge + push immediately.                                                                                           |
+| Logout                                | Flushes cloud, then ends session. Local guest data is not deleted.                                                         |
 
 One row in `user_states` = one account. PC and phone signed into the **same email** share that row.
 

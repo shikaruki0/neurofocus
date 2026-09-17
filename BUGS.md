@@ -307,14 +307,124 @@ symmetry, reset flows, and account-switching leaks.
 
 ---
 
+## 6. Security audit (defense-in-depth hardening)
+
+Full audit: auth, cloud sync, import/restore, XSS surface, CI, CSP, deployment.
+Findings and fixes:
+
+### 6.1 🟠 Cross-account data leak via `accountCache:*` in cloud uploads — `src/modules/cloudSync.ts`
+
+- **Bug:** `bindLocalDataToUser()` caches each signed-in account's full
+  progress under `accountCache:<userId>` (shared-device account switching).
+  `appSnapshot()` excluded only `META_KEYS`, so every cloud upload
+  (`syncOnLogin`, `syncNow`, `flushCloudSync`) included the cached progress of
+  **other** accounts that had used the same device. On a shared phone/tablet,
+  signing in as Account B silently uploaded Account A's private study data
+  (name, backlog, mission, habits, XP) into B's `user_states` row — where B
+  (or anyone restoring that row) could see it via backup export.
+- **Fix:** `isExcludedSyncKey()` now also drops `accountCache:*` from the
+  snapshot, and `restoreApp()` refuses to apply them from a cloud row (so an
+  already-leaked row cannot re-infect the next device either).
+- **Status:** NOW. Test: `tests/sync-isolation.test.ts`.
+
+### 6.2 🟠 Cloud row was an arbitrary localStorage write primitive — `src/modules/cloudSync.ts`
+
+- **Bug:** `restoreApp()` applied every key found in the cloud `app_data`
+  (except a small meta blocklist). If RLS were misconfigured — or a future
+  code path ever wrote an untrusted row — an attacker-controlled row could
+  seed arbitrary `nf_*` keys on the victim's device (e.g. a forged
+  `focusTimer` state, `welcomeSeen`, `lastCloudPushAt` sync bookkeeping).
+- **Fix:** restores now apply only `RESTORE_ALLOWED_KEYS` — the explicit set
+  of storage keys this app version knows. Unknown keys are dropped and
+  `console.debug`-logged. Defense in depth on top of RLS, not a replacement.
+- **Status:** NOW. Test: `tests/sync-isolation.test.ts`.
+
+### 6.3 🟠 Raw interpolation of data-row fields into innerHTML attributes — `src/main.ts`
+
+- **Bug:** `renderBacklogs`/`renderHabits`/`renderBattle` interpolated
+  `b.id`/`h.id`/`taskItem.id` raw into `data-id="..."` inside innerHTML
+  templates. Ids are normally `Date.now()` numbers, but rows can arrive from
+  cloud sync or an imported backup with arbitrary shapes (import validation
+  only checks the array type, not row shape). A crafted string id containing
+  quotes could break out of the attribute (execution only possible if the CSP
+  is ever bypassed — but the attribute-break itself was a real hygiene hole).
+  Same class of issue: quest `reward` and focus-history `duration` were
+  rendered un-coerced.
+- **Fix:** `safeEntityId()` / `safeCount()` helpers — ids are coerced to
+  non-negative integer strings (handlers already `parseInt` them, so `'0'`
+  simply no-ops), counts are coerced to non-negative integers.
+- **Status:** NOW.
+
+### 6.4 🟠 "Delete ALL your progress" left the cloud row behind — `src/main.ts`, `docs/supabase-setup.md`
+
+- **Bug:** the reset-all flow cleared local storage and reloaded, but the
+  account's `user_states` row (full study history) persisted in Supabase
+  forever. There was also no DELETE RLS policy in the documented schema.
+- **Fix:** best-effort `user_states.delete()` for the signed-in user before
+  clearing local data (never blocks the local delete), plus the documented
+  `Users can delete their own state` policy.
+- **Status:** NOW.
+
+### 6.5 🟠 Deployment shipped unverified code — `.github/workflows/deploy.yml`
+
+- **Bug:** the Pages workflow ran `npm ci && npm run build` only — no
+  `typecheck`, no tests. A red test suite or a type regression would still
+  deploy to production.
+- **Fix:** `npm run typecheck` + `npm test` now gate the build.
+- **Status:** NOW.
+
+### 6.6 🟡 Hard-coded Supabase project URL in the CSP meta tag — `index.html`, `vite.config.ts`
+
+- **Issue:** the strict CSP meta tag embedded the exact production project
+  reference (`connect-src https://zgrwthwfbjzpwngfazwc...`). Any environment
+  change (project rotation, per-deploy env) would require a code change, and
+  the repo permanently fingerprints the project.
+- **Fix:** `__CSP_CONTENT__` placeholder replaced at build/dev time by the
+  `neurofocus-csp` Vite plugin, which adds only the `VITE_SUPABASE_URL`
+  **https** origin when configured (https-only, URL-sanitized; no wss — the
+  app uses no Realtime channels). Local/GitHub-Pages builds ship a strict CSP
+  without the extra origin. Same policy as before for the live Vercel env.
+- **Status:** NOW.
+
+### 6.7 🟡 Production source maps — `vite.config.ts`
+
+- **Issue:** `build.sourcemap: true` shipped full original-source maps with
+  the production bundle — free reconnaissance for anyone finding a client bug.
+- **Fix:** `sourcemap: mode !== 'production'`.
+- **Status:** NOW.
+
+### Security: remaining risks (tracked, not code changes)
+
+- 🟡 **RLS on `user_states` must be verified on the live project** — the
+  documented schema is correct, but a live read-only probe is required
+  (procedure added to `docs/supabase-setup.md`: anon-key curl must return
+  `[]`, and `pg_policies` must show exactly the four `auth.uid() = user_id`
+  policies). Code above is hard so the app is safe even if RLS regresses.
+- ⚪ **Client-side gamification is trusted by design** — XP/levels live in
+  localStorage; `smartMerge` takes `Math.max` for XP, so devtools-farmed XP
+  can be merged into the cloud. Inherent to a backend-free product; a server
+  authority (edge function validating session-credit rules) is the only real
+  fix, and is a product decision.
+- ⚪ **ESLint cannot parse the codebase** — `@typescript-eslint` v7 is
+  incompatible with the project's TypeScript 7 (`ts.SyntaxKind.BarBarToken`
+  crash). `npm run lint` is an intentional no-op. Re-enable once a TS7-
+  compatible `@typescript-eslint` (v9+) lands; `typecheck` + tests are the
+  active CI gate in the meantime.
+- ⚪ **No client-side login throttle** — relies on Supabase Attack Protection
+  (rate limits + optional CAPTCHA, recommended in the setup docs).
+- ⚪ `public/_redirects` is Netlify-specific while deployment targets GitHub
+  Pages — inert file, no action needed.
+
+---
+
 ## Verification (all gates)
 
-| Gate                                   | Result                                                                 |
-| -------------------------------------- | ---------------------------------------------------------------------- |
-| `npm run typecheck`                    | ✅ clean (0 errors)                                                    |
-| `npm test`                             | ✅ 481 tests / 38 files green (was 464/36; +17 regression tests)       |
-| `npm run build`                        | ✅ succeeds (PWA + SPA fallback)                                       |
-| `npm run format:check` (files touched) | ✅ all 10 touched files pass (17 pre-existing failures left untouched) |
-| `git diff --check`                     | ✅ clean                                                               |
-| `npm audit --omit=dev`                 | ✅ 0 vulnerabilities                                                   |
-| `npm run dev` smoke test               | ✅ HTTP 200 for `/` and `/src/main.ts`, no transform errors            |
+| Gate                                   | Result                                                                                                               |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck`                    | ✅ clean (0 errors)                                                                                                  |
+| `npm test`                             | ✅ 490 tests / 40 files green (was 487/39; +3 sync-isolation tests)                                                  |
+| `npm run build`                        | ✅ succeeds (PWA + SPA fallback; 0 `.map` files in `dist/`)                                                          |
+| Built CSP verified                     | ✅ Vercel-env build → identical policy to previous live CSP (minus unused wss); no-env build → strict local-mode CSP |
+| `npm run format:check` (files touched) | ✅ all touched files pass                                                                                            |
+| `git diff --check`                     | ✅ clean                                                                                                             |
+| `npm audit --omit=dev`                 | ✅ 0 vulnerabilities                                                                                                 |

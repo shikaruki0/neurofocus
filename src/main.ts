@@ -223,6 +223,31 @@ let lastBlockCompletionMinutes: number | null = null;
 let focusHistoryDate = localISODate();
 
 // ===================================================================
+// SAFE DOM RENDERING HELPERS
+// ===================================================================
+
+/**
+ * Renders an entity id into a DOM attribute safely.
+ *
+ * Backlog/habit/task ids are normally numbers (Date.now()), but rows can arrive
+ * from cloud sync or an imported backup with arbitrary shapes. A non-numeric id
+ * (e.g. a string containing quotes) would otherwise be interpolated raw into
+ * `data-id="..."` inside an innerHTML template. Coercing to a non-negative
+ * integer string makes the attribute unbreakable; the click handlers already
+ * parse ids with parseInt, so '0' simply no-ops (no matching entity).
+ */
+function safeEntityId(id: unknown): string {
+  const n = Number(id);
+  return Number.isFinite(n) && n >= 0 ? String(Math.floor(n)) : '0';
+}
+
+/** Coerces a numeric display value to a safe non-negative integer string. */
+function safeCount(value: unknown): string {
+  const n = Number(value);
+  return String(Math.max(0, Math.floor(Number.isFinite(n) ? n : 0)));
+}
+
+// ===================================================================
 // TAB NAVIGATION
 // ===================================================================
 
@@ -423,7 +448,7 @@ function renderQuests() {
         <div class="quest-icon">${icons[i]}</div>
         <div class="quest-info">
           <div class="quest-title">${escapeHTML(labelText)}</div>
-          <div class="quest-reward">+${q.reward} XP</div>
+          <div class="quest-reward">+${safeCount(q.reward)} XP</div>
         </div>
         <div class="quest-btn ${q.completed ? 'done' : ''}">${escapeHTML(btnText)}</div>
       </div>`;
@@ -939,9 +964,9 @@ function renderBacklogs() {
                       </div>
                       <div class="backlog-actions">
                         <span class="tag ${left > 5 ? 'tag-red' : 'tag-green'}">${escapeHTML(leftText)}</span>
-                        <button class="btn btn-danger btn-sm" data-action="dec-backlog" data-id="${b.id}" title="Undo 1 lecture">−1</button>
-                        <button class="btn btn-success btn-sm" data-action="inc-backlog" data-id="${b.id}">+1</button>
-                        <button class="btn btn-danger btn-sm" data-action="del-backlog" data-id="${b.id}" title="Delete this backlog">×</button>
+                        <button class="btn btn-danger btn-sm" data-action="dec-backlog" data-id="${safeEntityId(b.id)}" title="Undo 1 lecture">−1</button>
+                        <button class="btn btn-success btn-sm" data-action="inc-backlog" data-id="${safeEntityId(b.id)}">+1</button>
+                        <button class="btn btn-danger btn-sm" data-action="del-backlog" data-id="${safeEntityId(b.id)}" title="Delete this backlog">×</button>
                       </div>
                     </div>`;
                 })
@@ -1054,8 +1079,8 @@ function renderHabits() {
           </div>
           <div class="flex items-center gap-2">
             <span style="font-weight:800;font-size:0.85rem;color:var(--accent-start)">🔥 ${h.streak || 0}</span>
-            <button class="btn btn-success btn-sm" data-action="toggle-habit" data-id="${h.id}">${escapeHTML(btnText)}</button>
-            <button class="btn btn-danger btn-sm" data-action="del-habit" data-id="${h.id}">×</button>
+            <button class="btn btn-success btn-sm" data-action="toggle-habit" data-id="${safeEntityId(h.id)}">${escapeHTML(btnText)}</button>
+            <button class="btn btn-danger btn-sm" data-action="del-habit" data-id="${safeEntityId(h.id)}">×</button>
           </div>
         </div>
         <div class="habit-grid">
@@ -1101,12 +1126,12 @@ function renderBattle() {
       return `
       <div class="list-item" style="border-left:3px solid ${colors[taskItem.priority] || colors.C}">
         <div class="flex items-center gap-3 flex-1" style="min-width:0">
-          <input type="checkbox" ${taskItem.done ? 'checked' : ''} data-action="toggle-battle" data-id="${taskItem.id}" style="width:20px;height:20px;flex-shrink:0">
+          <input type="checkbox" ${taskItem.done ? 'checked' : ''} data-action="toggle-battle" data-id="${safeEntityId(taskItem.id)}" style="width:20px;height:20px;flex-shrink:0">
           <span class="${taskItem.done ? 'text-tertiary' : ''}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.9rem">
             <strong style="color:var(--text-tertiary);margin-right:4px;font-size:0.75rem">[${taskItem.priority}]</strong>${escapeHTML(taskItem.task)} <span class="tag tag-blue">${escapeHTML(timeLabel)}</span>
           </span>
         </div>
-        <button class="btn btn-danger btn-sm" data-action="del-battle" data-id="${taskItem.id}">×</button>
+        <button class="btn btn-danger btn-sm" data-action="del-battle" data-id="${safeEntityId(taskItem.id)}">×</button>
       </div>`;
     })
     .join('');
@@ -1863,7 +1888,7 @@ function renderFocusHistory() {
           <span>Completed ${escapeHTML(session.completionTime)}</span>
         </div>
       </div>
-      <span class="focus-history-badge">${session.duration}m</span>
+      <span class="focus-history-badge">${safeCount(session.duration)}m</span>
     </div>`,
     )
     .join('');
@@ -3444,6 +3469,19 @@ function setupEventListeners() {
       danger: true,
     });
     if (!second) return;
+    // Best-effort: also delete this account's cloud row so "delete forever"
+    // is true for signed-in accounts (requires the DELETE RLS policy from
+    // docs/supabase-setup.md). Local-only profiles have no cloud row.
+    try {
+      const user = currentUser();
+      if (user && supabase) {
+        await supabase.from('user_states').delete().eq('user_id', user.id);
+      }
+    } catch {
+      // Offline, or the DELETE policy is not applied yet — local data is
+      // still cleared below; the cloud row, if any, remains until the policy
+      // exists. Never block the user's explicit local deletion on this.
+    }
     clearAll();
     location.reload();
   });

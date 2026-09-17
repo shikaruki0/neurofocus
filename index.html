@@ -6,11 +6,12 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <!-- Strict CSP: no third-party account scripts required -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://zgrwthwfbjzpwngfazwc.supabase.co wss://zgrwthwfbjzpwngfazwc.supabase.co; img-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
-    />
+    <!-- Strict CSP: no third-party account scripts required.
+         __CSP_CONTENT__ is replaced at build/dev time by the neurofocus-csp
+         plugin in vite.config.ts, which adds the Supabase HTTPS origin to
+         connect-src only when VITE_SUPABASE_URL is configured. This keeps the
+         policy strict without hard-coding a project reference in the repo. -->
+    <meta http-equiv="Content-Security-Policy" content="__CSP_CONTENT__" />
     <meta name="theme-color" content="#0a0f1e" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

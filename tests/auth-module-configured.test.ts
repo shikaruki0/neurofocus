@@ -183,6 +183,45 @@ describe('configured email/password auth module', () => {
     expect(currentUser()).toBeNull();
   });
 
+  it('does not let a slow pre-login restore erase a newly signed-in user', async () => {
+    let resolveRestore!: (value: { data: { user: null }; error: null }) => void;
+    hoisted.fakeSupabase.auth.getUser.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRestore = resolve;
+      }),
+    );
+    const { rememberUser, restoreAuthSession, currentUser } = await authModule();
+
+    const restoring = restoreAuthSession();
+    // Simulates the SIGNED_IN event while the initial anonymous getUser()
+    // request is still in flight.
+    rememberUser(hoisted.fakeUser as never);
+    resolveRestore({ data: { user: null }, error: null });
+
+    await expect(restoring).resolves.toMatchObject({ id: 'u1' });
+    expect(currentUser()?.email).toBe('person@example.com');
+  });
+
+  it('does not let a slow restore resurrect a user after sign-out', async () => {
+    let resolveRestore!: (value: { data: { user: typeof hoisted.fakeUser }; error: null }) => void;
+    hoisted.fakeSupabase.auth.getUser.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRestore = resolve;
+      }),
+    );
+    const { rememberUser, restoreAuthSession, currentUser } = await authModule();
+
+    rememberUser(hoisted.fakeUser as never);
+    const restoring = restoreAuthSession();
+    // Simulates the SIGNED_OUT event before the old signed-in getUser()
+    // response returns.
+    rememberUser(null);
+    resolveRestore({ data: { user: hoisted.fakeUser }, error: null });
+
+    await expect(restoring).resolves.toBeNull();
+    expect(currentUser()).toBeNull();
+  });
+
   it('onAuthChange stores signed-in users and clears signed-out sessions', async () => {
     let listener: (event: string, session: { user: typeof hoisted.fakeUser } | null) => void = () =>
       undefined;

@@ -31,9 +31,19 @@ const ACCOUNTS_UNAVAILABLE_MESSAGE =
 const GENERIC_AUTH_MESSAGE = 'Something went wrong. Please try again.';
 const EMAIL_NOT_CONFIRMED_MESSAGE =
   'Please confirm your email before signing in. Open the link we sent, then try again. Missing the email? Use Resend confirmation email.';
-const CONFIRMATION_SENT_MESSAGE = 'Confirmation email sent. Check your inbox (and spam), then sign in.';
+const CONFIRMATION_SENT_MESSAGE =
+  'Confirmation email sent. Check your inbox (and spam), then sign in.';
 const INVALID_CREDENTIALS_MESSAGE =
   'The email or password is incorrect. Create an account first if you are new, or double-check your password.';
+
+/**
+ * Increments whenever account state changes locally or through Supabase.
+ *
+ * Session restoration is asynchronous. Without this guard, a slow request
+ * started before sign-in can resolve with its old "no user" response after a
+ * successful sign-in and erase the newly saved user from local storage.
+ */
+let authStateRevision = 0;
 
 export type AuthActionResult = {
   ok: boolean;
@@ -50,6 +60,8 @@ export function currentUser(): User | null {
 }
 
 export function rememberUser(user: User | null): void {
+  // Mark every transition so an older in-flight restore cannot overwrite it.
+  authStateRevision += 1;
   if (user) set('authUser', user);
   else {
     // Keep this separate from app data: logout must not remove local progress.
@@ -288,10 +300,7 @@ export function friendlyAuthError(err: AuthErrorLike): string {
  * After a successful Supabase auth response, ensure we only keep confirmed sessions.
  * If the project has Confirm Email ON and the user is not confirmed, sign out and guide them.
  */
-async function acceptAuthenticatedUser(
-  user: User,
-  cleanEmail: string,
-): Promise<AuthActionResult> {
+async function acceptAuthenticatedUser(user: User, cleanEmail: string): Promise<AuthActionResult> {
   // Some Supabase projects return a user object before confirmation. Never treat
   // an unconfirmed user as signed-in — that is the "random email works" loophole
   // when combined with confusing client state.
@@ -473,7 +482,9 @@ export async function requestPasswordReset(email: string): Promise<AuthActionRes
 
   try {
     const redirectTo =
-      typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : undefined;
+      typeof window !== 'undefined'
+        ? `${window.location.origin}${window.location.pathname}`
+        : undefined;
     const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
       redirectTo,
     });
@@ -597,8 +608,18 @@ export async function resendConfirmationEmail(email: string): Promise<AuthAction
 
 export async function restoreAuthSession(): Promise<User | null> {
   if (!supabase) return currentUser();
+
+  // `getUser()` is network-backed. Capture the revision before awaiting it so
+  // a sign-in/sign-out that happens while the request is in flight wins.
+  const revisionAtRequestStart = authStateRevision;
   try {
     const { data, error } = await supabase.auth.getUser();
+
+    // Do not let a response for an earlier session overwrite newer auth state.
+    // This is especially important on first load: a person can sign in before
+    // the initial anonymous restore request finishes.
+    if (revisionAtRequestStart !== authStateRevision) return currentUser();
+
     if (error) {
       const status = error.status;
       const isAuthError = status === 400 || status === 401 || status === 403;
@@ -619,12 +640,16 @@ export async function restoreAuthSession(): Promise<User | null> {
       } catch {
         // ignore
       }
+      // A real auth event could have occurred while the best-effort sign-out
+      // awaited. Respect that newer state rather than clearing it again.
+      if (revisionAtRequestStart !== authStateRevision) return currentUser();
       rememberUser(null);
       return null;
     }
     rememberUser(data.user);
     return data.user;
   } catch (err) {
+    if (revisionAtRequestStart !== authStateRevision) return currentUser();
     console.debug('Session restoration offline fallback:', err);
     return currentUser();
   }

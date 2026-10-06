@@ -39,10 +39,16 @@ function enabledOptions(select: HTMLSelectElement): HTMLOptionElement[] {
   return Array.from(select.options).filter((option) => !option.disabled && !option.hidden);
 }
 
-function syncTrigger(select: HTMLSelectElement, trigger: HTMLButtonElement): void {
-  trigger.querySelector<HTMLElement>('.premium-select-value')!.textContent = optionLabel(
-    select.selectedOptions[0],
-  );
+function syncTrigger(
+  select: HTMLSelectElement,
+  trigger: HTMLButtonElement,
+  config: PremiumSelectConfig,
+): void {
+  const selectedLabel = optionLabel(select.selectedOptions[0]);
+  trigger.querySelector<HTMLElement>('.premium-select-value')!.textContent = selectedLabel;
+  // The visible value is intentionally included in the accessible name: an
+  // aria-label overrides descendant text for button announcements.
+  trigger.setAttribute('aria-label', `${config.title}: ${selectedLabel}`);
   trigger.disabled = select.disabled;
   trigger.setAttribute('aria-disabled', String(select.disabled));
 }
@@ -224,18 +230,26 @@ export function enhancePremiumSelect(
   trigger.className = 'premium-select-trigger';
   trigger.setAttribute('aria-haspopup', 'dialog');
   trigger.setAttribute('aria-expanded', 'false');
-  trigger.setAttribute('aria-label', config.title);
   trigger.innerHTML = `
     <span class="premium-select-value"></span>
     <span class="premium-select-chevron" aria-hidden="true">⌄</span>`;
   control.append(trigger);
 
+  const previousTabIndex = select.getAttribute('tabindex');
+  const previousAriaHidden = select.getAttribute('aria-hidden');
+  const wasHidden = select.hidden;
+  const hadNativeClass = select.classList.contains('premium-select-native');
+
   select.classList.add('premium-select-native');
+  // A clipped native control can still win a touch hit-test in some Chrome
+  // layouts. Use the semantic `hidden` state so Chrome never opens its own
+  // picker; JavaScript keeps this select as the single source of truth.
+  select.hidden = true;
   select.tabIndex = -1;
   select.setAttribute('aria-hidden', 'true');
   select.insertAdjacentElement('afterend', control);
 
-  const sync = () => syncTrigger(select, trigger);
+  const sync = () => syncTrigger(select, trigger, config);
   const open = () => openPicker({ select, trigger, config });
   const handleLabelClick = (event: Event) => {
     event.preventDefault();
@@ -266,9 +280,12 @@ export function enhancePremiumSelect(
       select.removeEventListener('change', sync);
       labels.forEach((label) => label.removeEventListener('click', handleLabelClick));
       control.remove();
-      select.classList.remove('premium-select-native');
-      select.removeAttribute('aria-hidden');
-      select.removeAttribute('tabindex');
+      if (!hadNativeClass) select.classList.remove('premium-select-native');
+      select.hidden = wasHidden;
+      if (previousAriaHidden === null) select.removeAttribute('aria-hidden');
+      else select.setAttribute('aria-hidden', previousAriaHidden);
+      if (previousTabIndex === null) select.removeAttribute('tabindex');
+      else select.setAttribute('tabindex', previousTabIndex);
     },
   };
 }

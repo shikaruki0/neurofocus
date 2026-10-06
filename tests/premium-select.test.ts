@@ -22,7 +22,11 @@ describe('premium in-app select', () => {
 
     const trigger = document.querySelector<HTMLButtonElement>('.premium-select-trigger')!;
     expect(trigger.textContent).toContain('Physics');
+    expect(trigger.getAttribute('aria-label')).toBe('Choose your focus topic: Physics');
     expect(select.classList.contains('premium-select-native')).toBe(true);
+    // Hidden is intentional: a visually-clipped select can still receive a
+    // touch hit in Chrome, which would re-open the browser picker.
+    expect(select.hidden).toBe(true);
 
     trigger.click();
     const overlay = document.querySelector<HTMLElement>('.premium-select-overlay')!;
@@ -94,5 +98,21 @@ describe('premium in-app select', () => {
     select.disabled = true;
     await Promise.resolve();
     expect(trigger.disabled).toBe(true);
+  });
+
+  it('restores the native control exactly when the enhancer is destroyed', () => {
+    const select = document.querySelector<HTMLSelectElement>('#topic')!;
+    select.tabIndex = 3;
+    select.setAttribute('aria-hidden', 'false');
+    select.classList.add('premium-select-native');
+    const picker = enhancePremiumSelect(select, { title: 'Choose a topic' });
+
+    picker.destroy();
+
+    expect(select.hidden).toBe(false);
+    expect(select.tabIndex).toBe(3);
+    expect(select.getAttribute('aria-hidden')).toBe('false');
+    expect(select.classList.contains('premium-select-native')).toBe(true);
+    expect(document.querySelector('.premium-select-control')).toBeNull();
   });
 });

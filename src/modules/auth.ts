@@ -1,11 +1,18 @@
 /**
- * Authentication Module — Email/password auth via Supabase.
- * No OTP, no email links, no Firebase. Only email+password.
+ * Authentication Module — Google sign-in + email/password auth via Supabase.
+ *
+ * Product rule (v14.1): "Continue with Google" is the primary way to create a
+ * free account, because it needs no email delivery at all. Email + password
+ * stays available for the accounts that already exist, and password sign-up is
+ * paused (see `isEmailSignupEnabled`) until reliable email delivery exists.
  *
  * Security rules:
  *  - Only real email formats are accepted (client-side gate).
  *  - Passwords must meet a minimum strength policy.
- *  - Unconfirmed accounts cannot use the app (sign out immediately).
+ *  - Unconfirmed email/password accounts cannot use the app (sign out immediately).
+ *  - Google accounts are trusted only because Google verifies the email; the
+ *    client still never marks anything confirmed itself.
+ *  - OAuth starts and returns only on an exact, allow-listed origin (no wildcards).
  *  - Wrong password never silently "logs you in".
  *  - Errors never expose raw Supabase internals.
  */
@@ -15,6 +22,31 @@ import { get, set } from './storage.ts';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+const ACCOUNTS_UNAVAILABLE_MESSAGE =
+  'Online accounts are not available right now. You can continue locally.';
+const GENERIC_AUTH_MESSAGE = 'Something went wrong. Please try again.';
+const GOOGLE_UNAVAILABLE_MESSAGE =
+  'Google sign-in is not available right now. You can sign in with email and password, or continue without an account.';
+const GOOGLE_CANCELLED_MESSAGE =
+  'Google sign-in was cancelled. You can try again, or sign in with your email and password.';
+const GOOGLE_FAILED_MESSAGE = 'We could not finish signing you in with Google. Please try again.';
+const GOOGLE_ORIGIN_MESSAGE =
+  'Google sign-in works on the live app. Here you can sign in with email and password, or continue without an account.';
+const GOOGLE_REDIRECTING_MESSAGE = 'Connecting to Google…';
+const LINK_EXPIRED_MESSAGE = 'That sign-in link has expired. Please start again.';
+const EMAIL_SIGNUP_PAUSED_MESSAGE =
+  'Creating a new password account is paused right now. Use “Continue with Google” to create your free account.';
+
+/**
+ * Captures an OAuth/email-link error that Supabase appended to the URL, BEFORE
+ * the Supabase client is created.
+ *
+ * Why before: `createClient()` starts consuming the URL hash asynchronously. If
+ * we read the hash afterwards, a cancelled Google sign-in can be cleared by the
+ * client and the user would land on the login screen with no explanation.
+ */
+const initialRedirectError = readAuthRedirectError();
 
 export const isEmailAuthConfigured = Boolean(url && anonKey);
 export const supabase: SupabaseClient | null = isEmailAuthConfigured
@@ -26,9 +58,34 @@ export const MIN_PASSWORD_LENGTH = 8;
 /** Maximum password length to avoid abuse. */
 export const MAX_PASSWORD_LENGTH = 200;
 
-const ACCOUNTS_UNAVAILABLE_MESSAGE =
-  'Online accounts are not available right now. You can continue locally.';
-const GENERIC_AUTH_MESSAGE = 'Something went wrong. Please try again.';
+/** Only basic identity scopes — never Gmail, Drive, Contacts or Calendar. */
+export const GOOGLE_OAUTH_SCOPES = 'openid email profile';
+/** OAuth provider used for the one-tap account path. */
+export const GOOGLE_PROVIDER = 'google';
+
+/**
+ * Exact origins where an OAuth round-trip is allowed to start/return.
+ * Wildcards (for example `*.vercel.app`) are deliberately NOT supported: a
+ * preview deployment is a different origin and can be controlled by anyone who
+ * can create a Vercel project. Extra origins can be added for local work with
+ * `VITE_AUTH_ALLOWED_ORIGINS` (comma separated, exact origins only).
+ */
+const DEFAULT_ALLOWED_AUTH_ORIGINS = [
+  'https://neurofocusx.vercel.app',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
+
+/**
+ * Email/password sign-up switch.
+ *
+ * Paused until reliable email delivery exists (custom SMTP + a verified
+ * sending domain). Supabase's built-in mailer is rate limited and often lands
+ * in spam, so a new sign-up would be stranded on "confirm your email".
+ * This is a product switch, NOT a security control: Supabase still enforces
+ * email confirmation for every password account created out-of-band.
+ */
+export const isEmailSignupEnabled = false;
 const EMAIL_NOT_CONFIRMED_MESSAGE =
   'Please confirm your email before signing in. Open the link we sent, then try again. Missing the email? Use Resend confirmation email.';
 const CONFIRMATION_SENT_MESSAGE =
@@ -45,13 +102,33 @@ const INVALID_CREDENTIALS_MESSAGE =
  */
 let authStateRevision = 0;
 
+/**
+ * Machine-readable reason codes so the UI can show the same friendly message in
+ * every supported language. `message` always carries an English fallback.
+ */
+export type AuthReason =
+  | 'accounts-unavailable'
+  | 'google-unavailable'
+  | 'google-cancelled'
+  | 'google-failed'
+  | 'google-origin'
+  | 'google-offline'
+  | 'link-expired';
+
 export type AuthActionResult = {
   ok: boolean;
   message: string;
   needsEmailConfirmation?: boolean;
   canResendConfirmation?: boolean;
   email?: string;
+  /** True while the browser is being sent to the provider (keep the spinner). */
+  redirecting?: boolean;
+  /** Optional code so the UI can translate the failure message. */
+  reason?: AuthReason;
 };
+
+/** Result of a failed OAuth/email-link return. */
+export type AuthRedirectNotice = { message: string; reason: AuthReason };
 
 type AuthErrorLike = { message?: string; status?: number; code?: string } | null;
 
@@ -256,6 +333,260 @@ export function isEmailConfirmed(user: User | null | undefined): boolean {
   return Boolean(record.email_confirmed_at || record.confirmed_at);
 }
 
+/** Providers that verify the email address themselves (Google does). */
+const TRUSTED_OAUTH_PROVIDERS = new Set([GOOGLE_PROVIDER]);
+
+/**
+ * True when the account was created through Google (or another trusted OAuth
+ * provider). Google only releases an address it has already verified, so these
+ * accounts need no confirmation email. Nothing is written to the account here —
+ * the provider metadata comes from the Supabase Auth server and is read-only
+ * for the browser.
+ */
+export function isTrustedOAuthUser(user: User | null | undefined): boolean {
+  if (!user) return false;
+  const record = user as User & {
+    app_metadata?: { provider?: string; providers?: string[] };
+    identities?: Array<{ provider?: string }> | null;
+  };
+  const provider = record.app_metadata?.provider;
+  if (provider && TRUSTED_OAUTH_PROVIDERS.has(String(provider).toLowerCase())) return true;
+  const providers = record.app_metadata?.providers;
+  if (Array.isArray(providers)) {
+    if (providers.some((item) => TRUSTED_OAUTH_PROVIDERS.has(String(item).toLowerCase()))) {
+      return true;
+    }
+  }
+  if (Array.isArray(record.identities)) {
+    if (
+      record.identities.some((identity) =>
+        TRUSTED_OAUTH_PROVIDERS.has(String(identity?.provider || '').toLowerCase()),
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Whether this session may enter the app.
+ *
+ * Email/password accounts must be confirmed (Confirm Email stays ON in
+ * Supabase). Google accounts count as verified because the identity provider
+ * verified them — this only reads server-provided metadata, it never flips any
+ * confirmation flag.
+ */
+export function isAccountVerified(user: User | null | undefined): boolean {
+  if (!user) return false;
+  return isEmailConfirmed(user) || isTrustedOAuthUser(user);
+}
+
+/** Exact origins allowed to start/return an OAuth round-trip. */
+export function getAllowedAuthOrigins(): string[] {
+  const configured = (import.meta.env.VITE_AUTH_ALLOWED_ORIGINS as string | undefined) || '';
+  const extra = configured
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+  return [...DEFAULT_ALLOWED_AUTH_ORIGINS, ...extra];
+}
+
+/** True only for an exact, non-wildcard allow-listed origin. */
+export function isAuthOriginAllowed(origin: string): boolean {
+  return getAllowedAuthOrigins().includes(origin.replace(/\/+$/, ''));
+}
+
+/**
+ * The URL Google should send the user back to.
+ *
+ * Returns the current page on an allow-listed origin, or null when this origin
+ * must not use Google sign-in (preview deployments, unknown hosts, insecure
+ * origins). No wildcard matching, no fallback to an arbitrary host.
+ */
+export function getOAuthRedirectUrl(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const current = new URL(window.location.href);
+    if (!isAuthOriginAllowed(current.origin)) return null;
+    const isLocal = current.hostname === 'localhost' || current.hostname === '127.0.0.1';
+    if (current.protocol !== 'https:' && !isLocal) return null;
+    const path = current.pathname && current.pathname !== '' ? current.pathname : '/';
+    // Query/hash are dropped on purpose: Supabase appends its own tokens there.
+    return `${current.origin}${path}`;
+  } catch {
+    return null;
+  }
+}
+
+/** Removes Supabase error parameters from the URL so a refresh is clean. */
+function clearRedirectErrorParams(source: 'hash' | 'search'): void {
+  try {
+    const current = new URL(window.location.href);
+    if (source === 'hash') current.hash = '';
+    else {
+      for (const key of ['error', 'error_code', 'error_description']) {
+        current.searchParams.delete(key);
+      }
+    }
+    const cleaned = `${current.pathname}${current.search}${current.hash}`;
+    window.history.replaceState(null, '', cleaned);
+  } catch {
+    // History API unavailable (rare) — the message is still shown once.
+  }
+}
+
+/** Maps a Supabase redirect error to a friendly message. Never raw internals. */
+function redirectErrorMessage(code: string, description: string): AuthRedirectNotice {
+  const haystack = `${code} ${description}`.toLowerCase();
+  if (
+    haystack.includes('access_denied') ||
+    haystack.includes('denied') ||
+    haystack.includes('cancelled') ||
+    haystack.includes('canceled')
+  ) {
+    return { message: GOOGLE_CANCELLED_MESSAGE, reason: 'google-cancelled' };
+  }
+  if (haystack.includes('expired') || haystack.includes('otp_expired')) {
+    return { message: LINK_EXPIRED_MESSAGE, reason: 'link-expired' };
+  }
+  if (haystack.includes('provider') || haystack.includes('oauth')) {
+    return { message: GOOGLE_UNAVAILABLE_MESSAGE, reason: 'google-unavailable' };
+  }
+  return { message: GOOGLE_FAILED_MESSAGE, reason: 'google-failed' };
+}
+
+/**
+ * Reads (and clears) an error that Supabase appended to the URL.
+ * A successful implicit-flow return carries `access_token` instead of `error`,
+ * so tokens are never touched here.
+ */
+function readAuthRedirectError(): AuthRedirectNotice | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const hash = window.location.hash.startsWith('#')
+      ? window.location.hash.slice(1)
+      : window.location.hash;
+    const hashParams = new URLSearchParams(hash);
+    if (hashParams.get('access_token') || hashParams.get('code')) return null;
+    if (hashParams.has('error') || hashParams.has('error_code')) {
+      const message = redirectErrorMessage(
+        hashParams.get('error_code') || hashParams.get('error') || '',
+        hashParams.get('error_description') || '',
+      );
+      clearRedirectErrorParams('hash');
+      return message;
+    }
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has('error') || searchParams.has('error_code')) {
+      const message = redirectErrorMessage(
+        searchParams.get('error_code') || searchParams.get('error') || '',
+        searchParams.get('error_description') || '',
+      );
+      clearRedirectErrorParams('search');
+      return message;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Friendly message for a failed OAuth/email-link return, or null when this page
+ * load is not a redirect. The error is removed from the URL at page load, so a
+ * later refresh does not repeat a stale message. Reading it is side-effect free
+ * and safe to repeat (the login screen may render more than once).
+ */
+export function getOAuthRedirectNotice(): AuthRedirectNotice | null {
+  return initialRedirectError;
+}
+
+/** How long a successful provider check is trusted (ms). */
+const PROVIDER_CHECK_TTL_MS = 5 * 60 * 1000;
+let cachedGoogleAvailableAt = 0;
+
+/**
+ * Asks Supabase (with the public anon key) whether the Google provider is
+ * enabled. This stops the user from being redirected into a raw JSON error page
+ * when the dashboard is not configured yet.
+ *
+ * 'available' → provider enabled, 'unavailable' → provider disabled,
+ * 'unknown' → could not tell (offline/slow); the caller may still try.
+ */
+export async function checkGoogleSignInAvailability(): Promise<
+  'available' | 'unavailable' | 'unknown'
+> {
+  if (!url || !anonKey) return 'unavailable';
+  if (cachedGoogleAvailableAt && Date.now() - cachedGoogleAvailableAt < PROVIDER_CHECK_TTL_MS) {
+    return 'available';
+  }
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), 6000) : null;
+  try {
+    const response = await fetch(`${url.replace(/\/+$/, '')}/auth/v1/settings`, {
+      headers: { apikey: anonKey, Accept: 'application/json' },
+      signal: controller ? controller.signal : undefined,
+    });
+    if (!response?.ok) return 'unknown';
+    const settings = (await response.json()) as { external?: Record<string, boolean> };
+    if (!settings || typeof settings !== 'object' || !settings.external) return 'unknown';
+    if (settings.external[GOOGLE_PROVIDER] === true) {
+      cachedGoogleAvailableAt = Date.now();
+      return 'available';
+    }
+    return 'unavailable';
+  } catch {
+    return 'unknown';
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+/**
+ * Starts the official Supabase Google OAuth flow (implicit flow, like the rest
+ * of the app). On success the browser is redirected to Google and Supabase
+ * returns the user to the allow-listed origin; `restoreAuthSession()` /
+ * `onAuthChange()` then accept the session and the normal sync flow runs.
+ */
+export async function signInWithGoogle(): Promise<AuthActionResult> {
+  if (!supabase) {
+    return { ok: false, message: ACCOUNTS_UNAVAILABLE_MESSAGE, reason: 'accounts-unavailable' };
+  }
+
+  const redirectTo = getOAuthRedirectUrl();
+  if (!redirectTo) {
+    return { ok: false, message: GOOGLE_ORIGIN_MESSAGE, reason: 'google-origin' };
+  }
+
+  const availability = await checkGoogleSignInAvailability();
+  if (availability === 'unavailable') {
+    return { ok: false, message: GOOGLE_UNAVAILABLE_MESSAGE, reason: 'google-unavailable' };
+  }
+
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: GOOGLE_PROVIDER,
+      options: {
+        redirectTo,
+        scopes: GOOGLE_OAUTH_SCOPES,
+        queryParams: { prompt: 'select_account' },
+      },
+    });
+    if (error) {
+      return { ok: false, message: friendlyAuthError(error), reason: 'google-failed' };
+    }
+    if (!data?.url) return { ok: false, message: GOOGLE_FAILED_MESSAGE, reason: 'google-failed' };
+    return { ok: true, message: GOOGLE_REDIRECTING_MESSAGE, redirecting: true };
+  } catch {
+    return {
+      ok: false,
+      message: 'Connection problem. Please check your internet and try again.',
+      reason: 'google-offline',
+    };
+  }
+}
+
 function signUpLooksLikeExistingAccount(
   data: { user?: User | null; session?: unknown } | null,
 ): boolean {
@@ -276,6 +607,25 @@ export function friendlyAuthError(err: AuthErrorLike): string {
   if (isInvalidCredentialsError(err)) return INVALID_CREDENTIALS_MESSAGE;
   if (isAlreadyRegisteredError(err)) {
     return 'This account already exists. Try signing in instead.';
+  }
+  // OAuth/provider problems: e.g. provider not enabled, consent cancelled.
+  if (
+    msg.includes('provider is not enabled') ||
+    msg.includes('unsupported provider') ||
+    msg.includes('provider is disabled') ||
+    msg.includes('oauth')
+  ) {
+    return msg.includes('access_denied') || msg.includes('denied')
+      ? GOOGLE_CANCELLED_MESSAGE
+      : GOOGLE_UNAVAILABLE_MESSAGE;
+  }
+  if (
+    msg.includes('access_denied') ||
+    msg.includes('user denied') ||
+    msg.includes('cancelled') ||
+    msg.includes('canceled')
+  ) {
+    return GOOGLE_CANCELLED_MESSAGE;
   }
   if (
     msg.includes('password should be at least') ||
@@ -302,9 +652,10 @@ export function friendlyAuthError(err: AuthErrorLike): string {
  */
 async function acceptAuthenticatedUser(user: User, cleanEmail: string): Promise<AuthActionResult> {
   // Some Supabase projects return a user object before confirmation. Never treat
-  // an unconfirmed user as signed-in — that is the "random email works" loophole
-  // when combined with confusing client state.
-  if (!isEmailConfirmed(user)) {
+  // an unconfirmed email/password user as signed-in — that is the "random email
+  // works" loophole when combined with confusing client state. Google accounts
+  // are accepted because Google already verified that address.
+  if (!isAccountVerified(user)) {
     try {
       if (supabase) await supabase.auth.signOut();
     } catch {
@@ -338,6 +689,13 @@ export async function signUpWithEmailPassword(
       ok: false,
       message: ACCOUNTS_UNAVAILABLE_MESSAGE,
     };
+  }
+
+  // Product switch: new password accounts stay closed until reliable email
+  // delivery exists. Nothing is sent to Supabase, so no half-created account
+  // can be left behind waiting for a confirmation email that never arrives.
+  if (!isEmailSignupEnabled) {
+    return { ok: false, message: EMAIL_SIGNUP_PAUSED_MESSAGE };
   }
 
   try {
@@ -634,7 +992,7 @@ export async function restoreAuthSession(): Promise<User | null> {
       return null;
     }
     // Drop stale unconfirmed sessions so a half-created account cannot open the app.
-    if (!isEmailConfirmed(data.user)) {
+    if (!isAccountVerified(data.user)) {
       try {
         await supabase.auth.signOut();
       } catch {
@@ -671,7 +1029,7 @@ export function onAuthChange(callback: (user: User | null) => void): () => void 
   if (!supabase) return () => undefined;
   const { data } = supabase.auth.onAuthStateChange((_event, session) => {
     const user = session?.user ?? null;
-    if (user && !isEmailConfirmed(user)) {
+    if (user && !isAccountVerified(user)) {
       rememberUser(null);
       callback(null);
       return;

@@ -64,31 +64,17 @@ describe('configured email/password auth module', () => {
     }));
   });
 
-  it('sign-up stores the returned session so confirm-email-off accounts enter the app immediately', async () => {
-    const { signUpWithEmailPassword, currentUser } = await authModule();
+  it('keeps password sign-up paused so no account is stranded without email delivery', async () => {
+    const { isEmailSignupEnabled, signUpWithEmailPassword, currentUser } = await authModule();
 
     const result = await signUpWithEmailPassword('person@example.com', 'password123');
 
-    expect(result).toMatchObject({ ok: true, message: expect.stringMatching(/signed in/i) });
-    expect(currentUser()?.email).toBe('person@example.com');
-  });
-
-  it('sign-up without a session keeps the user on confirmation flow instead of faking login', async () => {
-    hoisted.fakeSupabase.auth.signUp.mockResolvedValueOnce({
-      data: { user: hoisted.fakeUser, session: null },
-      error: null,
-    });
-    hoisted.fakeSupabase.auth.signInWithPassword.mockResolvedValueOnce({
-      data: null,
-      error: { message: 'Invalid login credentials', status: 400 },
-    });
-    const { signUpWithEmailPassword, currentUser } = await authModule();
-
-    const result = await signUpWithEmailPassword('person@example.com', 'password123');
-
+    expect(isEmailSignupEnabled).toBe(false);
     expect(result.ok).toBe(false);
-    expect(result.message).toMatch(/confirm/i);
-    expect(result.canResendConfirmation).toBe(true);
+    expect(result.message).toMatch(/Google/);
+    // Nothing reaches Supabase, so no half-created unconfirmed account exists.
+    expect(hoisted.fakeSupabase.auth.signUp).not.toHaveBeenCalled();
+    expect(hoisted.fakeSupabase.auth.signInWithPassword).not.toHaveBeenCalled();
     expect(currentUser()).toBeNull();
   });
 

@@ -64,6 +64,24 @@ export const en = {
   'auth.benefit_sub': 'An account backs up your XP and keeps it available across devices.',
   'auth.sign_in': 'Sign in',
   'auth.create_account': 'Create free account',
+  // ---- Google sign-in (primary account path, no email delivery needed) ----
+  'auth.google_cta': 'Continue with Google',
+  'auth.google_pending': 'Connecting to Google…',
+  'auth.google_note':
+    'Recommended. No password to remember, and your progress syncs to every device.',
+  'auth.google_unavailable':
+    'Google sign-in is not available right now. Sign in with email and password, or continue without an account.',
+  'auth.google_cancelled':
+    'Google sign-in was cancelled. You can try again, or sign in with your email and password.',
+  'auth.google_failed': 'We could not finish signing you in with Google. Please try again.',
+  'auth.google_offline': 'Connection problem. Please check your internet and try again.',
+  'auth.google_origin':
+    'Google sign-in works on the live app. Here you can sign in with email and password, or continue without an account.',
+  'auth.email_signin_cta': 'Sign in with email and password',
+  'auth.signin_existing_hint': 'For accounts created before Google sign-in was added.',
+  'auth.signup_paused_note':
+    'New here? Create your free account with Google above. Email sign-ups are paused until reliable email delivery is ready.',
+  'auth.link_expired': 'That sign-in link has expired. Please start again.',
   'auth.or': 'or',
   'auth.device_cta': 'Continue without an account',
   'auth.device_note':
@@ -446,6 +464,24 @@ const hiLatn: TranslationDict = {
   'auth.benefit_sub': 'Account se tumhara XP backup hota hai aur har device par milta hai.',
   'auth.sign_in': 'Sign in karo',
   'auth.create_account': 'Free account banao',
+  // ---- Google sign-in ----
+  'auth.google_cta': 'Google se continue karo',
+  'auth.google_pending': 'Google se connect ho raha hai…',
+  'auth.google_note':
+    'Sabse aasan tarika. Password yaad rakhne ki zaroorat nahi, aur progress har device par sync hoti hai.',
+  'auth.google_unavailable':
+    'Google sign-in abhi available nahi hai. Email aur password se sign in karo, ya bina account ke continue karo.',
+  'auth.google_cancelled':
+    'Google sign-in cancel ho gaya. Dubara try karo, ya email aur password se sign in karo.',
+  'auth.google_failed': 'Google se sign in poora nahi ho paya. Dubara try karo.',
+  'auth.google_offline': 'Internet connection ki problem hai. Check karke dubara try karo.',
+  'auth.google_origin':
+    'Google sign-in live app par chalta hai. Yahan email aur password se sign in karo, ya bina account ke continue karo.',
+  'auth.email_signin_cta': 'Email aur password se sign in karo',
+  'auth.signin_existing_hint': 'Un accounts ke liye jo Google sign-in se pehle bane the.',
+  'auth.signup_paused_note':
+    'Naye ho? Upar “Google se continue karo” se free account banao. Email sign-ups abhi paused hain jab tak email delivery theek na ho.',
+  'auth.link_expired': 'Ye sign-in link expire ho gaya hai. Dubara shuru karo.',
   'auth.or': 'ya',
   'auth.device_cta': 'Bina account ke continue karo',
   'auth.device_note':
@@ -811,6 +847,24 @@ const hi: TranslationDict = {
   'auth.benefit_sub': 'अकाउंट से आपका XP बैकअप होता है और हर डिवाइस पर मिलता है।',
   'auth.sign_in': 'साइन इन करें',
   'auth.create_account': 'मुफ़्त अकाउंट बनाएँ',
+  // ---- Google sign-in ----
+  'auth.google_cta': 'Google से जारी रखें',
+  'auth.google_pending': 'Google से कनेक्ट हो रहा है…',
+  'auth.google_note':
+    'सबसे आसान तरीका। पासवर्ड याद रखने की ज़रूरत नहीं, और प्रगति हर डिवाइस पर सिंक होती है।',
+  'auth.google_unavailable':
+    'Google साइन-इन अभी उपलब्ध नहीं है। ईमेल और पासवर्ड से साइन इन करें, या बिना अकाउंट के जारी रखें।',
+  'auth.google_cancelled':
+    'Google साइन-इन रद्द हो गया। दोबारा कोशिश करें, या ईमेल और पासवर्ड से साइन इन करें।',
+  'auth.google_failed': 'Google से साइन इन पूरा नहीं हो सका। दोबारा कोशिश करें।',
+  'auth.google_offline': 'इंटरनेट कनेक्शन की समस्या है। जाँच कर दोबारा कोशिश करें।',
+  'auth.google_origin':
+    'Google साइन-इन लाइव ऐप पर चलता है। यहाँ ईमेल और पासवर्ड से साइन इन करें, या बिना अकाउंट के जारी रखें।',
+  'auth.email_signin_cta': 'ईमेल और पासवर्ड से साइन इन करें',
+  'auth.signin_existing_hint': 'उन अकाउंट के लिए जो Google साइन-इन से पहले बने थे।',
+  'auth.signup_paused_note':
+    'नए हैं? ऊपर “Google से जारी रखें” से मुफ़्त अकाउंट बनाएँ। ईमेल साइन-अप तब तक रोके गए हैं जब तक भरोसेमंद ईमेल डिलीवरी तैयार न हो।',
+  'auth.link_expired': 'यह साइन-इन लिंक एक्सपायर हो गया है। दोबारा शुरू करें।',
   'auth.or': 'या',
   'auth.device_cta': 'बिना अकाउंट के जारी रखें',
   'auth.device_note':
@@ -1173,6 +1227,23 @@ const es: TranslationDict = {
   'auth.benefit_sub': 'Una cuenta respalda tu XP y lo mantiene disponible en tus dispositivos.',
   'auth.sign_in': 'Iniciar sesión',
   'auth.create_account': 'Crear cuenta gratis',
+  'auth.google_cta': 'Continuar con Google',
+  'auth.google_pending': 'Conectando con Google…',
+  'auth.google_note':
+    'Recomendado. Sin contraseña que recordar y tu progreso se sincroniza en todos tus dispositivos.',
+  'auth.google_unavailable':
+    'El inicio de sesión con Google no está disponible ahora. Inicia sesión con correo y contraseña, o continúa sin cuenta.',
+  'auth.google_cancelled':
+    'Se canceló el inicio de sesión con Google. Inténtalo de nuevo o usa tu correo y contraseña.',
+  'auth.google_failed': 'No pudimos completar el inicio de sesión con Google. Inténtalo de nuevo.',
+  'auth.google_offline': 'Problema de conexión. Revisa tu internet e inténtalo de nuevo.',
+  'auth.google_origin':
+    'El inicio de sesión con Google funciona en la app en vivo. Aquí puedes usar correo y contraseña, o continuar sin cuenta.',
+  'auth.email_signin_cta': 'Iniciar sesión con correo y contraseña',
+  'auth.signin_existing_hint': 'Para cuentas creadas antes de añadir el acceso con Google.',
+  'auth.signup_paused_note':
+    '¿Nuevo por aquí? Crea tu cuenta gratis con Google arriba. El registro con correo está en pausa hasta que la entrega de correos sea fiable.',
+  'auth.link_expired': 'Ese enlace de acceso ha caducado. Empieza de nuevo.',
   'auth.or': 'o',
   'auth.device_cta': 'Continuar sin cuenta',
   'auth.device_note':
@@ -1493,6 +1564,23 @@ const fr: TranslationDict = {
   'auth.benefit_sub': 'Un compte sauvegarde tes XP et les retrouve sur tous tes appareils.',
   'auth.sign_in': 'Se connecter',
   'auth.create_account': 'Créer un compte gratuit',
+  'auth.google_cta': 'Continuer avec Google',
+  'auth.google_pending': 'Connexion à Google…',
+  'auth.google_note':
+    'Recommandé. Aucun mot de passe à retenir et votre progression se synchronise sur tous vos appareils.',
+  'auth.google_unavailable':
+    "La connexion Google n'est pas disponible pour le moment. Connectez-vous avec e-mail et mot de passe, ou continuez sans compte.",
+  'auth.google_cancelled':
+    'La connexion Google a été annulée. Réessayez ou connectez-vous avec votre e-mail et mot de passe.',
+  'auth.google_failed': "Nous n'avons pas pu terminer la connexion Google. Veuillez réessayer.",
+  'auth.google_offline': 'Problème de connexion. Vérifiez votre internet et réessayez.',
+  'auth.google_origin':
+    "La connexion Google fonctionne sur l'application en ligne. Ici, utilisez e-mail et mot de passe, ou continuez sans compte.",
+  'auth.email_signin_cta': 'Se connecter avec e-mail et mot de passe',
+  'auth.signin_existing_hint': "Pour les comptes créés avant l'ajout de la connexion Google.",
+  'auth.signup_paused_note':
+    "Nouveau ici ? Créez votre compte gratuit avec Google ci-dessus. Les inscriptions par e-mail sont en pause jusqu'à ce que l'envoi d'e-mails soit fiable.",
+  'auth.link_expired': "Ce lien de connexion a expiré. Veuillez recommencer.",
   'auth.or': 'ou',
   'auth.device_cta': 'Continuer sans compte',
   'auth.device_note':
@@ -1811,6 +1899,23 @@ const de: TranslationDict = {
   'auth.benefit_sub': 'Ein Konto sichert deine XP und hält sie auf allen Geräten bereit.',
   'auth.sign_in': 'Anmelden',
   'auth.create_account': 'Kostenloses Konto erstellen',
+  'auth.google_cta': 'Mit Google fortfahren',
+  'auth.google_pending': 'Verbindung mit Google…',
+  'auth.google_note':
+    'Empfohlen. Kein Passwort zu merken und dein Fortschritt wird auf allen Geräten synchronisiert.',
+  'auth.google_unavailable':
+    'Google-Anmeldung ist derzeit nicht verfügbar. Melde dich mit E-Mail und Passwort an oder fahre ohne Konto fort.',
+  'auth.google_cancelled':
+    'Die Google-Anmeldung wurde abgebrochen. Versuche es erneut oder melde dich mit E-Mail und Passwort an.',
+  'auth.google_failed': 'Die Google-Anmeldung konnte nicht abgeschlossen werden. Bitte erneut versuchen.',
+  'auth.google_offline': 'Verbindungsproblem. Prüfe dein Internet und versuche es erneut.',
+  'auth.google_origin':
+    'Google-Anmeldung funktioniert in der Live-App. Hier kannst du E-Mail und Passwort verwenden oder ohne Konto fortfahren.',
+  'auth.email_signin_cta': 'Mit E-Mail und Passwort anmelden',
+  'auth.signin_existing_hint': 'Für Konten, die vor der Google-Anmeldung erstellt wurden.',
+  'auth.signup_paused_note':
+    'Neu hier? Erstelle dein kostenloses Konto oben mit Google. E-Mail-Registrierungen sind pausiert, bis die E-Mail-Zustellung zuverlässig ist.',
+  'auth.link_expired': 'Dieser Anmeldelink ist abgelaufen. Bitte starte neu.',
   'auth.or': 'oder',
   'auth.device_cta': 'Ohne Konto fortfahren',
   'auth.device_note':

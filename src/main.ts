@@ -138,12 +138,13 @@ import {
   showUrgeCompleteNotification,
 } from './modules/notification.ts';
 import {
+  getOAuthRedirectNotice,
   currentUser,
   isEmailAuthConfigured,
   onAuthChange,
   restoreAuthSession,
   signInWithEmailPassword,
-  signUpWithEmailPassword,
+  signInWithGoogle,
   validatePassword,
   resendConfirmationEmail,
   requestPasswordReset,
@@ -174,6 +175,7 @@ import {
   t,
 } from './modules/i18n.ts';
 import type { LocaleCode, TranslationKey } from './modules/i18n.ts';
+import type { AuthReason, AuthRedirectNotice } from './modules/auth.ts';
 import { hasSeenWelcome, markWelcomeSeen } from './modules/onboarding.ts';
 import {
   validateImportData,
@@ -2096,7 +2098,12 @@ function renderSettingsLanguageList(): void {
 }
 
 function renderSession(): void {
-  if (isSessionStarted() || currentUser()) {
+  const authNotice = pendingAuthNotice;
+
+  // Someone coming back from a cancelled/failed Google sign-in always lands on
+  // the account screen so the reason is visible — even if they already had a
+  // device-only session running.
+  if (!authNotice && (isSessionStarted() || currentUser())) {
     setWelcomeOverlayOpen(false);
     setLanguageOverlayOpen(false);
     setLoginOverlayOpen(false);
@@ -2105,7 +2112,7 @@ function renderSession(): void {
   }
 
   // First visit: explain what the app is and how to use it BEFORE the account ask.
-  if (!hasSeenWelcome()) {
+  if (!authNotice && !hasSeenWelcome()) {
     setLoginOverlayOpen(false);
     setWelcomeOverlayOpen(true);
     qs<HTMLButtonElement>('#welcome-cta-btn')?.focus();
@@ -2115,7 +2122,16 @@ function renderSession(): void {
   setWelcomeOverlayOpen(false);
   showLoginView('choice');
   setLoginOverlayOpen(true);
-  qs<HTMLButtonElement>('#email-login-btn')?.focus();
+  qs<HTMLButtonElement>('#google-login-btn')?.focus();
+
+  // A cancelled or failed Google return must explain itself instead of leaving
+  // a silent login screen behind.
+  if (authNotice) {
+    // Kept until the user leaves the account screen or signs in, so a second
+    // render of this screen cannot swallow the explanation.
+    setFormMessage('login-choice-message', authMessageText(authNotice), 'error');
+    qs<HTMLButtonElement>('#google-login-btn')?.focus();
+  }
 }
 
 function renderAccountSettings() {
@@ -2536,12 +2552,14 @@ function updateDashboard() {
 // EVENT HANDLERS
 // ===================================================================
 
-type AuthMode = 'signin' | 'signup';
 type LoginView = 'choice' | 'email' | 'local' | 'forgot' | 'reset';
 type MessageTone = 'error' | 'success' | 'info';
 
-let authMode: AuthMode = 'signin';
 let authSubmitting = false;
+let googleSubmitting = false;
+/** Message captured from a failed Google/OAuth return; cleared when the user
+ *  leaves the account screen or a real session starts. */
+let pendingAuthNotice: AuthRedirectNotice | null = null;
 let resendSubmitting = false;
 let forgotSubmitting = false;
 let resetSubmitting = false;
@@ -2587,59 +2605,67 @@ function resetPasswordVisibility(): void {
 
 function updateAuthControls(): void {
   const sendBtn = qs<HTMLButtonElement>('#send-login-btn');
-  const signInButton = qs<HTMLButtonElement>('#auth-tab-signin');
-  const signUpButton = qs<HTMLButtonElement>('#auth-tab-signup');
-  const action = authMode === 'signin' ? t('auth.submit_signin') : t('auth.submit_signup');
-  const pendingAction =
-    authMode === 'signin' ? t('auth.submit_signin_pending') : t('auth.submit_signup_pending');
-
   if (sendBtn) {
-    sendBtn.textContent = authSubmitting ? pendingAction : action;
+    sendBtn.textContent = authSubmitting
+      ? t('auth.submit_signin_pending')
+      : t('auth.submit_signin');
     sendBtn.disabled = authSubmitting || !isEmailAuthConfigured;
     sendBtn.setAttribute('aria-busy', String(authSubmitting));
   }
-  if (signInButton) signInButton.disabled = authSubmitting;
-  if (signUpButton) signUpButton.disabled = authSubmitting;
+  updateGoogleControls();
 }
 
-function setAuthMode(mode: AuthMode): void {
-  const modeChanged = authMode !== mode;
-  authMode = mode;
+/** Translation keys for every auth failure the UI can show. */
+const AUTH_REASON_KEYS: Partial<Record<AuthReason, TranslationKey>> = {
+  'accounts-unavailable': 'auth.google_unavailable',
+  'google-unavailable': 'auth.google_unavailable',
+  'google-cancelled': 'auth.google_cancelled',
+  'google-failed': 'auth.google_failed',
+  'google-origin': 'auth.google_origin',
+  'google-offline': 'auth.google_offline',
+  'link-expired': 'auth.link_expired',
+};
 
-  const signInButton = qs<HTMLButtonElement>('#auth-tab-signin');
-  const signUpButton = qs<HTMLButtonElement>('#auth-tab-signup');
+/**
+ * Localized text for an auth result. Falls back to the module's English
+ * message when there is no reason code (for example validation messages).
+ */
+function authMessageText(result: { message: string; reason?: AuthReason }): string {
+  const key = result.reason ? AUTH_REASON_KEYS[result.reason] : undefined;
+  return key ? t(key) : result.message;
+}
+
+/**
+ * Google button state: label, loading text, busy state and duplicate-click
+ * guard. The label is a translated key, so the active language always wins.
+ */
+function updateGoogleControls(): void {
+  const button = qs<HTMLButtonElement>('#google-login-btn');
+  const note = qs<HTMLElement>('#login-choice-note');
+  if (note) {
+    note.textContent = isEmailAuthConfigured ? t('auth.google_note') : t('auth.google_unavailable');
+  }
+  if (!button) return;
+  const label = button.querySelector<HTMLElement>('.auth-google-label');
+  if (label) label.textContent = t(googleSubmitting ? 'auth.google_pending' : 'auth.google_cta');
+  button.setAttribute('aria-busy', String(googleSubmitting));
+  button.setAttribute('aria-disabled', String(googleSubmitting || !isEmailAuthConfigured));
+  button.disabled = googleSubmitting || !isEmailAuthConfigured;
+}
+
+/** Puts the email form into "sign in to an existing account" shape. */
+function applySignInForm(): void {
   const passwordInput = qs<HTMLInputElement>('#login-password');
-  const passwordHint = qs<HTMLElement>('#password-hint');
   const resendButton = qs<HTMLButtonElement>('#resend-confirmation-btn');
 
-  if (modeChanged && passwordInput) passwordInput.value = '';
   resetPasswordVisibility();
   clearAuthFieldErrors();
   setFormMessage('login-message');
+  passwordInput?.setAttribute('autocomplete', 'current-password');
+  if (passwordInput) passwordInput.placeholder = t('auth.password_ph_signin');
+  setLoginHeader('auth.kicker_signin', 'auth.title_signin', 'auth.subtitle_signin');
 
-  signInButton?.setAttribute('aria-pressed', String(mode === 'signin'));
-  signUpButton?.setAttribute('aria-pressed', String(mode === 'signup'));
-  passwordHint?.classList.toggle('hidden', mode !== 'signup');
-
-  if (passwordInput) {
-    passwordInput.setAttribute(
-      'autocomplete',
-      mode === 'signin' ? 'current-password' : 'new-password',
-    );
-    passwordInput.placeholder =
-      mode === 'signin' ? t('auth.password_ph_signin') : t('auth.password_ph_signup');
-  }
-
-  if (mode === 'signin') {
-    setLoginHeader('auth.kicker_signin', 'auth.title_signin', 'auth.subtitle_signin');
-  } else {
-    setLoginHeader('auth.kicker_signup', 'auth.title_signup', 'auth.subtitle_signup');
-  }
-
-  qs<HTMLButtonElement>('#forgot-password-btn')?.classList.toggle(
-    'hidden',
-    mode !== 'signin' || !isEmailAuthConfigured,
-  );
+  qs<HTMLButtonElement>('#forgot-password-btn')?.classList.toggle('hidden', !isEmailAuthConfigured);
 
   if (resendButton) {
     resendButton.classList.add('hidden');
@@ -2657,7 +2683,9 @@ function setAuthMode(mode: AuthMode): void {
   updateAuthControls();
 }
 
-function showLoginView(view: LoginView, mode: AuthMode = 'signin'): void {
+function showLoginView(view: LoginView): void {
+  // The Google-return notice only describes the account chooser screen.
+  if (view !== 'choice') pendingAuthNotice = null;
   qs<HTMLElement>('#login-choice')?.classList.toggle('hidden', view !== 'choice');
   qs<HTMLElement>('#email-login-form')?.classList.toggle('hidden', view !== 'email');
   qs<HTMLElement>('#local-login-form')?.classList.toggle('hidden', view !== 'local');
@@ -2667,6 +2695,7 @@ function showLoginView(view: LoginView, mode: AuthMode = 'signin'): void {
   if (view === 'choice') {
     setLoginHeader('auth.kicker', 'auth.title', 'auth.subtitle');
     setFormMessage('login-message');
+    setFormMessage('login-choice-message');
     setFormMessage('local-login-message');
     setFormMessage('forgot-message');
     setFormMessage('reset-message');
@@ -2676,13 +2705,14 @@ function showLoginView(view: LoginView, mode: AuthMode = 'signin'): void {
     if (passwordInput) passwordInput.value = '';
     resetPasswordVisibility();
     updateResendConfirmationState({}, '');
+    // Coming back to the choice screen ends any previous Google attempt.
+    googleSubmitting = false;
+    updateGoogleControls();
     return;
   }
 
   if (view === 'email') {
-    setAuthMode(mode);
-    const forgotBtn = qs<HTMLButtonElement>('#forgot-password-btn');
-    forgotBtn?.classList.toggle('hidden', mode !== 'signin' || !isEmailAuthConfigured);
+    applySignInForm();
     return;
   }
 
@@ -2708,10 +2738,46 @@ function showLoginView(view: LoginView, mode: AuthMode = 'signin'): void {
   qs<HTMLInputElement>('#login-name')?.removeAttribute('aria-invalid');
 }
 
-function openEmailAuth(mode: AuthMode): void {
-  showLoginView('email', mode);
+function openEmailAuth(): void {
+  showLoginView('email');
   setLoginOverlayOpen(true);
   qs<HTMLInputElement>('#login-email')?.focus();
+}
+
+/**
+ * Starts "Continue with Google".
+ *
+ * Guarded against double clicks, shows a busy state, and keeps every failure
+ * (unavailable provider, blocked origin, cancelled consent, offline) as a
+ * friendly sentence in the login screen — never a raw Supabase error.
+ */
+async function startGoogleSignIn(): Promise<void> {
+  const button = qs<HTMLButtonElement>('#google-login-btn');
+  if (googleSubmitting || !isEmailAuthConfigured) return;
+
+  googleSubmitting = true;
+  setFormMessage('login-choice-message');
+  updateGoogleControls();
+  button?.focus();
+
+  try {
+    const result = await signInWithGoogle();
+    if (!result.ok) {
+      googleSubmitting = false;
+      setFormMessage('login-choice-message', authMessageText(result), 'error');
+      updateGoogleControls();
+      button?.focus();
+      return;
+    }
+    // Success: the browser is navigating to Google now. Keep the loading state
+    // so nothing looks "stuck" or clickable while the page unloads.
+    setFormMessage('login-choice-message', authMessageText(result), 'info');
+  } catch {
+    googleSubmitting = false;
+    setFormMessage('login-choice-message', 'Something went wrong. Please try again.', 'error');
+    updateGoogleControls();
+    button?.focus();
+  }
 }
 
 function markAuthFieldErrors(message: string): void {
@@ -2794,7 +2860,7 @@ function setupEventListeners() {
   });
   qs<HTMLElement>('#settings-login-btn')?.addEventListener('click', () => {
     qs<HTMLElement>('#settings-overlay')?.classList.remove('show');
-    openEmailAuth('signin');
+    openEmailAuth();
   });
   qs<HTMLElement>('#sync-now-btn')?.addEventListener('click', async () => {
     try {
@@ -3052,13 +3118,11 @@ function setupEventListeners() {
   });
 
   // Account start screen. All handlers are attached here (no inline JS).
-  qs<HTMLElement>('#email-login-btn')?.addEventListener('click', () => openEmailAuth('signin'));
-  qs<HTMLElement>('#create-account-btn')?.addEventListener('click', () => openEmailAuth('signup'));
+  qs<HTMLElement>('#email-login-btn')?.addEventListener('click', () => openEmailAuth());
+  qs<HTMLElement>('#google-login-btn')?.addEventListener('click', () => void startGoogleSignIn());
   qs<HTMLElement>('#back-login-btn')?.addEventListener('click', renderSession);
   qs<HTMLElement>('#back-local-btn')?.addEventListener('click', renderSession);
-  qs<HTMLElement>('#back-forgot-btn')?.addEventListener('click', () => openEmailAuth('signin'));
-  qs<HTMLElement>('#auth-tab-signin')?.addEventListener('click', () => setAuthMode('signin'));
-  qs<HTMLElement>('#auth-tab-signup')?.addEventListener('click', () => setAuthMode('signup'));
+  qs<HTMLElement>('#back-forgot-btn')?.addEventListener('click', () => openEmailAuth());
   qs<HTMLElement>('#forgot-password-btn')?.addEventListener('click', () => {
     showLoginView('forgot');
     setLoginOverlayOpen(true);
@@ -3185,10 +3249,9 @@ function setupEventListeners() {
     updateAuthControls();
 
     try {
-      const result =
-        authMode === 'signin'
-          ? await signInWithEmailPassword(email, password)
-          : await signUpWithEmailPassword(email, password);
+      // Only existing (already confirmed) accounts can sign in here. New
+      // accounts are created with Google — password sign-up stays paused.
+      const result = await signInWithEmailPassword(email, password);
       const tone: MessageTone = result.ok
         ? 'success'
         : result.needsEmailConfirmation
@@ -4553,6 +4616,10 @@ if (earlyUrgeCompletion) {
 // ===================================================================
 
 function init() {
+  // Capture a cancelled/failed Google return before anything else renders, so
+  // the account screen can explain what happened instead of appearing blank.
+  pendingAuthNotice = getOAuthRedirectNotice();
+
   // Service Worker: vite-plugin-pwa handles registration via registerSW.js
   // Fallback base-aware registration only if not already controlled
   if ('serviceWorker' in navigator) {
@@ -4577,6 +4644,10 @@ function init() {
   } catch (e) {
     console.warn('i18n init failed', e);
   }
+  // Prime the Google button/note in the active language before first paint.
+  try {
+    updateGoogleControls();
+  } catch {}
   try {
     resetHabitsForNewDay();
   } catch {}
@@ -4587,6 +4658,7 @@ function init() {
   // Subscribe to locale changes for real-time translation updates across all tabs
   onLocaleChange(() => {
     applyTranslations();
+    updateGoogleControls();
     dailyChecksBuilt = false; // force re-render of daily checks with new translations
     updateDashboard();
     renderHabits();
@@ -4741,6 +4813,8 @@ function init() {
   });
   onAuthChange((user) => {
     renderAccountSettings();
+    // Signed in for real — any earlier "Google sign-in failed" note is stale.
+    if (user) pendingAuthNotice = null;
     if (passwordRecoveryPending) {
       showLoginView('reset');
       setLoginOverlayOpen(true);

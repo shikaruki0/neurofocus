@@ -1,6 +1,16 @@
 # Supabase cloud sync setup
 
-NeuroFocusX uses **email + password** auth (no magic links) and one `user_states` row per account. The app remains usable offline and with **Continue without an account** when these variables are absent.
+NeuroFocusX uses **Google sign-in** (primary) plus **email + password** for accounts
+that already exist, and one `user_states` row per account. The app remains usable
+offline and with **Continue without an account** when these variables are absent.
+
+- **New users:** “Continue with Google” — no email delivery involved.
+- **Existing users:** email + password sign-in still works for confirmed accounts.
+- **Password sign-up:** paused in the app (`isEmailSignupEnabled = false`) until a
+  reliable sender exists (custom SMTP + verified domain). Supabase's built-in mailer
+  is rate limited and often lands in spam, so a new sign-up would be stranded.
+- **Confirm Email:** stays **ON**. Nothing is ever marked verified by the client.
+- Full one-screen-at-a-time Google setup: [google-signin-setup.md](./google-signin-setup.md).
 
 ## 1. Create the table
 
@@ -64,7 +74,31 @@ You should see exactly the four policies above (select/insert/update/delete),
 all with `qual`/`with_check` containing `auth.uid() = user_id`. Any policy
 with `TRUE` (or a looser condition) is a finding — drop it.
 
-## 2. Configure email login (important)
+## 2. Configure Google sign-in (primary account path)
+
+1. Create an OAuth client in Google Cloud (**Web application**).
+   - Authorized JavaScript origin: `https://neurofocusx.vercel.app`
+   - Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+   - Scopes: `openid`, `email`, `profile` only — never Gmail, Drive, Contacts or Calendar.
+2. **Authentication → Providers → Google**: enable it and paste the **Client ID** and
+   **Client Secret** directly into the dashboard. The secret never enters this
+   repository, the frontend bundle, or Vercel environment variables.
+3. **Authentication → URL Configuration**
+   - **Site URL:** `https://neurofocusx.vercel.app`
+   - **Redirect URLs:** the exact app URL(s):
+     - `https://neurofocusx.vercel.app/`
+     - `http://localhost:5173/` (local development only)
+   - Never add a broad entry such as `https://*.vercel.app` — a preview deployment
+     is a different origin and must not be able to receive auth redirects.
+4. The client asks Supabase's public `/auth/v1/settings` endpoint (anon key only)
+   whether Google is enabled. If it is not, the app shows a friendly message instead
+   of redirecting the user to a raw JSON error page.
+
+Accounts created through an allow-listed Google OAuth client are treated as
+verified because Google verifies the address — the app only reads the provider
+metadata returned by Supabase Auth; it never writes confirmation state itself.
+
+## 3. Configure email login (existing accounts)
 
 In **Authentication → Providers**, enable **Email**.
 
@@ -82,14 +116,15 @@ In **Authentication → Providers**, enable **Email**.
 
 In **Authentication → Providers → Email** (or project Auth settings), set minimum password length to **at least 8**. The app already requires 8+ characters with a letter and a number.
 
-### Redirect URLs
+### Sign-ups are paused in the app
 
-Add your deployed app URL and local URL (`http://localhost:5173`) to  
-**Authentication → URL Configuration → Redirect URLs**.
+The UI does not offer password sign-up any more (see §2). The code path still
+exists behind `isEmailSignupEnabled = false` in `src/modules/auth.ts` and can be
+re-enabled once a reliable sender (custom SMTP + verified domain) is configured.
+Until then, a new account is created with **Continue with Google**.
 
-Also set **Site URL** to your live app URL. Password reset and confirmation emails use these.
-
-For production, configure custom SMTP under **Project Settings → Auth** so confirmation and reset emails actually arrive.
+Existing confirmed accounts are unaffected: **Forgot password?** and the
+resend-confirmation button keep working exactly as before.
 
 ### Forgot password
 
@@ -101,7 +136,7 @@ The app has a **Forgot password?** flow:
 
 No extra SQL is required. Just make sure redirect URLs (above) include your app.
 
-## 3. Configure the app
+## 4. Configure the app
 
 Copy `.env.example` to `.env.local` and set the project URL and public **anon** key:
 
@@ -112,7 +147,7 @@ VITE_SUPABASE_ANON_KEY=your-public-anon-key
 
 Never put a service-role key in the frontend or commit `.env.local`. Restart Vite after changing environment variables.
 
-## 4. How cross-device sync works
+## 5. How cross-device sync works
 
 | Moment                                | What happens                                                                                                               |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |

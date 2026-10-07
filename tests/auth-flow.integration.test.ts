@@ -91,45 +91,44 @@ describe('Production auth/import flows', () => {
     vi.clearAllMocks();
   });
 
-  it('presents sign-in, account creation, and device-only use as distinct choices', async () => {
+  it('offers Google first, email sign-in for existing accounts, and device-only use', async () => {
     await loadApp();
 
+    const google = document.querySelector<HTMLButtonElement>('#google-login-btn')!;
     const signIn = document.querySelector<HTMLButtonElement>('#email-login-btn')!;
-    const createAccount = document.querySelector<HTMLButtonElement>('#create-account-btn')!;
     const deviceOnly = document.querySelector<HTMLButtonElement>('#skip-login-btn')!;
     const choice = document.querySelector<HTMLElement>('#login-choice')!;
 
-    expect(signIn.textContent?.trim()).toBe('Sign in');
-    expect(createAccount.textContent?.trim()).toBe('Create free account');
+    expect(google.textContent).toContain('Continue with Google');
+    expect(google.disabled).toBe(false);
+    expect(signIn.textContent?.trim()).toBe('Sign in with email and password');
     expect(deviceOnly.textContent).toContain('Continue without an account');
     expect(choice.textContent).toContain('will not sync to other devices');
     expect(document.querySelector('#app-header')?.hasAttribute('inert')).toBe(true);
+
+    // Password sign-up is gone until reliable email delivery exists.
+    expect(document.querySelector('#create-account-btn')).toBeNull();
+    expect(document.querySelector('#auth-tab-signup')).toBeNull();
+    expect(choice.textContent).toMatch(/Email sign-ups are paused/i);
   });
 
-  it('opens account creation with matching guidance and lets users switch modes', async () => {
+  it('opens the email sign-in form for existing accounts and offers no sign-up', async () => {
     await loadApp();
-    document.querySelector<HTMLButtonElement>('#create-account-btn')?.click();
+    document.querySelector<HTMLButtonElement>('#email-login-btn')?.click();
 
     const title = document.querySelector<HTMLElement>('#login-title')!;
     const password = document.querySelector<HTMLInputElement>('#login-password')!;
-    const passwordHint = document.querySelector<HTMLElement>('#password-hint')!;
-    const signInMode = document.querySelector<HTMLButtonElement>('#auth-tab-signin')!;
-    const signUpMode = document.querySelector<HTMLButtonElement>('#auth-tab-signup')!;
     const submit = document.querySelector<HTMLButtonElement>('#send-login-btn')!;
 
-    expect(title.textContent).toBe('Create your account');
-    expect(signUpMode.getAttribute('aria-pressed')).toBe('true');
-    expect(signInMode.getAttribute('aria-pressed')).toBe('false');
-    expect(password.autocomplete).toBe('new-password');
-    expect(passwordHint.classList.contains('hidden')).toBe(false);
-    expect(submit.textContent?.trim()).toBe('Create account');
-
-    signInMode.click();
+    expect(document.querySelector('#email-login-form')?.classList.contains('hidden')).toBe(false);
     expect(title.textContent).toBe('Welcome back');
-    expect(signInMode.getAttribute('aria-pressed')).toBe('true');
     expect(password.autocomplete).toBe('current-password');
-    expect(passwordHint.classList.contains('hidden')).toBe(true);
     expect(submit.textContent?.trim()).toBe('Sign in');
+
+    // No mode switch, no "create account" affordance, no sign-up call.
+    expect(document.querySelector('#auth-tab-signin')).toBeNull();
+    expect(document.querySelector('#auth-tab-signup')).toBeNull();
+    expect(hoisted.fakeSupabase.auth.signUp).not.toHaveBeenCalled();
   });
 
   it('shows validation next to the form and clears it when the user edits the field', async () => {

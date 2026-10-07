@@ -144,18 +144,39 @@ npm run test:coverage
 
 ### Login & Data Storage
 
-The first screen offers separate **Sign in**, **Create free account**, and **Continue without an account** paths. Accounts use Supabase email and password authentication for cross-device sync; the account-free path creates a display-name profile saved only in the current browser. Missing cloud configuration never blocks account-free use. Existing local data is not deleted when logging out. When both local and cloud data exist, the app backs up locally and requires an explicit local, cloud, or safe merge choice before replacing anything.
+The first screen offers three paths:
 
-See [docs/supabase-setup.md](docs/supabase-setup.md) for the one-time database and Auth setup.
+1. **Continue with Google** — the primary (and recommended) way to create a free
+   account. OAuth runs through the official Supabase flow with Google's basic
+   identity scopes only (`openid email profile`) and returns to an exact
+   allow-listed origin — no wildcard redirects, no Gmail/Drive/Contacts access,
+   and no client secret in the frontend.
+2. **Sign in with email and password** — kept for accounts created earlier.
+   Password **sign-up is paused** (`isEmailSignupEnabled = false`) until reliable
+   email delivery exists, so nobody is stranded waiting for a confirmation email.
+   Confirm Email stays ON in Supabase; the client never marks an account verified.
+3. **Continue without an account** — a display-name profile saved only in the
+   current browser.
+
+Missing cloud configuration never blocks account-free use. Existing local data is
+not deleted when logging out. When both local and cloud data exist, the app backs
+up locally and requires an explicit local, cloud, or safe merge choice before
+replacing anything. A cancelled or failed Google sign-in returns to the account
+screen with a friendly, translated message — never a raw Supabase error.
+
+See [docs/supabase-setup.md](docs/supabase-setup.md) for the one-time database and Auth setup,
+and [docs/google-signin-setup.md](docs/google-signin-setup.md) for the step-by-step Google
+Cloud + Supabase dashboard guide.
 
 ### Environment Variables
 
-| Variable                 | Description                                        |
-| ------------------------ | -------------------------------------------------- |
-| `VITE_SUPABASE_URL`      | Supabase project URL (optional for local mode)     |
-| `VITE_SUPABASE_ANON_KEY` | Public Supabase anon key (optional for local mode) |
-| `VITE_APP_TITLE`         | App title (default: NeuroFocusX)                   |
-| `VITE_APP_VERSION`       | Version displayed in settings                      |
+| Variable                    | Description                                                                                                                                                                   |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`         | Supabase project URL (optional for local mode)                                                                                                                                |
+| `VITE_SUPABASE_ANON_KEY`    | Public Supabase anon key (optional for local mode)                                                                                                                            |
+| `VITE_AUTH_ALLOWED_ORIGINS` | Extra **exact** origins allowed to start/finish Google sign-in (comma separated, e.g. `http://localhost:5173`). Production origin is built in; wildcards are never supported. |
+| `VITE_APP_TITLE`            | App title (default: NeuroFocusX)                                                                                                                                              |
+| `VITE_APP_VERSION`          | Version displayed in settings                                                                                                                                                 |
 
 Never commit `.env.local` or real credentials.
 

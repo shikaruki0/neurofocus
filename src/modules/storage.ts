@@ -54,6 +54,26 @@ const NO_CLOUD_PUSH_KEYS = new Set([
   'urgeTimer',
 ]);
 
+/** >0 while writes must not trigger a cloud push (see `runWithoutCloudPush`). */
+let cloudPushSuppressed = 0;
+
+/**
+ * Runs `fn` so its storage writes do not schedule a cloud push. Used when the
+ * device is re-bound to another account: those writes swap whose data is on
+ * the device and are not user edits — pushing them could upload one
+ * account's (or a blank) state before that account's own login sync runs.
+ * The check happens synchronously in `set()`, because the push itself is
+ * scheduled asynchronously (lazy import).
+ */
+export function runWithoutCloudPush<T>(fn: () => T): T {
+  cloudPushSuppressed += 1;
+  try {
+    return fn();
+  } finally {
+    cloudPushSuppressed -= 1;
+  }
+}
+
 /**
  * Sets a value in storage.
  * @param key - Storage key (without prefix)
@@ -72,7 +92,11 @@ export function set(key: string, value: unknown): void {
 
   // Keep signed-in accounts in sync across devices after every real progress write.
   // Lazy import avoids a circular dependency (cloudSync → storage).
-  if (!NO_CLOUD_PUSH_KEYS.has(key) && !key.startsWith('accountCache:')) {
+  if (
+    cloudPushSuppressed === 0 &&
+    !NO_CLOUD_PUSH_KEYS.has(key) &&
+    !key.startsWith('accountCache:')
+  ) {
     try {
       void import('./cloudSync.ts')
         .then((mod) => {

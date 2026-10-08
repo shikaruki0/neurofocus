@@ -139,6 +139,7 @@ import {
 } from './modules/notification.ts';
 import {
   getOAuthRedirectNotice,
+  takeGoogleReturnNotice,
   currentUser,
   isEmailAuthConfigured,
   onAuthChange,
@@ -154,13 +155,13 @@ import {
 } from './modules/auth.ts';
 import {
   createLocalBackup,
+  exportCurrentAccountData,
   syncOnLogin,
   syncNow,
   startAutoSync,
   bindLocalDataToUser,
   pullIfCloudNewer,
 } from './modules/cloudSync.ts';
-import { exportAll } from './modules/storage.ts';
 import {
   applyTranslations,
   detectInitialLocale,
@@ -2358,7 +2359,10 @@ function finishDailyCheck(): void {
 
 function downloadBackup() {
   createLocalBackup();
-  const blob = new Blob([JSON.stringify(exportAll(), null, 2)], { type: 'application/json' });
+  // Only the current account's data — never another account's device cache.
+  const blob = new Blob([JSON.stringify(exportCurrentAccountData(), null, 2)], {
+    type: 'application/json',
+  });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = `neurofocusx-backup-${new Date().toISOString().slice(0, 10)}.json`;
@@ -2873,7 +2877,7 @@ function setupEventListeners() {
   });
   qs<HTMLElement>('#logout-btn')?.addEventListener('click', async () => {
     await logout();
-    bindLocalDataToUser(null);
+    if (bindLocalDataToUser(null)) refreshAfterCloudSync();
     renderAccountSettings();
     renderSession();
   });
@@ -3198,7 +3202,7 @@ function setupEventListeners() {
         markWelcomeSeen();
         try {
           const user = currentUser();
-          if (user) bindLocalDataToUser(user.id);
+          if (user && bindLocalDataToUser(user.id)) refreshAfterCloudSync();
           const syncResult = await syncOnLogin();
           if (syncResult.kind === 'conflict') await syncOnLogin(askSyncChoice());
           startAutoSync();
@@ -3274,7 +3278,7 @@ function setupEventListeners() {
         // Pull/push cloud progress immediately so phone and PC match.
         try {
           const user = currentUser();
-          if (user) bindLocalDataToUser(user.id);
+          if (user && bindLocalDataToUser(user.id)) refreshAfterCloudSync();
           const syncResult = await syncOnLogin();
           if (syncResult.kind === 'conflict') {
             await syncOnLogin(askSyncChoice());
@@ -4792,12 +4796,18 @@ function init() {
       return;
     }
     if (!user) {
-      bindLocalDataToUser(null);
+      // A Google return that could not be finished (expired code, different
+      // browser, offline) explains itself on the account screen.
+      const googleNotice = takeGoogleReturnNotice();
+      if (googleNotice) pendingAuthNotice = googleNotice;
+      if (bindLocalDataToUser(null)) refreshAfterCloudSync();
       renderSession();
       return;
     }
+    // Signed in after all — drop any stale Google-return notice.
+    takeGoogleReturnNotice();
     try {
-      bindLocalDataToUser(user.id);
+      if (bindLocalDataToUser(user.id)) refreshAfterCloudSync();
       const result = await syncOnLogin();
       if (result.kind === 'conflict') {
         await syncOnLogin(askSyncChoice());
@@ -4821,10 +4831,12 @@ function init() {
       return;
     }
     if (!user) {
-      bindLocalDataToUser(null);
+      // The previous account's progress was moved into its device cache —
+      // redraw so nothing of it stays on screen after signing out.
+      if (bindLocalDataToUser(null)) refreshAfterCloudSync();
       return;
     }
-    bindLocalDataToUser(user.id);
+    if (bindLocalDataToUser(user.id)) refreshAfterCloudSync();
     renderSession();
     void syncOnLogin()
       .then(async (result) => {

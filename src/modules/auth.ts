@@ -48,10 +48,201 @@ const EMAIL_SIGNUP_PAUSED_MESSAGE =
  */
 const initialRedirectError = readAuthRedirectError();
 
+/**
+ * Google sign-in uses the OAuth 2.0 PKCE flow (RFC 7636).
+ *
+ * The browser keeps a one-time secret (the "code verifier") and Supabase
+ * returns only a short-lived, single-use `?code=` to the app. The code is
+ * worthless without the verifier, so no access/refresh token ever travels in
+ * the URL (history, screenshots, analytics, referrers) on the way back from
+ * Google.
+ *
+ * PKCE is used ONLY for Google. A dedicated helper client starts the redirect
+ * and exchanges the code; the resulting session is then handed to the main
+ * client. The main client keeps the implicit flow so email links (password
+ * reset, confirmation) keep working when opened on a different device/browser
+ * than the one that requested them — PKCE email links would not.
+ */
+const GOOGLE_PKCE_STORAGE_KEY = 'nf-google-pkce';
+const GOOGLE_PKCE_VERIFIER_KEY = `${GOOGLE_PKCE_STORAGE_KEY}-code-verifier`;
+
+/**
+ * Reads (and removes) the PKCE `?code=` from the URL BEFORE the main Supabase
+ * client is created, for the same reason as `readAuthRedirectError`.
+ * Returns the code only when this browser started the Google sign-in (its
+ * verifier exists). A code without a verifier cannot be exchanged — for
+ * example the sign-in finished in a different browser — so it becomes a
+ * friendly "please try again" notice instead of a silent failure.
+ */
+function readGoogleAuthCode(): { code: string | null; notice: AuthRedirectNotice | null } {
+  const none = { code: null, notice: null };
+  if (typeof window === 'undefined') return none;
+  try {
+    const current = new URL(window.location.href);
+    const code = current.searchParams.get('code');
+    if (!code) return none;
+    current.searchParams.delete('code');
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${current.pathname}${current.search}${current.hash}`,
+    );
+    let verifier: string | null = null;
+    try {
+      verifier = window.localStorage.getItem(GOOGLE_PKCE_VERIFIER_KEY);
+    } catch {
+      verifier = null;
+    }
+    if (!verifier) {
+      return { code: null, notice: { message: GOOGLE_FAILED_MESSAGE, reason: 'google-failed' } };
+    }
+    return { code, notice: null };
+  } catch {
+    return none;
+  }
+}
+
+const initialGoogleReturn = readGoogleAuthCode();
+
 export const isEmailAuthConfigured = Boolean(url && anonKey);
 export const supabase: SupabaseClient | null = isEmailAuthConfigured
   ? createClient(url!, anonKey!, { auth: { persistSession: true, autoRefreshToken: true } })
   : null;
+
+/**
+ * Storage for the PKCE helper: only the one-time code verifier is persisted
+ * (it has to survive the round-trip to Google). Anything else the helper
+ * writes — notably the session it receives from the code exchange — stays in
+ * memory, so the main client remains the single owner of the real session.
+ */
+const pkceMemory = new Map<string, string>();
+const pkceHelperStorage = {
+  getItem(key: string): string | null {
+    if (key === GOOGLE_PKCE_VERIFIER_KEY) {
+      try {
+        return window.localStorage.getItem(key);
+      } catch {
+        return pkceMemory.get(key) ?? null;
+      }
+    }
+    return pkceMemory.get(key) ?? null;
+  },
+  setItem(key: string, value: string): void {
+    if (key === GOOGLE_PKCE_VERIFIER_KEY) {
+      try {
+        window.localStorage.setItem(key, value);
+        return;
+      } catch {
+        // Fall through to memory (private mode); the redirect may then fail
+        // safely with a friendly "try again" message.
+      }
+    }
+    pkceMemory.set(key, value);
+  },
+  removeItem(key: string): void {
+    if (key === GOOGLE_PKCE_VERIFIER_KEY) {
+      try {
+        window.localStorage.removeItem(key);
+      } catch {
+        // ignore
+      }
+    }
+    pkceMemory.delete(key);
+  },
+};
+
+let googlePkceClient: SupabaseClient | null = null;
+
+/** Lazily created so pages that never touch Google sign-in pay nothing. */
+function getGooglePkceClient(): SupabaseClient | null {
+  if (!url || !anonKey) return null;
+  if (!googlePkceClient) {
+    googlePkceClient = createClient(url, anonKey, {
+      auth: {
+        flowType: 'pkce',
+        storageKey: GOOGLE_PKCE_STORAGE_KEY,
+        storage: pkceHelperStorage,
+        persistSession: true,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    });
+  }
+  return googlePkceClient;
+}
+
+/** A failure from the Google code exchange that the UI has not shown yet. */
+let pendingGoogleExchangeNotice: AuthRedirectNotice | null = initialGoogleReturn.notice;
+
+function googleExchangeFailureNotice(err: AuthErrorLike): AuthRedirectNotice {
+  if (isNetworkError(err)) {
+    return {
+      message: 'Connection problem. Please check your internet and try again.',
+      reason: 'google-offline',
+    };
+  }
+  return { message: GOOGLE_FAILED_MESSAGE, reason: 'google-failed' };
+}
+
+/**
+ * Finishes a Google return: exchanges the one-time code (with this browser's
+ * verifier) for a session and gives that session to the main client, which
+ * persists it and emits SIGNED_IN so the normal sign-in + sync flow runs.
+ */
+async function completeGoogleCodeExchange(code: string): Promise<void> {
+  try {
+    const helper = getGooglePkceClient();
+    if (!helper || !supabase) {
+      pendingGoogleExchangeNotice = {
+        message: GOOGLE_UNAVAILABLE_MESSAGE,
+        reason: 'google-unavailable',
+      };
+      return;
+    }
+    const { data, error } = await helper.auth.exchangeCodeForSession(code);
+    const session = data?.session ?? null;
+    if (error || !session?.access_token || !session?.refresh_token) {
+      pendingGoogleExchangeNotice = googleExchangeFailureNotice(error);
+      return;
+    }
+    const { error: setError } = await supabase.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    });
+    if (setError) pendingGoogleExchangeNotice = googleExchangeFailureNotice(setError);
+  } catch (err) {
+    pendingGoogleExchangeNotice = googleExchangeFailureNotice(err as AuthErrorLike);
+  } finally {
+    // The helper must never keep a session of its own.
+    pkceMemory.clear();
+    pkceHelperStorage.removeItem(GOOGLE_PKCE_VERIFIER_KEY);
+  }
+}
+
+/** True until a Google return on this page load (if any) has been handled. */
+let googleReturnInProgress = Boolean(initialGoogleReturn.code && supabase);
+
+/** Resolves once a Google return on this page load (if any) has been handled. */
+const googleReturnReady: Promise<void> = googleReturnInProgress
+  ? completeGoogleCodeExchange(initialGoogleReturn.code!).finally(() => {
+      googleReturnInProgress = false;
+    })
+  : Promise.resolve();
+
+/** Waits for a Google return (if any) to finish before reading auth state. */
+export function waitForGoogleReturn(): Promise<void> {
+  return googleReturnReady;
+}
+
+/**
+ * Returns (once) a failure from finishing the Google return — for example the
+ * code expired or the sign-in finished in a different browser. Null otherwise.
+ */
+export function takeGoogleReturnNotice(): AuthRedirectNotice | null {
+  const notice = pendingGoogleExchangeNotice;
+  pendingGoogleExchangeNotice = null;
+  return notice;
+}
 
 /** Minimum password length (stronger than Supabase's bare minimum of 6). */
 export const MIN_PASSWORD_LENGTH = 8;
@@ -544,9 +735,10 @@ export async function checkGoogleSignInAvailability(): Promise<
 }
 
 /**
- * Starts the official Supabase Google OAuth flow (implicit flow, like the rest
- * of the app). On success the browser is redirected to Google and Supabase
- * returns the user to the allow-listed origin; `restoreAuthSession()` /
+ * Starts the official Supabase Google OAuth flow with PKCE. On success the
+ * browser is redirected to Google and Supabase returns the user to the
+ * allow-listed origin with a one-time `?code=`; the code is exchanged at page
+ * load (see `completeGoogleCodeExchange`), and `restoreAuthSession()` /
  * `onAuthChange()` then accept the session and the normal sync flow runs.
  */
 export async function signInWithGoogle(): Promise<AuthActionResult> {
@@ -564,8 +756,13 @@ export async function signInWithGoogle(): Promise<AuthActionResult> {
     return { ok: false, message: GOOGLE_UNAVAILABLE_MESSAGE, reason: 'google-unavailable' };
   }
 
+  const pkceClient = getGooglePkceClient();
+  if (!pkceClient) {
+    return { ok: false, message: ACCOUNTS_UNAVAILABLE_MESSAGE, reason: 'accounts-unavailable' };
+  }
+
   try {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await pkceClient.auth.signInWithOAuth({
       provider: GOOGLE_PROVIDER,
       options: {
         redirectTo,
@@ -966,6 +1163,12 @@ export async function resendConfirmationEmail(email: string): Promise<AuthAction
 
 export async function restoreAuthSession(): Promise<User | null> {
   if (!supabase) return currentUser();
+
+  // A Google return on this page load must finish first, otherwise the
+  // restore could answer "no user" while the new session is being created.
+  // (Only awaited when one is actually running, so the revision below is
+  // captured synchronously in every other case.)
+  if (googleReturnInProgress) await googleReturnReady;
 
   // `getUser()` is network-backed. Capture the revision before awaiting it so
   // a sign-in/sign-out that happens while the request is in flight wins.

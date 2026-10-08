@@ -11,14 +11,16 @@ Supabase project ref: `zgrwthwfbjzpwngfazwc`
 
 ## Kya-kya change hua (product decision)
 
-| Topic                      | Decision                                                                              |
-| -------------------------- | ------------------------------------------------------------------------------------- |
-| New users                  | **Continue with Google** — primary aur sabse aasan raasta                             |
-| Existing users             | Email + password sign-in **waise hi chalta rahega** (sirf already confirmed accounts) |
-| Password sign-up           | **Paused** (`isEmailSignupEnabled = false`) jab tak reliable email delivery na ho     |
-| Confirm Email              | **ON hi rahega** — koi manually verified karne wala workaround nahi                   |
-| Old unconfirmed accounts   | Na delete, na merge, na migrate — waise hi chhode gaye hain                           |
-| Gmail/Drive/Contacts scope | Kabhi nahi — sirf `openid email profile`                                              |
+| Topic                       | Decision                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| New users                   | **Continue with Google** — primary aur sabse aasan raasta                             |
+| Existing users              | Email + password sign-in **waise hi chalta rahega** (sirf already confirmed accounts) |
+| Password sign-up            | **Paused** (`isEmailSignupEnabled = false`) jab tak reliable email delivery na ho     |
+| Confirm Email               | **ON hi rahega** — koi manually verified karne wala workaround nahi                   |
+| Old unconfirmed accounts    | Na delete, na merge, na migrate — waise hi chhode gaye hain                           |
+| Gmail/Drive/Contacts scope  | Kabhi nahi — sirf `openid email profile`                                              |
+| Google return flow          | **PKCE** — URL mein sirf one-time `?code=` aata hai, tokens kabhi URL mein nahi       |
+| Email links (reset/confirm) | Purane implicit flow par hi — doosre phone/laptop par link kholne se bhi chalta hai   |
 
 ## Manual steps (har step chhota hai)
 
@@ -64,6 +66,10 @@ Supabase project ref: `zgrwthwfbjzpwngfazwc`
    - `https://neurofocusx.vercel.app/`
    - `http://localhost:5173/` (sirf local development ke liye — optional)
 4. `*.vercel.app` jaisa broad/wildcard entry **mat** add karna.
+
+> **PKCE ke liye kuch extra nahi karna:** Redirect URLs wahi rehte hain (Step 5).
+> Google sign-in usi browser mein poora hona chahiye jahan se shuru hua tha — agar beech
+> mein browser badal gaya to app friendly “try again” message dikhata hai.
 
 ### Step 6 — Email settings ko waise hi rakho
 
